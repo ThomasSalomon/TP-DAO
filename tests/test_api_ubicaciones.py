@@ -14,7 +14,7 @@ def test_altas_listado_consulta_edicion_memoria_y_aislamiento():
     cd = cliente.post("/api/ubicaciones", json={"codigo": " CD01 ", "nombre": " Central ", "tipo": "CD"})
     assert cd.status_code == 201
     assert cd.headers["Location"] == "/api/ubicaciones/1"
-    assert cd.get_json() == {"id": 1, "codigo": "CD01", "nombre": "Central", "tipo": "CD"}
+    assert cd.get_json() == {"id": 1, "codigo": "CD01", "nombre": "Central", "tipo": "CD", "activo": True}
     assert cliente.get(cd.headers["Location"]).get_json() == cd.get_json()
     for codigo in ["0001", "0002"]:
         local = cliente.post("/api/ubicaciones", json={"codigo": codigo, "nombre": "Local", "tipo": "LOCAL"})
@@ -23,7 +23,7 @@ def test_altas_listado_consulta_edicion_memoria_y_aislamiento():
         assert local.get_json()["tipo"] == "LOCAL"
     actualizado = cliente.put("/api/ubicaciones/1", json={"codigo": "CD02", "nombre": " Nueva central "})
     assert actualizado.status_code == 200
-    assert actualizado.get_json() == {"id": 1, "codigo": "CD02", "nombre": "Nueva central", "tipo": "CD"}
+    assert actualizado.get_json() == {"id": 1, "codigo": "CD02", "nombre": "Nueva central", "tipo": "CD", "activo": True}
     assert app.test_client().get("/api/ubicaciones/1").get_json() == actualizado.get_json()
     listado = cliente.get("/api/ubicaciones").get_json()["ubicaciones"]
     assert len(listado) == 3
@@ -142,7 +142,7 @@ def test_tipo_de_contenido_baja_no_disponible_y_respuestas_sin_atributos_interno
     assert respuesta.is_json
     assert "PUT" in respuesta.headers["Allow"]
     ubicacion = cliente.post("/api/ubicaciones", json={"codigo": "L", "nombre": "Local", "tipo": "LOCAL"})
-    assert set(ubicacion.get_json()) == {"id", "codigo", "nombre", "tipo"}
+    assert set(ubicacion.get_json()) == {"id", "codigo", "nombre", "tipo", "activo"}
 
 
 @pytest.mark.parametrize("codigos,tipos", [

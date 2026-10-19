@@ -27,7 +27,7 @@ def test_consulta_ausencia_cero_y_establecimiento_repetido():
     for minimo in [0, 12, 12, 0]:
         respuesta = cliente.put(f'{ruta}/{producto["id"]}', json={"minimo": minimo})
         assert respuesta.status_code == 200
-        configuracion = {"producto": {campo: producto[campo] for campo in ["id", "codigo", "nombre"]}, "minimo": minimo}
+        configuracion = {"producto": {campo: producto[campo] for campo in ["id", "codigo", "nombre", "activo"]}, "minimo": minimo}
         assert respuesta.get_json() == {"ubicacion": local, **configuracion}
         assert cliente.get(ruta).get_json() == {"ubicacion": local, "minimos": [configuracion]}
 
@@ -121,7 +121,7 @@ def test_nombres_y_codigos_actuales_sin_perder_configuracion():
     cliente.put("/api/productos/1", json={"codigo": "002", "nombre": "Arroz integral", "categoria_id": producto["categoria"]["id"], "precio": "140"})
     datos = cliente.get("/api/ubicaciones/1/minimos").get_json()
     assert datos["ubicacion"]["nombre"] == "Centro actualizado"
-    assert datos["minimos"] == [{"producto": {"id": 1, "codigo": "002", "nombre": "Arroz integral"}, "minimo": 5}]
+    assert datos["minimos"] == [{"producto": {"id": 1, "codigo": "002", "nombre": "Arroz integral", "activo": True}, "minimo": 5}]
 
 
 def test_puts_concurrentes_reemplazan_el_par_y_conservan_otro_local():

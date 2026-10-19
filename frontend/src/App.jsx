@@ -17,10 +17,10 @@ export default function App() {
     const controller = new AbortController();
     setCarga({ estado: 'cargando' });
     Promise.all([
-      catalogoAPI.categorias.listar(controller.signal),
-      catalogoAPI.productos.listar(controller.signal),
-      catalogoAPI.proveedores.listar(controller.signal),
-      catalogoAPI.ubicaciones.listar(controller.signal),
+      catalogoAPI.categorias.listar(controller.signal, 'todos'),
+      catalogoAPI.productos.listar(controller.signal, 'todos'),
+      catalogoAPI.proveedores.listar(controller.signal, 'todos'),
+      catalogoAPI.ubicaciones.listar(controller.signal, 'todos'),
     ])
       .then(([categorias, productos, proveedores, ubicaciones]) => {
         if (!controller.signal.aborted) {
@@ -49,10 +49,19 @@ export default function App() {
     return resultado;
   }
 
+  async function desactivar(tipo, id) {
+    const resultado = await catalogoAPI[tipo].desactivar(id);
+    setDatos((actual) => ({
+      ...actual, [tipo]: actual[tipo].map((item) => item.id === id ? resultado : item),
+    }));
+    setRevision((valor) => valor + 1);
+    return resultado;
+  }
+
   return (
     <main className="app">
       <header className="page-header">
-        <p className="eyebrow">DAO 2026 · F-01.5</p>
+        <p className="eyebrow">DAO 2026 · F-01.6</p>
         <h1>Administración del catálogo</h1>
         <p>Administrá categorías, productos, proveedores, locales y Centro de Distribución.</p>
       </header>
@@ -75,8 +84,9 @@ export default function App() {
       <div className="catalog-grid">
         {['categorias', 'productos', 'proveedores', 'ubicaciones'].map((tipo) => (
           <SeccionCatalogo
-            key={tipo} tipo={tipo} registros={datos[tipo]} categorias={datos.categorias}
-            bloqueado={bloqueado} estadoConsulta={carga.estado} onGuardar={guardar}
+            key={tipo} tipo={tipo} registros={datos[tipo]}
+            categorias={datos.categorias.filter((item) => item.activo)}
+            bloqueado={bloqueado} estadoConsulta={carga.estado} onGuardar={guardar} onDesactivar={desactivar}
             onActividad={(recurso, valor) => setOcupados((actual) => ({ ...actual, [recurso]: valor }))}
           />
         ))}

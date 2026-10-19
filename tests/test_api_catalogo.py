@@ -27,7 +27,7 @@ def test_altas_listados_consultas_y_respuestas_registradas():
     categoria = respuesta.get_json()
     assert respuesta.status_code == 201
     assert respuesta.headers["Location"] == f'/api/categorias/{categoria["id"]}'
-    assert categoria == {"id": categoria["id"], "codigo": "ALM", "nombre": "Almacén"}
+    assert categoria == {"id": categoria["id"], "codigo": "ALM", "nombre": "Almacén", "activo": True}
     assert type(categoria["id"]) is int
     assert cliente.get(respuesta.headers["Location"]).get_json() == categoria
 
@@ -40,6 +40,7 @@ def test_altas_listados_consultas_y_respuestas_registradas():
     assert respuesta.headers["Location"] == f'/api/productos/{producto["id"]}'
     assert producto == {
         "id": producto["id"], "codigo": "001", "nombre": "Arroz",
+        "activo": True,
         "categoria": categoria, "precio": "12345678901234567890.12", "moneda": "ARS",
     }
     assert cliente.get(respuesta.headers["Location"]).get_json() == producto

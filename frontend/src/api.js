@@ -53,11 +53,16 @@ async function solicitar(ruta, { signal, ...opciones } = {}) {
 function recurso(nombre) {
   const ruta = `/api/${nombre}`;
   return {
-    listar: async (signal) => (await solicitar(ruta, { signal }))[nombre],
+    listar: async (signal, estado = 'activos') => (
+      await solicitar(`${ruta}?estado=${encodeURIComponent(estado)}`, { signal })
+    )[nombre],
     obtener: (id, signal) => solicitar(`${ruta}/${id}`, { signal }),
     crear: (datos) => solicitar(ruta, { method: 'POST', body: JSON.stringify(datos) }),
     modificar: (id, datos) => solicitar(`${ruta}/${id}`, {
       method: 'PUT', body: JSON.stringify(datos),
+    }),
+    desactivar: (id) => solicitar(`${ruta}/${id}/estado`, {
+      method: 'PATCH', body: JSON.stringify({ activo: false }),
     }),
   };
 }

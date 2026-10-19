@@ -14,13 +14,13 @@ def test_recorrido_alta_listado_consulta_edicion_y_memoria_entre_clientes():
     respuesta = cliente.post("/api/proveedores", json={"codigo": " 0001 ", "nombre": " Mayorista "})
     assert respuesta.status_code == 201
     assert respuesta.headers["Location"] == "/api/proveedores/1"
-    assert respuesta.get_json() == {"id": 1, "codigo": "0001", "nombre": "Mayorista"}
+    assert respuesta.get_json() == {"id": 1, "codigo": "0001", "nombre": "Mayorista", "activo": True}
     assert cliente.get(respuesta.headers["Location"]).get_json() == respuesta.get_json()
     mismo_nombre = cliente.post("/api/proveedores", json={"codigo": "0002", "nombre": "Mayorista"})
     assert mismo_nombre.status_code == 201
     respuesta = cliente.put("/api/proveedores/1", json={"codigo": " A01 ", "nombre": " Actualizado "})
     assert respuesta.status_code == 200
-    assert respuesta.get_json() == {"id": 1, "codigo": "A01", "nombre": "Actualizado"}
+    assert respuesta.get_json() == {"id": 1, "codigo": "A01", "nombre": "Actualizado", "activo": True}
     assert app.test_client().get("/api/proveedores/1").get_json() == respuesta.get_json()
     assert cliente.get("/api/proveedores").get_json() == {
         "proveedores": [respuesta.get_json(), mismo_nombre.get_json()]
@@ -80,7 +80,7 @@ def test_conflictos_actuales_e_historicos_y_codigo_actual_con_otro_uso_de_mayusc
     cliente.put("/api/proveedores/1", json={"codigo": "NUEVO", "nombre": "Actual"})
     for metodo, ruta in [("post", "/api/proveedores"), ("put", "/api/proveedores/2"), ("put", "/api/proveedores/1")]:
         assert getattr(cliente, metodo)(ruta, json={"codigo": "ABC", "nombre": "Reutilizar"}).status_code == 409
-    assert cliente.get("/api/proveedores/1").get_json() == {"id": 1, "codigo": "NUEVO", "nombre": "Actual"}
+    assert cliente.get("/api/proveedores/1").get_json() == {"id": 1, "codigo": "NUEVO", "nombre": "Actual", "activo": True}
 
 
 @pytest.mark.parametrize("identificador,estado", [(0, 400), (999, 404), ("-1", 404), ("texto", 404)])

@@ -9,6 +9,28 @@ class CentroDistribucionDuplicadoError(ValueError):
     """El catálogo ya tiene un Centro de Distribución registrado."""
 
 
+class ConflictoCatalogoError(ValueError):
+    """Una operación contradice el estado administrativo o sus referencias."""
+
+
+def _filtrar_estado(registros, estado):
+    if not isinstance(estado, str):
+        raise TypeError("El filtro de estado debe ser texto.")
+    if estado not in ("activos", "inactivos", "todos"):
+        raise ValueError("El estado debe ser activos, inactivos o todos.")
+    return tuple(item for item in registros if estado == "todos" or item.activo == (estado == "activos"))
+
+
+def _reservar_codigo(registro, codigo, entidad, mensaje):
+    clave = _texto_no_vacio(codigo, "código").casefold()
+    existente = registro.get(clave)
+    if existente is not None and (
+        existente is not entidad or existente.codigo.casefold() != clave
+    ):
+        raise CodigoDuplicadoError(mensaje)
+    registro[clave] = entidad
+
+
 def _texto_no_vacio(valor, campo):
     if not isinstance(valor, str):
         raise TypeError(f"El {campo} debe ser un texto.")
@@ -53,7 +75,17 @@ class Categoria:
             raise TypeError("El catálogo debe ser un Catalogo.")
         self._identificador = identificador
         self._catalogo = catalogo
+        self._activo = True
         self.modificar(codigo, nombre)
+
+    @property
+    def activo(self):
+        return self._activo
+
+    def desactivar(self):
+        if self.activo and self._catalogo.tiene_productos_activos(self):
+            raise ConflictoCatalogoError("La categoría tiene productos activos asociados.")
+        self._activo = False
 
     @property
     def identificador(self):
@@ -69,11 +101,11 @@ class Categoria:
 
     def modificar(self, codigo, nombre):
         """Valida todos los datos antes de modificar la misma instancia."""
+        if not self.activo:
+            raise ConflictoCatalogoError("La categoría está inactiva y no se puede modificar.")
         codigo = _texto_no_vacio(codigo, "código")
         nombre = _texto_no_vacio(nombre, "nombre")
-        existente = self._catalogo.buscar_categoria_por_codigo(codigo)
-        if existente is not None and existente is not self:
-            raise CodigoDuplicadoError("Ya existe una categoría con ese código.")
+        self._catalogo.reservar_codigo_categoria(codigo, self)
 
         self._codigo = codigo
         self._nombre = nombre
@@ -88,7 +120,15 @@ class Producto:
             raise TypeError("El catálogo debe ser un Catalogo.")
         self._identificador = identificador
         self._catalogo = catalogo
+        self._activo = True
         self.modificar(codigo, nombre, categoria, precio)
+
+    @property
+    def activo(self):
+        return self._activo
+
+    def desactivar(self):
+        self._activo = False
 
     @property
     def identificador(self):
@@ -117,16 +157,18 @@ class Producto:
 
     def modificar(self, codigo, nombre, categoria, precio):
         """Actualiza datos juntos, conservando identidad y referencias válidas."""
+        if not self.activo:
+            raise ConflictoCatalogoError("El producto está inactivo y no se puede modificar.")
         codigo = _texto_no_vacio(codigo, "código")
         nombre = _texto_no_vacio(nombre, "nombre")
         if not isinstance(categoria, Categoria):
             raise TypeError("La categoría debe ser una Categoria.")
         if not self._catalogo.contiene_categoria(categoria):
             raise ValueError("La categoría no pertenece a este catálogo.")
+        if not categoria.activo:
+            raise ConflictoCatalogoError("La categoría está inactiva y no admite nuevas asociaciones.")
         centavos = _precio_a_centavos(precio)
-        existente = self._catalogo.buscar_producto_por_codigo(codigo)
-        if existente is not None and existente is not self:
-            raise CodigoDuplicadoError("Ya existe un producto con ese código.")
+        self._catalogo.reservar_codigo_producto(codigo, self)
 
         self._codigo = codigo
         self._nombre = nombre
@@ -134,6 +176,8 @@ class Producto:
         self._precio_centavos = centavos
 
     def cambiar_precio(self, precio):
+        if not self.activo:
+            raise ConflictoCatalogoError("El producto está inactivo y no se puede modificar.")
         self._precio_centavos = _precio_a_centavos(precio)
 
 
@@ -146,7 +190,15 @@ class Proveedor:
             raise TypeError("El catálogo debe ser un Catalogo.")
         self._identificador = identificador
         self._catalogo = catalogo
+        self._activo = True
         self.modificar(codigo, nombre)
+
+    @property
+    def activo(self):
+        return self._activo
+
+    def desactivar(self):
+        self._activo = False
 
     @property
     def identificador(self):
@@ -162,6 +214,8 @@ class Proveedor:
 
     def modificar(self, codigo, nombre):
         """Valida todo antes de reservar el código y actualizar la misma instancia."""
+        if not self.activo:
+            raise ConflictoCatalogoError("El proveedor está inactivo y no se puede modificar.")
         codigo = _texto_no_vacio(codigo, "código")
         nombre = _texto_no_vacio(nombre, "nombre")
         self._catalogo.reservar_codigo_proveedor(codigo, self)
@@ -182,7 +236,19 @@ class Ubicacion:
         self._identificador = identificador
         self._tipo = tipo
         self._catalogo = catalogo
+        self._activo = True
         self.modificar(codigo, nombre)
+
+    @property
+    def activo(self):
+        return self._activo
+
+    def desactivar(self):
+        if self.tipo == "CD":
+            raise ConflictoCatalogoError(
+                "No se permite desactivar el CD sin una política de reemplazo aprobada."
+            )
+        self._activo = False
 
     @property
     def identificador(self):
@@ -202,6 +268,8 @@ class Ubicacion:
 
     def modificar(self, codigo, nombre):
         """Cambia sólo datos administrativos después de validar la operación."""
+        if not self.activo:
+            raise ConflictoCatalogoError("La ubicación está inactiva y no se puede modificar.")
         codigo = _texto_no_vacio(codigo, "código")
         nombre = _texto_no_vacio(nombre, "nombre")
         self._catalogo.reservar_codigo_ubicacion(codigo, self)
@@ -214,12 +282,43 @@ class Catalogo:
 
     def __init__(self):
         self._categorias = {}
+        self._codigos_categorias = {}
         self._productos = {}
+        self._codigos_productos = {}
         self._proveedores = {}
         self._codigos_proveedores = {}
         self._ubicaciones = {}
         self._codigos_ubicaciones = {}
         self._minimos = {}
+
+    def tiene_productos_activos(self, categoria):
+        return any(item.activo and item.categoria is categoria for item in self._productos.values())
+
+    def reservar_codigo_categoria(self, codigo, categoria):
+        _reservar_codigo(self._codigos_categorias, codigo, categoria, "Ya existe una categoría con ese código.")
+
+    def reservar_codigo_producto(self, codigo, producto):
+        _reservar_codigo(self._codigos_productos, codigo, producto, "Ya existe un producto con ese código.")
+
+    def desactivar_categoria(self, identificador):
+        categoria = self.obtener_categoria(identificador)
+        categoria.desactivar()
+        return categoria
+
+    def desactivar_producto(self, identificador):
+        producto = self.obtener_producto(identificador)
+        producto.desactivar()
+        return producto
+
+    def desactivar_proveedor(self, identificador):
+        proveedor = self.obtener_proveedor(identificador)
+        proveedor.desactivar()
+        return proveedor
+
+    def desactivar_ubicacion(self, identificador):
+        ubicacion = self.obtener_ubicacion(identificador)
+        ubicacion.desactivar()
+        return ubicacion
 
     def _local_para_minimos(self, identificador):
         local = self.obtener_ubicacion(identificador)
@@ -231,6 +330,8 @@ class Catalogo:
         """Configura unidades del par registrado; no modifica existencias."""
         local = self._local_para_minimos(local_id)
         producto = self.obtener_producto(producto_id)
+        if not local.activo or not producto.activo:
+            raise ConflictoCatalogoError("El producto y el local deben estar activos para configurar mínimos.")
         if type(minimo) is not int:
             raise TypeError("El mínimo debe ser un entero de unidades.")
         if minimo < 0:
@@ -262,13 +363,7 @@ class Catalogo:
             raise CentroDistribucionDuplicadoError(
                 "Ya existe un Centro de Distribución registrado."
             )
-        clave = _texto_no_vacio(codigo, "código").casefold()
-        existente = self._codigos_ubicaciones.get(clave)
-        if existente is not None and (
-            existente is not ubicacion or existente.codigo.casefold() != clave
-        ):
-            raise CodigoDuplicadoError("El código de ubicación ya fue registrado.")
-        self._codigos_ubicaciones[clave] = ubicacion
+        _reservar_codigo(self._codigos_ubicaciones, codigo, ubicacion, "El código de ubicación ya fue registrado.")
 
     def crear_ubicacion(self, codigo, nombre, tipo):
         identificador = len(self._ubicaciones) + 1
@@ -287,8 +382,8 @@ class Catalogo:
                 return ubicacion
         return None
 
-    def listar_ubicaciones(self):
-        return tuple(self._ubicaciones.values())
+    def listar_ubicaciones(self, estado="activos"):
+        return _filtrar_estado(self._ubicaciones.values(), estado)
 
     def modificar_ubicacion(self, identificador, codigo, nombre):
         ubicacion = self.obtener_ubicacion(identificador)
@@ -297,13 +392,7 @@ class Catalogo:
 
     def reservar_codigo_proveedor(self, codigo, proveedor):
         """Conserva códigos históricos; sólo permite mantener el código vigente."""
-        clave = _texto_no_vacio(codigo, "código").casefold()
-        existente = self._codigos_proveedores.get(clave)
-        if existente is not None and (
-            existente is not proveedor or existente.codigo.casefold() != clave
-        ):
-            raise CodigoDuplicadoError("El código de proveedor ya fue registrado.")
-        self._codigos_proveedores[clave] = proveedor
+        _reservar_codigo(self._codigos_proveedores, codigo, proveedor, "El código de proveedor ya fue registrado.")
 
     def crear_proveedor(self, codigo, nombre):
         identificador = len(self._proveedores) + 1
@@ -322,8 +411,8 @@ class Catalogo:
                 return proveedor
         return None
 
-    def listar_proveedores(self):
-        return tuple(self._proveedores.values())
+    def listar_proveedores(self, estado="activos"):
+        return _filtrar_estado(self._proveedores.values(), estado)
 
     def modificar_proveedor(self, identificador, codigo, nombre):
         proveedor = self.obtener_proveedor(identificador)
@@ -364,11 +453,11 @@ class Catalogo:
                 return producto
         return None
 
-    def listar_categorias(self):
-        return tuple(self._categorias.values())
+    def listar_categorias(self, estado="activos"):
+        return _filtrar_estado(self._categorias.values(), estado)
 
-    def listar_productos(self):
-        return tuple(self._productos.values())
+    def listar_productos(self, estado="activos"):
+        return _filtrar_estado(self._productos.values(), estado)
 
     def contiene_categoria(self, categoria):
         return (

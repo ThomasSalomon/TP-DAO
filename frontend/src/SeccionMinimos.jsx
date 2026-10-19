@@ -2,7 +2,9 @@ import { useEffect, useRef, useState } from 'react';
 import { ErrorAPI, minimosAPI } from './api';
 
 export default function SeccionMinimos({ productos, ubicaciones, bloqueado, estadoCatalogo, onActividad }) {
-  const locales = ubicaciones.filter((item) => item.tipo === 'LOCAL');
+  const [historico, setHistorico] = useState(false);
+  const locales = ubicaciones.filter((item) => item.tipo === 'LOCAL' && (historico || item.activo));
+  const productosDisponibles = productos.filter((item) => historico || item.activo);
   const [localId, setLocalId] = useState('');
   const [productoId, setProductoId] = useState('');
   const [cantidad, setCantidad] = useState('');
@@ -12,11 +14,11 @@ export default function SeccionMinimos({ productos, ubicaciones, bloqueado, esta
   const [exito, setExito] = useState('');
   const [enviando, setEnviando] = useState(false);
   const pendiente = useRef(false);
-  const local = locales.find((item) => String(item.id) === localId);
+  const local = ubicaciones.find((item) => item.tipo === 'LOCAL' && String(item.id) === localId);
   const producto = productos.find((item) => String(item.id) === productoId);
   const lista = consulta.estado === 'lista' && consulta.localId === localId;
   const configuracion = lista && consulta.minimos.find((item) => String(item.producto.id) === productoId);
-  const puedeGuardar = lista && local && producto && !bloqueado && !enviando;
+  const puedeGuardar = lista && local?.activo && producto?.activo && !historico && !bloqueado && !enviando;
 
   useEffect(() => {
     if (!localId) {
@@ -90,8 +92,16 @@ export default function SeccionMinimos({ productos, ubicaciones, bloqueado, esta
         </button>
       </div>
       <p className="detail">Configuración administrativa en unidades enteras. No representa cantidades disponibles.</p>
+      <label className="history-toggle">
+        <input type="checkbox" checked={historico} disabled={bloqueado || enviando}
+          onChange={(evento) => setHistorico(evento.target.checked)} />
+        Consultar mínimos históricos (sólo lectura)
+      </label>
+      {(historico || local?.activo === false || producto?.activo === false) && (
+        <p className="notice">Consulta de configuraciones conservadas. No se puede guardar con registros inactivos ni en modo histórico.</p>
+      )}
       {estadoCatalogo === 'lista' && !locales.length && <p className="empty">Registrá un local para configurar mínimos.</p>}
-      {estadoCatalogo === 'lista' && !productos.length && <p className="empty">Registrá un producto para configurar mínimos.</p>}
+      {estadoCatalogo === 'lista' && !productosDisponibles.length && <p className="empty">Registrá un producto activo para configurar mínimos.</p>}
       <form onSubmit={guardar} aria-labelledby="minimos-form-title">
         <h3 id="minimos-form-title">Configurar mínimo</h3>
         {error && <p id="minimos-error" className="notice error" role="alert">{error.message}</p>}
@@ -105,7 +115,8 @@ export default function SeccionMinimos({ productos, ubicaciones, bloqueado, esta
               <select id="minimos-local" required value={localId}
                 onChange={(evento) => seleccionar('local', evento.target.value)}>
                 <option value="">Elegí un local</option>
-                {locales.map((item) => <option key={item.id} value={item.id}>{item.codigo} · {item.nombre}</option>)}
+                {!historico && local?.activo === false && <option value={local.id} disabled>{local.codigo} · {local.nombre} (inactivo)</option>}
+                {locales.map((item) => <option key={item.id} value={item.id}>{item.codigo} · {item.nombre}{!item.activo ? ' (inactivo)' : ''}</option>)}
               </select>
             </div>
             <div>
@@ -113,7 +124,8 @@ export default function SeccionMinimos({ productos, ubicaciones, bloqueado, esta
               <select id="minimos-producto" required value={productoId}
                 onChange={(evento) => seleccionar('producto', evento.target.value)}>
                 <option value="">Elegí un producto</option>
-                {productos.map((item) => <option key={item.id} value={item.id}>{item.codigo} · {item.nombre}</option>)}
+                {!historico && producto?.activo === false && <option value={producto.id} disabled>{producto.codigo} · {producto.nombre} (inactivo)</option>}
+                {productosDisponibles.map((item) => <option key={item.id} value={item.id}>{item.codigo} · {item.nombre}{!item.activo ? ' (inactivo)' : ''}</option>)}
               </select>
             </div>
             <div>
@@ -123,7 +135,7 @@ export default function SeccionMinimos({ productos, ubicaciones, bloqueado, esta
                   : configuracion ? `${configuracion.minimo} unidades` : 'Sin configurar'}</p>
               <label htmlFor="minimos-cantidad">Nuevo mínimo (unidades)</label>
               <input id="minimos-cantidad" type="text" inputMode="numeric" required
-                disabled={!lista || !local || !producto} value={cantidad}
+                disabled={!lista || !local?.activo || !producto?.activo || historico} value={cantidad}
                 aria-invalid={Boolean(error?.campos?.minimo) || undefined}
                 aria-describedby={`minimos-ayuda${error ? ' minimos-error' : ''}`}
                 onChange={(evento) => { setCantidad(evento.target.value); setError(null); setExito(''); }} />
@@ -144,9 +156,9 @@ export default function SeccionMinimos({ productos, ubicaciones, bloqueado, esta
             <div className="table-scroll" role="region" aria-label="Mínimos configurados del local" tabIndex="0">
               <table>
                 <caption className="sr-only">Mínimos configurados del local</caption>
-                <thead><tr><th scope="col">Código de producto</th><th scope="col">Producto</th><th scope="col">Mínimo</th></tr></thead>
+                <thead><tr><th scope="col">Código de producto</th><th scope="col">Producto</th><th scope="col">Estado del producto</th><th scope="col">Mínimo</th></tr></thead>
                 <tbody>{consulta.minimos.map((item) => (
-                  <tr key={item.producto.id}><td>{item.producto.codigo}</td><td>{item.producto.nombre}</td><td>{item.minimo} unidades</td></tr>
+                  <tr key={item.producto.id}><td>{item.producto.codigo}</td><td>{item.producto.nombre}</td><td>{item.producto.activo ? 'Activo' : 'Inactivo'}</td><td>{item.minimo} unidades</td></tr>
                 ))}</tbody>
               </table>
             </div>

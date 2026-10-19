@@ -10,7 +10,7 @@ function valoresIniciales(registro) {
 }
 
 export default function FormularioCatalogo({
-  tipo, registro, categorias, bloqueado, onGuardar, onCancelar, onActividad,
+  tipo, registro, categorias, bloqueado, soloLectura = false, onGuardar, onCancelar, onActividad,
 }) {
   const esProducto = tipo === 'productos';
   const esCategoria = tipo === 'categorias';
@@ -42,7 +42,7 @@ export default function FormularioCatalogo({
 
   async function guardar(evento) {
     evento.preventDefault();
-    if (pendiente.current) return;
+    if (pendiente.current || soloLectura || bloqueado) return;
     pendiente.current = true;
     setEnviando(true);
     onActividad(true);
@@ -76,7 +76,7 @@ export default function FormularioCatalogo({
       required: true, 'aria-invalid': tieneError || undefined,
       'aria-describedby': [
         campo === 'precio' ? 'producto-precio-ayuda' : '',
-        (tipo === 'proveedores' || esUbicacion) && campo === 'codigo' ? `${prefijo}-codigo-ayuda` : '',
+        campo === 'codigo' ? `${prefijo}-codigo-ayuda` : '',
         esUbicacion && campo === 'tipo' ? 'ubicacion-tipo-ayuda' : '',
         tieneError ? `${prefijo}-${campo}-error` : '',
         error && !tieneError ? `${prefijo}-error` : '',
@@ -93,22 +93,21 @@ export default function FormularioCatalogo({
   return (
     <form onSubmit={guardar} aria-labelledby={`${prefijo}-form-title`}>
       <h3 id={`${prefijo}-form-title`}>
-        {registro ? `Editar ${singular} · ID ${registro.id}` : `Registrar ${singular}`}
+        {registro ? `${soloLectura ? 'Consultar' : 'Editar'} ${singular} · ID ${registro.id}` : `Registrar ${singular}`}
       </h3>
+      {soloLectura && <p className="notice">Registro inactivo. Los campos se conservan y no pueden guardarse. Usá Consultar para recuperar los datos registrados.</p>}
       {error && <p className="notice error" role="alert" id={`${prefijo}-error`}>{error.message}</p>}
       {exito && <p className="notice success" role="status">{exito}</p>}
       {enviando && <p role="status">Guardando {singular}…</p>}
-      <fieldset disabled={bloqueado || enviando}>
+      <fieldset disabled={bloqueado || enviando || soloLectura}>
         <legend className="sr-only">Datos de {singular}</legend>
         <div className="form-fields">
           <div>
             <label htmlFor={`${prefijo}-codigo`}>Código de {singular}</label>
             <input {...atributos('codigo')} type="text" autoComplete="off" />
-            {(tipo === 'proveedores' || esUbicacion) && (
-              <p id={`${prefijo}-codigo-ayuda`} className="detail">
-                Si cambiás el código, el anterior queda reservado y no puede volver a usarse.
-              </p>
-            )}
+            <p id={`${prefijo}-codigo-ayuda`} className="detail">
+              Si cambiás el código, el anterior queda reservado y no puede volver a usarse.
+            </p>
             {errorCampo('codigo')}
           </div>
           <div>
@@ -145,6 +144,9 @@ export default function FormularioCatalogo({
                 <label htmlFor="producto-categoria_id">Categoría del producto</label>
                 <select {...atributos('categoria_id')}>
                   <option value="">Elegí una categoría</option>
+                  {soloLectura && registro?.categoria && !categorias.some((item) => item.id === registro.categoria.id) && (
+                    <option value={registro.categoria.id} disabled>{registro.categoria.codigo} · {registro.categoria.nombre} (inactiva)</option>
+                  )}
                   {categorias.map((item) => (
                     <option key={item.id} value={item.id}>{item.codigo} · {item.nombre}</option>
                   ))}
@@ -161,13 +163,13 @@ export default function FormularioCatalogo({
             </>
           )}
         </div>
-        <div className="actions">
-          <button type="submit" disabled={esProducto && !categorias.length}>
-            {enviando ? 'Guardando…' : registro ? `Guardar ${singular}` : `Registrar ${singular}`}
-          </button>
-          {registro && <button type="button" className="secondary" onClick={onCancelar}>Cancelar edición</button>}
-        </div>
       </fieldset>
+      <div className="actions">
+        {!soloLectura && <button type="submit" disabled={bloqueado || enviando || (esProducto && !categorias.length)}>
+          {enviando ? 'Guardando…' : registro ? `Guardar ${singular}` : `Registrar ${singular}`}
+        </button>}
+        {registro && <button type="button" className="secondary" disabled={bloqueado || enviando} onClick={onCancelar}>{soloLectura ? 'Cerrar consulta' : 'Cancelar edición'}</button>}
+      </div>
     </form>
   );
 }

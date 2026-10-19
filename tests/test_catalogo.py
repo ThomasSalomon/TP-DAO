@@ -311,6 +311,11 @@ local = catalogo.crear_ubicacion('L1', 'Centro', 'LOCAL')
 assert catalogo.obtener_minimo(local.identificador, producto.identificador) is None
 catalogo.establecer_minimo(local.identificador, producto.identificador, 0)
 assert catalogo.listar_minimos(local.identificador) == ((producto, 0),)
+producto.desactivar()
+local.desactivar()
+categoria.desactivar()
+assert not producto.activo and not categoria.activo and not local.activo
+assert catalogo.listar_minimos(local.identificador) == ((producto, 0),)
 assert 'flask' not in sys.modules
 assert 'sqlite3' not in sys.modules
 print('dominio independiente')
