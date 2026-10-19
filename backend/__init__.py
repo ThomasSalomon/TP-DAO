@@ -1,0 +1,39 @@
+"""Creación de la aplicación HTTP; todavía no hay lógica de dominio."""
+
+from pathlib import Path
+
+from flask import Flask, request, send_from_directory
+from werkzeug.exceptions import HTTPException
+
+from .api import api
+
+
+def create_app(frontend_dist=None):
+    if frontend_dist is None:
+        frontend_dist = Path(__file__).resolve().parent.parent / "frontend" / "dist"
+    frontend_dist = Path(frontend_dist).resolve()
+
+    app = Flask(
+        __name__,
+        static_folder=str(frontend_dist / "assets"),
+        static_url_path="/assets",
+    )
+    app.register_blueprint(api)
+
+    @app.get("/")
+    def frontend():
+        return send_from_directory(frontend_dist, "index.html")
+
+    @app.errorhandler(HTTPException)
+    def error_http(error):
+        if request.path == "/api" or request.path.startswith("/api/"):
+            response = error.get_response()
+            response.data = app.json.dumps(
+                {"error": {"code": error.code, "message": error.name}}
+            )
+            response.content_type = "application/json"
+            return response
+        return error
+
+    return app
+

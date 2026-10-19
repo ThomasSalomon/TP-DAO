@@ -2,7 +2,7 @@
 
 Fecha de revisión: 19 de octubre de 2026. Audiencia: equipo del TP y docente.
 
-**Estado actual:** revisión documental completada; acuerdos humanos pendientes. No hay aplicación implementada. Este documento evalúa y recomienda; no aprueba por el equipo, no reemplaza la planificación original ni autoriza F-01.
+**Estado actual:** documentación sincronizada el 19/10/2026 por pedido del usuario. DN-10 acordada para planificación: React + Vite, API Flask Python y SQLite/sqlite3. Políticas de dominio y DN-11 siguen pendientes; F-01 no está autorizado y no hay aplicación implementada.
 
 ## A. Resumen de cumplimiento del enunciado
 
@@ -10,7 +10,7 @@ Fecha de revisión: 19 de octubre de 2026. Audiencia: equipo del TP y docente.
 
 | Referencia | Fuente leída | Localizador usado en esta revisión |
 | --- | --- | --- |
-| E1 | [tema3.pdf](<C:/Users/Tommy/Documents/cosas de la facultad/4to/DAO/TP-DAO/tema3.pdf>) | Página 1, Contexto. |
+| E1 | [tema3.pdf](<C:/Users/Tommy/Documents/cosas de la facultad/4to/DAO/TP-DAO/docs/tema3.pdf>) | Página 1, Contexto. |
 | E2 | Mismo PDF | Página 1, Procesos de negocio obligatorios, puntos 1 a 7. |
 | E3 | Mismo PDF | Página 1, Procesos de negocio opcionales. |
 | E4 | Mismo PDF | Página 2, las cinco viñetas de Validaciones de negocio; el título comienza en página 1. |
@@ -18,16 +18,18 @@ Fecha de revisión: 19 de octubre de 2026. Audiencia: equipo del TP y docente.
 | E6 | Mismo PDF | Página 2, Consideraciones particulares. |
 | A | [AGENTS.md del TP](<C:/Users/Tommy/Documents/cosas de la facultad/4to/DAO/TP-DAO/AGENTS.md>) | Secciones numeradas; leído completo. |
 | AP | [AGENTS.md del directorio DAO](<C:/Users/Tommy/Documents/cosas de la facultad/4to/DAO/AGENTS.md>) | Instrucción de ámbito superior, también leída. Su alcance introductorio se precisa para este TP mediante A §§3, 6 y 15 y E6. |
-| P | [PLANIFICACION_TP_POO.md](<C:/Users/Tommy/Documents/cosas de la facultad/4to/DAO/TP-DAO/PLANIFICACION_TP_POO.md>) | Leído completo, secciones 0 y A a N. Sus referencias E1 a E6 coinciden con las anteriores. |
-| U | [Pedido de revisión de F-00](<C:/Users/Tommy/.codex/attachments/479212ff-a9d6-4cea-85c2-f00dc2bd4b45/Texto%20pegado.txt>) | Secciones 1 a 10 del pedido actual. La U histórica citada por P no se considera una fuente independiente disponible. |
+| P | [PLANIFICACION_TP_POO.md](<C:/Users/Tommy/Documents/cosas de la facultad/4to/DAO/TP-DAO/docs/PLANIFICACION_TP_POO.md>) | Leído completo, secciones 0 y A a N. Sus referencias E1 a E6 coinciden con las anteriores. |
+| U | [Pedido inicial de revisión F-00](<C:/Users/Tommy/.codex/attachments/479212ff-a9d6-4cea-85c2-f00dc2bd4b45/Texto%20pegado.txt>) | Antecedente de esta revisión; no se confunde con instrucciones posteriores. |
+| S | Pedidos posteriores del usuario en esta conversación | React + Vite/API Python/SQLite y posterior sincronización de las tres documentaciones. Autoriza su edición, sin implementación. |
+| R | [PROPUESTA_ARQUITECTURA_REACT_PYTHON.md](<C:/Users/Tommy/Documents/cosas de la facultad/4to/DAO/TP-DAO/docs/PROPUESTA_ARQUITECTURA_REACT_PYTHON.md>) | Detalle técnico vigente de DN-10 y ADR-RP-01. |
 
-Se extrajeron y revisaron visualmente las dos páginas del PDF, sin crear imágenes en disco. El repositorio contiene los tres archivos originales versionados y carece de código, configuración de aplicación y pruebas. No se encontraron otros AGENTS.md dentro del TP. Los seis materiales enumerados en A §15 y una rúbrica adicional no están en este repositorio: se utiliza A como síntesis documentada, sin atribuirles una lectura directa.
+Se extrajeron y revisaron visualmente las dos páginas del PDF, sin crear imágenes en disco. El repositorio contiene AGENTS.md y, bajo docs/, el enunciado y las tres documentaciones; carece de código, configuración de aplicación y pruebas. No se encontraron otros AGENTS.md dentro del TP. Los seis materiales enumerados en A §15 y una rúbrica adicional no están en este repositorio: se utiliza A como síntesis documentada, sin atribuirles una lectura directa.
 
 Clasificación aplicada:
 
 - **O — obligación explícita:** exigida por E1 a E6.
 - **A — regla académica documentada:** indicada en AGENTS.md; se distinguen sus convenciones confirmadas, observadas y buenas prácticas generales (A §§6, 7, 9.1 y 13).
-- **U — restricción del usuario:** backend exclusivamente Python; frontend libre, sujeto a su aprobación concreta; en esta tarea sólo se crea este archivo (U §§2, 5 y 8).
+- **U/S — instrucciones del usuario:** backend exclusivamente Python; React + Vite y Flask adoptados para planificación al pedir sincronización; se editan P, D y R, sin implementar. Las restricciones de crear sólo un archivo pertenecían al encargo inicial y fueron sustituidas por S.
 - **P — propuesta técnica o política del equipo:** recomendación sin aprobación todavía.
 - **I/S — interpretación o supuesto:** evidencia incompleta; se identifica quién debe resolverla y cuándo.
 
@@ -67,18 +69,20 @@ E6 exige al menos **dos patrones** y **cuatro reportes no triviales**, y evaluac
 
 ### B.1 Correcciones y precisiones de alcance
 
+Los hallazgos resueltos por esta sincronización se marcan como corregidos; las políticas de negocio no acordadas conservan su pendiente.
+
 | ID / prioridad | Hallazgo con evidencia | Impacto recomendado |
 | --- | --- | --- |
-| H-01 / alta | P RT-05, D.1, E.2 y K.1 DN-10 tienden a convertir la falta de material GUI/framework en una autorización docente obligatoria general. A §§3, 4 y 8 exige pertinencia y simplicidad; E1 a E6 no fija interfaz. U §5 permite cualquier frontend y exige aprobar su elección concreta. | Reclasificar RT-05: evaluar aceptación académica cuando exista una restricción concreta o duda de evaluación; no declarar una prohibición universal ni un permiso docente previo para todo frontend. Mantener aprobación del usuario para elegirlo. |
+| H-01 / alta | La versión inicial de P trataba la ausencia de material GUI/framework como un permiso docente general. E1-E6 no fija interfaz; A §§3/4/8 exige pertinencia. | Corregido en P RT-05/D/E y DN-10: React + Vite/Flask acordados por S, sin aval académico atribuido; sólo revisar restricciones concretas si aparecen. |
 | H-02 / alta | “Todos los bultos deben estar verificados antes del remito” es P C.5, no E4. Con un bulto rechazado podría bloquear permanentemente los íntegros. | Separar el invariante obligatorio de la política documental multibulto; DN-01 debe definir alcance, parciales y recuperación. |
 | H-03 / alta | P G.3 sí distingue pedido local→CD y flujo físico CD→local, pero RF-07 y el modelo por destino no explicitan si existe consolidación de varios locales en una orden. E2.3 usa “necesidades de los locales en una orden”. | Conservar solicitante y trayecto físico; confirmar agrupación por destino frente a orden global antes de F-03. No afirmar que una variante es la única lectura. |
-| H-04 / alta | P RB-17 aplica el principio contextual de control de ingreso también a compras/devoluciones. E1 lo respalda en términos generales, pero no define allí estados, remitos ni procedimientos. P G.2/G.9 ya reconoce esta diferencia. | Mantener control del ingreso como interpretación fundamentada; clasificar su procedimiento como política adicional. No imponer el circuito completo del bulto a compras o devoluciones. |
+| H-04 / alta | E1 exige control antes de stock vendible; no define procedimientos de compra/devolución. P G.2/G.9 separa esos flujos del remito interno. | Clasificación precisada en P RB-17: principio obligatorio, procedimientos interpretados/propuestos y pendientes de DN-03/DN-07; no imponer ciclo completo del bulto a ambos. |
 | H-05 / alta | Integrar compras es obligación contextual; generar órdenes sugeridas es opcional. P RF-05 y B.5 lo separa correctamente (E1, E3, E6). | Conservar la separación. Una compra manual con ingreso controlado puede ser el mínimo propuesto; recepción parcial y pagos a proveedores no están exigidos explícitamente. |
 | H-06 / alta | Los plazos, locales permitidos, aptitud, reintegro y límite acumulado de devolución no están detallados en E4. P DN-07 los señala, pero deben pasar de preguntas a una política aceptada antes de F-05. | Proponer reglas mínimas verificables; no atribuirlas a la cátedra. Devolución comercial y rechazo logístico son procesos distintos. |
 | H-07 / media | P F.6 usa último costo confirmado para estimar margen. Es una política, no costo real de las unidades trasladadas ni método contable exigido (E1, E5). | Conservar precio/costo histórico en venta, declarar la estimación y acordar costos faltantes. No restar compras de nuevo como gasto de las mismas unidades vendidas. |
-| H-08 / media | P DN-10/DN-11 concentra decisiones antes de F-01, aunque pagos, devoluciones y semántica multibulto se consumen después (P I, K.1). | Dividir decisiones compuestas por fecha de consumo; H e I de este documento fijan cortes parciales. |
-| H-09 / media | P F.5 afirma como confirmado que el repositorio está dentro de OneDrive; la ruta actual es Documents y no prueba sincronización. P 0.1 describe además un estado Git histórico distinto del actual. | Marcar sincronización como no verificada. Mantener sólo la precaución condicional sobre bases abiertas sincronizadas. Actualizar el inventario cuando se autorice editar P, sin borrar su contexto histórico. |
-| H-10 / media | P 0.2 mezcla prioridad de instrucciones del agente con autoridad académica; P RT-07 y su cabecera describen el encargo anterior. La U original no está disponible para contraste independiente. | Separar autoridad académica A §2 y restricciones del encargo actual U. No atribuir al pedido histórico contenido que sólo consta como cita en P. |
+| H-08 / media | La revisión detectó que decisiones compuestas debían separarse por fase consumidora (P I/K.1). | Aplicado en H/I y P I/K/L: DN-10 resuelta; catálogo primero y pagos/devoluciones/multibulto antes de sus fases, sin bloquear F-01 por todo F-00. |
+| H-09 / media | La versión inicial de P F.5 afirmaba OneDrive sin evidencia; P 0.1 describía un inventario histórico. | Corregido: sincronización no verificada y precaución condicional; inventario actual y rutas docs/ alineados. |
+| H-10 / media | La versión inicial mezclaba autoridad académica y alcance del agente, y conservaba el encargo de un único archivo. | Corregido en P 0/RT-07 y cabeceras: A §2 mantiene autoridad académica; S autoriza editar P/D/R, sin implementación ni cambios al enunciado/AGENTS.md. |
 
 ### B.2 Compras, devoluciones y cardinalidades: límite de lo explícito
 
@@ -110,7 +114,7 @@ Ni la relación muchos a muchos ni el remito multibulto son requisitos expresos.
 
 ## C. Decisiones DN-01 a DN-11
 
-Todos los títulos y problemas provienen de P K.1. **Estado común: propuestas sin aceptación registrada**, salvo las restricciones ya confirmadas de U. “Resoluble técnicamente” clasifica decisiones de ingeniería; “equipo” define política/alcance; “docente” precisa una expectativa académica ambigua. Una misma DN puede contener subdecisiones de distinta autoridad.
+Todos los títulos y problemas provienen de P K.1. **DN-10 está resuelta para planificación por S.** DN-01 a DN-09 siguen como propuestas/políticas por acordar y DN-11 mantiene supuestos de operación/entrega; no se aprobaron por sincronizar arquitectura. “Resoluble técnicamente” clasifica decisiones de ingeniería; “equipo” define política/alcance; “docente” precisa una expectativa académica ambigua. Una misma DN puede contener subdecisiones de distinta autoridad.
 
 Prioridades: **P0**, impacto inmediato en el inicio autorizado de F-01; **P1**, importante antes de la fase consumidora; **P2**, detalle que puede esperar sin perder datos necesarios. El límite es una dependencia, no una fecha inventada. Las alternativas listadas son viables sólo si conservan E4 y backend Python.
 
@@ -206,13 +210,15 @@ Prioridades: **P0**, impacto inmediato en el inicio autorizado de F-01; **P1**, 
 
 ### DN-10. Interfaz y arquitectura de presentación
 
-- **Problema y origen:** escoger una interacción proporcional sin asumir que consola es definitiva. P D/E, G.12/H y K.1; U §§2/5; A §§4/8/9. E1 a E6 no especifica consola, web ni escritorio.
-- **Alternativas y balance:** A consola, B web renderizada en Python, C API Python con frontend independiente y D escritorio. La comparación completa está en D; todas pueden conservar POO y backend Python. A reduce herramientas; B ofrece formularios/reportes con un backend; C aporta autonomía de frontend con más contratos; D agrega manejo de ventanas y distribución local.
-- **Recomendación técnica:** **B como propuesta condicionada**, dentro de un monolito Python, sin elegir aún framework ni tecnología frontend. Conserva lógica/modelo y facilita demostrar stock, documentos e historia. Si el equipo prioriza mínimo aprendizaje y tiempo, A sigue siendo razonable. C necesita una ventaja concreta que compense el segundo proyecto; D necesita preferencia/condición de escritorio u operación sin servidor web.
-- **Impacto funcional/arquitectónico:** adaptador de presentación, manejo de errores, pruebas de interacción y requisitos de ejecución. Ninguna opción cambia E4 ni permite confiar en validaciones cliente. No construir consola y web completas por anticipado. Una API separada no implica microservicios.
-- **Fases:** decisión de F-00 para la presentación prevista en F-01; adaptación de G/H/J y F-07 según selección. Dominio de F-01 puede desacoplarse si el usuario autoriza explícitamente ese alcance sin interfaz final.
-- **Responsable:** **debe decidir el equipo y aprobar el usuario** la opción/tecnología frontend; **resoluble técnicamente** garantizar backend Python; docente si hay regla de interfaz/dependencias o criterio de evaluación específico. No existe prohibición concreta encontrada.
-- **Prioridad/límite:** P0 antes de construir la interfaz de F-01; puede diferirse sólo la elección frontend si F-01 autorizado se limita al dominio y pruebas. Cierre: alternativa, frontend concreto y modalidad de demostración aceptados, o aplazamiento explícito con alcance limitado.
+- **Estado:** resuelta para planificación el 19/10/2026 por S; no implementada. P D.2, este documento E.1 y R §2 comparten AC-01 a AC-07.
+- **Problema y origen:** ofrecer UI elegida sin desplazar POO ni negocio Python. E1-E6 no fija interfaz; S adopta la opción React + Vite de la evaluación solicitada. A §§4/8/9 exige pertinencia/simplicidad.
+- **Alternativas y balance:** consola reduce herramientas; web renderizada reduce fronteras; React/API añade contrato y build con UI elegida; escritorio añade ventanas/distribución. Se conserva la comparación de D. Flask es el adaptador elegido por flujo síncrono simple; FastAPI aporta esquemas/OpenAPI con conceptos adicionales, como alternativa futura de reconsideración.
+- **Decisión:** React + Vite en navegador, API Flask HTTP/JSON Python bajo /api, SQLite/sqlite3; desarrollo npm con proxy transparente y build estático servido por Python. Nada de backend/SSR/BFF/reglas/DB en Node.
+- **Impacto funcional/arquitectónico:** entidades, casos de uso y persistencia Python conservados; rutas delgadas y React como presentación. Pruebas de API directa, errores, comunicación y build sin Vite. Ninguna variante cambia la doble verificación ni permite confiar en cliente.
+- **Fases:** F-01 a F-07 con el impacto de R §10 ya reflejado en P I. No construir una consola paralela por anticipado.
+- **Responsable:** usuario adopta la arquitectura al pedir alineación; equipo fija versiones, JS/TS y contratos por caso. Docente sólo para condiciones académicas concretas si existen; no se atribuye aprobación no recibida.
+- **Prioridad/límite:** arquitectura P0 ya resuelta; detalles de entorno/transporte antes de implementar F-01 y cada contrato antes de su caso. La autorización de implementación sigue pendiente.
+- **Cierre verificable:** decisiones y restricciones coinciden en los tres documentos; runtime, instalación y build se verificarán en fases futuras autorizadas.
 
 ### DN-11. Modalidad operativa, simultaneidad y entrega
 
@@ -228,9 +234,9 @@ Prioridades: **P0**, impacto inmediato en el inicio autorizado de F-01; **P1**, 
 
 ### D.1 Drivers y condiciones comunes
 
-Prioridad alta: obligaciones E1/E2/E4/E6, POO explicable (A §14), backend sólo Python y aprobación de la elección frontend (U §§2/5). Prioridad media: demostrar operaciones/reportes con claridad, desarrollo y ejecución comprensibles, aislamiento para pruebas y separación de responsabilidades. No hay carga, plazo, experiencia del equipo ni número de usuarios simultáneos confirmados; no se puntúan productividad o rendimiento con números inventados.
+Prioridad alta: obligaciones E1/E2/E4/E6, POO explicable (A §14), backend sólo Python y arquitectura React + Vite/API Flask acordada por S. Prioridad media: demostrar operaciones/reportes con claridad, desarrollo y ejecución comprensibles, aislamiento para pruebas y separación de responsabilidades. No hay carga, plazo, experiencia del equipo ni número de usuarios simultáneos confirmados; no se puntúan productividad o rendimiento con números inventados.
 
-Las cuatro alternativas son **técnicamente viables**, con la distinción de D.3 para escritorio. La aceptación académica depende de las reglas concretas que se obtengan y de que la UI no sustituya la POO. No se encontró una obligación de GUI ni una prohibición. La consola tiene mayor cercanía al material disponible; eso no le da preferencia automática frente al objetivo de demostración.
+Las cuatro alternativas se conservan como comparación técnica; **la opción vigente es C con React + Vite y Flask**, acordada por S. Las otras no son líneas paralelas de implementación. Todas son técnicamente viables, con la distinción de D.3 para escritorio. La aceptación académica depende de las reglas concretas que se obtengan y de que la UI no sustituya la POO. No se encontró una obligación de GUI ni una prohibición. La consola tiene mayor cercanía al material disponible; eso no le da preferencia automática frente al objetivo de demostración.
 
 ### D.2 Comparación de las cuatro opciones
 
@@ -263,19 +269,25 @@ Son comparaciones técnicas cualitativas, no obligaciones docentes. Fuentes del 
 
 ## E. Recomendación técnica
 
-### E.1 ADR de revisión F-00: monolito Python con presentación por aprobar
+### E.1 Acuerdo vigente de F-00: React + Vite y API Flask Python
 
-- **Estado:** propuesta condicionada; no aceptada ni implementada. Fecha: 2026-10-19. Responsables de aceptar: equipo/usuario; docente para expectativas académicas concretas de G.
-- **Relación con ADR-001 de P D.4:** propone revisar su preferencia por consola; no lo reemplaza ni modifica todavía. El límite lógico Python ya propuesto se conserva.
-- **Contexto/evidencia:** E1/E2/E4/E6 exige procesos relacionados, reglas de stock e informes; A §9 prioriza simplicidad; U permite frontend libre pero backend sólo Python. No existe aplicación previa ni datos para migrar.
-- **Decisión propuesta:** un **monolito modular Python con SQLite directo** y **B, web renderizada en Python, como primera opción de presentación a considerar**. Es la opción web con menos fronteras de ejecución de las comparadas: no requiere API independiente ni un segundo proyecto cliente para formularios/reportes. A conserva ventaja de menor herramienta y sería preferible si el equipo no quiere asumir HTTP/plantillas. No se da por elegida la web, Flask, HTML/CSS ni ninguna tecnología frontend sin aprobación del usuario.
-- **Supuestos críticos:** equipo dispuesto a aprender/usar una capa web pequeña; demostración con navegador aporta valor; modalidad local o un backend central basta; no hay instrucción docente concreta incompatible. No están verificados. Si fallan, revisar opción, sin alterar las reglas de dominio.
-- **Evidencia/condición previa:** respuesta del equipo a DN-10/DN-11 y revisión de instrucciones de interfaz si existen. Flask es sólo un candidato ya mencionado por P E.2 y técnicamente compatible según su documentación, no una selección ni autorización académica. No instalar ni prototipar en esta tarea.
-- **Consecuencias positivas:** un único dueño de stock/caja, transacciones locales, POO visible y reutilizable, interfaz apta para comparar documentos y reportes. Sin sincronización entre instalaciones ni servicios de negocio separados.
-- **Costos y riesgos:** aprender manejo de solicitudes y formularios; validar interacción y errores HTTP; evitar reglas en vistas; seleccionar dependencia web. No afirmar que ahorra tiempo frente a consola sin conocer al equipo.
-- **Reversibilidad:** aprobar primero límites y alcance; construir después un incremento pequeño autorizado. No hay migración actual. Cambiar presentación conserva dominio si sus dependencias permanecen limpias; cambiar cardinalidades o costos después de guardar operaciones sí puede requerir migración.
-- **Validación futura:** circuito compra→reposición→bulto→doble verificación→venta/devolución, reportes y reinicio; fallos sin efectos parciales; misma prohibición de venta por API/UI; inspección de runtimes/dependencias. Los T de P J.2 son planes, no pruebas ejecutadas.
-- **Reconsiderar si:** la rúbrica exige otra interfaz, el equipo prioriza consola, se requiere interacción rica que justifique C, operación de escritorio que justifique D o acceso/concurrencia que cambie DN-11.
+Estado: **acordado para planificación por S el 19/10/2026; sin implementación**. Responsable: usuario. El detalle técnico reside en R, ADR-RP-01; P D.4 (ADR-001) resume el mismo acuerdo. Sustituye las preferencias anteriores por consola y web renderizada. No se convierte en aceptación docente ni en cierre de todas las políticas F-00.
+
+| ID | Decisión vigente |
+| --- | --- |
+| AC-01 | Frontend React + Vite ejecutado en navegador; `npm run dev` durante desarrollo. |
+| AC-02 | API HTTP/JSON con Flask y backend exclusivamente Python; prefijo `/api`. |
+| AC-03 | Persistencia SQLite mediante `sqlite3` y SQL directo parametrizado. |
+| AC-04 | Desarrollo con proxy transparente de Vite hacia Python, conservando `/api` y sin lógica de aplicación en Node. |
+| AC-05 | `npm run build` genera estáticos; para demostración local Python sirve frontend compilado y API desde el mismo origen. |
+| AC-06 | Prohibidos backend, SSR, BFF, reglas de negocio y acceso a DB desde Node.js; Node se limita a herramientas/frontend. |
+| AC-07 | Dominio POO, cálculos definitivos, validaciones y transacciones en Python; React presenta e informa la intención del usuario. |
+
+La opción C asume el costo de contrato HTTP, dos entornos durante desarrollo y verificación del build a cambio de la UI elegida. Flask mantiene el flujo síncrono con sqlite3; FastAPI sólo se reconsiderará por experiencia o esquemas/OpenAPI que lo justifiquen, no como framework pendiente de elegir.
+
+Desarrollo con npm run dev y proxy sin lógica; demostración con estáticos compilados y API servidos por Python. Puertos/loopback siguen como configuración propuesta, JavaScript/TypeScript y versiones por fijar. Modalidad real/concurrencia DN-11 y políticas DN-01 a DN-09 conservan sus plazos.
+
+No hay aplicación/datos que migrar. Cambiar adaptador requiere pruebas de contrato aunque preserve dominio. Validación futura: flujo completo, API directa, rollback/reinicio y build con Vite apagado. Reconsiderar sólo por restricción concreta, cambio de topología o necesidad demostrada. Adoptar estas decisiones documentales no autoriza F-01.
 
 ### E.2 Límites, datos y consistencia recomendados
 
@@ -283,25 +295,25 @@ Conservar la separación lógica de P D.2/D.3 y F.3/F.4:
 
 | Responsabilidad | Autoridad y colaboración propuesta |
 | --- | --- |
-| Presentación aprobada | Recoge entradas y muestra resultados; llama casos de uso. No decide disponibilidad, transición o reintegro. |
+| React + adaptador API Flask | React recoge entradas; Flask valida transporte/traduce errores y llama casos de uso. Ninguno sustituye invariantes del dominio Python. |
 | Casos de uso Python | Coordinan entidades y acceso concreto, revalidan datos y son dueños de la transacción. Cada acción confirma o revierte sus cambios vinculados. |
 | Dominio Python | Mantiene invariantes, contenido, cantidades y estados; State/Strategy con contratos justificados. No importa consola, HTTP, toolkit ni sqlite3. |
 | Persistencia Python/SQL | Traduce filas/objetos, parametriza y guarda. SQLite es fuente persistente; saldos y movimientos se guardan en la misma transacción. |
 | Reportes | Leen operaciones confirmadas; agrupan sin modificar stock/caja. Cada indicador identifica su fuente, período y limitación de costo. |
 
-Comunicación interna mediante llamadas Python síncronas; HTTP sólo si se elige web. Una única base permite atomicidad de ingreso, despacho, verificación, venta y devolución, sin transacciones distribuidas. Registrar estado, evento y efectos de inventario conjuntamente; si falla la persistencia, descartar/recargar objetos mutados. No mantener transacciones abiertas mientras se espera entrada humana (P D.3/F.4; A §6.23).
+Comunicación React/API mediante HTTP/JSON; comunicación interna mediante llamadas Python síncronas. Una única base permite atomicidad de ingreso, despacho, verificación, venta y devolución, sin transacciones distribuidas. Registrar estado, evento y efectos de inventario conjuntamente; si falla la persistencia, descartar/recargar objetos mutados. No mantener transacciones abiertas mientras se espera entrada humana (P D.3/F.4; A §6.23).
 
-Operación propuesta: ejecución local para demostración hasta resolver DN-11; manejo visible de errores e historial para diagnóstico, sin plataforma de monitoreo. En web, escapar datos presentados y proteger acciones que escriben; controles de acceso, sesiones y exposición se ajustarán a la modalidad aprobada. No se inventa una exigencia de cuentas ni se promete seguridad de producción. Mantener SQL parametrizado y tests aislados (A §§6.22, 9.1).
+Operación propuesta: ejecución local para demostración hasta resolver DN-11; manejo visible de errores e historial para diagnóstico, sin plataforma de monitoreo. En la UI React/API acordada, escapar datos presentados y proteger acciones que escriben; controles de acceso, sesiones y exposición se ajustarán a la modalidad aprobada. No se inventa una exigencia de cuentas ni se promete seguridad de producción. Mantener SQL parametrizado y tests aislados (A §§6.22, 9.1).
 
 El criterio de datos inmutables protege operaciones ordinarias. Controles SQL contra modificación/baja de eventos son una defensa posible; no son por sí mismos el modelo de estados ni un requisito de usar triggers. Respaldo consistente y evitar sincronizar la DB abierta son precauciones operativas condicionales, no prueba de que el directorio actual use OneDrive (P F.5; H-09).
 
 ## F. Preguntas pendientes para el equipo
 
-Son preguntas para aprobar políticas concretas. No se registró respuesta del equipo durante esta revisión.
+Son preguntas para aprobar políticas concretas. El pedido S resuelve la arquitectura de DN-10; no registra respuesta sobre las políticas de negocio restantes.
 
 | Orden | Pregunta y propuesta a evaluar | Autoridad / límite |
 | --- | --- | --- |
-| 1 | ¿Preferimos B, web renderizada por Python, A consola, C API con frontend independiente o D escritorio? Si se difiere frontend, ¿autorizamos F-01 sólo de dominio/pruebas? ¿Qué herramientas sabemos usar y qué esfuerzo de UI queremos asumir? | Equipo/usuario, DN-10; antes de implementar presentación. No está elegida ninguna tecnología frontend. |
+| 1 | Con React + Vite y Flask ya acordados, ¿JavaScript o TypeScript y qué versiones compatibles usará el equipo? ¿Qué herramientas de prueba UI aportan valor? | Equipo/técnico, detalles de DN-10 antes de implementación F-01; no reabrir frontend/framework. |
 | 2 | ¿La demostración será en una computadora con varios locales lógicos o necesitamos usuarios desde varios equipos? Propuesta: una instalación para demostración. | Equipo, DN-11; límite inicial antes de F-01, concurrencia antes de F-02. |
 | 3 | ¿Aceptamos ID interno y códigos comerciales únicos, texto normalizado sin perder ceros, también únicos tras baja? ¿Qué ejemplos de códigos usaremos? | Equipo, DN-02; producto/proveedor antes de F-01. |
 | 4 | ¿Unidades enteras, mínimo por producto/local y precio positivo? ¿Qué moneda/escala monetaria usaremos? ¿Aceptamos baja administrativa, consulta histórica y bloqueo de nuevas operaciones con inactivos? | Equipo, DN-06/DN-08/DN-09; parte mínima antes de F-01. |
@@ -334,7 +346,7 @@ La política detallada de devoluciones, identificadores comerciales y medios de 
 | Prioridad | Acuerdo mínimo para comenzar | Criterio observable de cierre |
 | --- | --- | --- |
 | 1 | Registrar aceptación de límites: backend exclusivamente Python, siete procesos, cinco validaciones, dos patrones y cuatro reportes; conservar base POO y pendientes por fase. | Equipo acepta el alcance; no se incorpora opción que requiera backend/SSR/BFF no Python. E1/E2/E4/E6; U §2. |
-| 2 | DN-10/DN-11: modalidad inicial y alcance de presentación. | Elegir alternativa y aprobar tecnología frontend antes de implementarla; o autorizar expresamente F-01 de dominio/pruebas con frontend diferido. Conservar independencia del dominio en ambos casos. |
+| 2 | DN-10 acordada; cerrar detalles de entorno y modalidad DN-11. | Registrar React + Vite, Flask y SQLite; fijar JS/TS/versiones y modalidad antes de crear entorno. Dominio independiente; implementación aún por autorizar. |
 | 3 | Parte catálogo de DN-02: identidad producto/proveedor y normalización. | Tabla de códigos válidos/duplicados, alcance de unicidad y regla tras baja. |
 | 4 | Parte base de DN-06 y DN-09: unidad, ubicación del mínimo, precio válido, moneda/escala y representación. | Atributos/validaciones de catálogo tienen reglas verificables sin suponer políticas de F-04/F-06. |
 | 5 | Parte base de DN-08: operaciones iniciales e inactivos. | Alta/consulta/modificación y baja administrativa aceptadas como propuesta, o alcance F-01 limitado explícitamente mientras se confirma baja académica. |
@@ -342,7 +354,7 @@ La política detallada de devoluciones, identificadores comerciales y medios de 
 
 La aclaración docente es bloqueante de F-01 **sólo** si aparece una regla concreta que afecte sus decisiones. Multibulto, devolución, pagos y fórmulas finales no son bloqueantes de catálogo. Definir mínimos/identidad ahora no obliga a implementar reposición ni reportes ahora.
 
-Si se conserva F-01 tal como P I lo describe, incluye presentación de consola y debe revisarse esa preferencia antes de ejecutarlo. Empezar sólo dominio/pruebas con UI diferida es una modificación de alcance **propuesta**, no aplicada a P ni autorizada por este documento.
+P I F-01 ya está alineada: catálogo Python, API Flask y vistas React, con persistencia en F-02. Una postergación de UI requeriría modificar expresamente ese incremento; no se construye consola como elección tácita.
 
 ## I. Decisiones diferibles
 
@@ -357,7 +369,7 @@ Si se conserva F-01 tal como P I lo describe, incluye presentación de consola y
 | DN-07 | Plazo, aptitud, local y reintegro de devolución. | Capturar referencias/precio/costo originales antes de F-04; política completa antes de F-05. |
 | DN-08 | Si se exige DELETE físico y reglas complementarias de reactivación. | Antes de cerrar F-02 o antes de ofrecer reactivación; no postergar integridad de referencias. |
 | DN-09 | Fórmulas finales, empates y presentación de reportes. | Fechas/costos base antes de F-02; costo de preparación para R-04 antes de F-03; fórmulas y períodos antes de F-06. Moneda/escala del precio no se difiere. |
-| DN-10 | Framework y frontend concreto, sólo con F-01 limitado autorizado. | Antes de construir cualquier interfaz; no implementar consola como decisión tácita mientras se espera. |
+| DN-10 | Sólo JS/TS, versiones, contratos concretos y pruebas UI; arquitectura ya resuelta. | Entorno antes de F-01; contrato antes de su caso; no diferir ni reabrir frontend/framework ya acordados. |
 | DN-11 | Formato de entrega y distribución final. | Concurrencia antes de F-02; artefactos/fecha al organizar entrega y antes de F-07. Obtener rúbrica temprano si cambia alcance. |
 
 Ruta mínima recomendada tras aprobación: catálogo F-01 → compras/persistencia F-02 → logística y primer circuito F-03 → venta F-04 → devolución F-05 → reportes F-06 → integración F-07, manteniendo el orden de P I/L. Los acuerdos se cierran antes de la fase que los consume; no se permite diferir una decisión después de capturar datos indispensables.
@@ -375,27 +387,22 @@ Riesgos prioritarios para esa ruta:
 
 No se asignan horas, fechas de entrega ni porcentajes de cobertura porque no constan en las fuentes.
 
-## J. Impacto recomendado en PLANIFICACION_TP_POO.md
+## J. Estado de sincronización con PLANIFICACION_TP_POO.md
 
-**Cambios propuestos para una edición posterior autorizada. No se aplicaron.**
+La edición documental fue autorizada por S y aplicada a P, D y R. Esta tabla distingue correcciones efectuadas y políticas que permanecen pendientes; no describe cambios futuros ya implementados en una aplicación.
 
-| Secciones de P | Cambio recomendado | Motivo y dependencias |
+| Área de P | Estado | Alcance |
 | --- | --- | --- |
-| Cabecera; 0.1/0.2; B.2 RT-07; N | Distinguir encargo histórico y revisión actual, fuente U disponible, inventario actual y autoridad académica. Enlazar este registro de decisiones cuando se autorice. | H-09/H-10. P es planificación, no evidencia de ejecución; sus verificaciones históricas no se heredan como actuales. |
-| B.2 RT-05; D.1/D.4; E.2; K.1 DN-10 | Sustituir permiso genérico por revisión de restricciones reales; comparar también escritorio; estado de interfaz pendiente. | H-01, U §5. Revisar ADR-001 después de la decisión del usuario; B es recomendación, no arquitectura adoptada. |
-| D.2; E.1; G.12; H; J.1 | Adaptar presentación y pruebas sólo a la opción aprobada; preservar dominio/casos de uso/datos. | DN-10/DN-11. No crear a la vez consola/web/API sin alcance que lo justifique. |
-| B.4 RB-17; G.2/G.9; J T-04/T-20 | Precisar qué es principio contextual de control y qué es procedimiento elegido de ingreso/reingreso. | H-04. Evitar imponer remito y estados del bulto a compras/devoluciones. |
-| C.3/C.4/C.5; F.1/F.2/F.4; G.6; J T-11 | Alinear cardinalidad remito/bulto y criterio de verificación con DN-01 aprobado. | H-02; conservar ambos controles, trazabilidad y bloqueo de rechazo. El diagrama multibulto no debe parecer definitivo mientras se demuestra 1:1. |
-| B.1 RF-07; C.2/C.4; F.1/F.2; G.3 | Precisar orden por destino/global, origen del pedido y origen físico. | H-03/DN-04. Mantener trazabilidad de necesidades y separación de cantidades por destino. |
-| C.6; G.11 R-01; J T-21/T-28 | Fijar unidad común de datos/resultado para estrategias y calcular ventas/caja sin producto cartesiano entre líneas y cobros. | B.3. Las perspectivas siguen siendo un único reporte. |
-| C.2; H | Mantener clases útiles; tratar catálogos, Comprobante y ConsultasReportes según responsabilidad real. El árbol propuesto es orientativo. | A §§6.8/6.9/9. No expandir repositorios abstractos, Singleton de conexión o capas genéricas. |
-| F.5; K.2 | Reclasificar sincronización OneDrive como no verificada; conservar precaución condicional, no afirmación del entorno. | H-09. La ruta actual no demuestra sincronización activa. |
-| F.6; G.11; J.3 | Registrar método de costo, período de devoluciones, fecha de rechazo, diferencia entre bloqueado y merma y cobertura de datos faltantes. | DN-03/DN-09. Dataset actual aritméticamente coherente: ventas netas 380, costo neto 240, margen 140; comprobar según políticas aceptadas. |
-| G.8/G.9; F.4; J.3 | Ajustar pagos/reintegros al mínimo aprobado, conservar precio/costo original. | DN-05/DN-07. Si se elige un solo medio, rehacer caso con venta de pagos divididos; no mantener una prueba que exija una ampliación descartada. |
-| I F-00/F-01; K.1; L.2 | Descomponer DN por momento de consumo y registrar estado, autoridad y fecha/fase límite. | H-08; tablas H/I de esta revisión. No exigir once decisiones completamente cerradas para catálogo. |
-| I F-02 a F-07; J.2; M | Mantener aceptación por fase; adaptar sólo los casos y datos afectados por acuerdos. Añadir pruebas de interacción para web/API/escritorio si se elige. | Los T-01 a T-31 siguen siendo catálogo futuro, sin afirmar que existen tests o comandos de ejecución de aplicación. |
+| Cabecera/0, RT-07 y N | Aplicado | Fuentes actuales, autoridad académica separada del alcance del agente y sincronización de los tres documentos, sin implementación. |
+| RT-05, D/E, DN-10 y ADR-001 | Aplicado | React + Vite/API Flask Python/SQLite, mismos AC-01 a AC-07 que R/D. Sin permiso académico general inventado ni aval atribuido. |
+| G.12/H, I F-01 a F-07, J y L | Aplicado | Vistas React/API, pruebas de contrato y navegador, proxy de desarrollo y build servido por Python. No consola como base. |
+| C.6/G.11 | Precisión de diseño aplicada | Strategy usa un conjunto definido de cobros/reintegros; ventas netas calculadas aparte para evitar multiplicación líneas×cobros. Patrón sigue propuesto. |
+| F.5/K.2 | Aplicado | OneDrive/sincronización no verificados; precaución condicional. |
+| RB-17/G.2/G.9 | Clasificación precisada | Principio genérico de control es explícito; procedimientos de compra/devolución siguen en DN-03/DN-07, sin remito logístico obligatorio para ambos. |
+| Cardinalidades, consolidación y políticas | Pendiente de acuerdo | DN-01 a DN-09 conservan alternativas, recomendaciones y fases. No elegir 1:1, pagos divididos, costos/plazos por sincronizar arquitectura. |
+| DN-11 y entrega | Pendiente | Modalidad, concurrencia, cuentas si fueran necesarias y rúbrica/artefactos. |
 
-La edición propuesta conserva RF-01 a RF-21, las cinco validaciones, el núcleo del modelo y el roadmap. Ajusta clasificación, políticas, interfaz y criterios de aceptación; no replantea todo el TP.
+Se conservan RF-01 a RF-21, siete procesos, cinco validaciones, modelo base y roadmap. No se implementó ningún caso ni se instaló herramienta.
 
 ## K. Checklist de cierre de F-00
 
@@ -406,36 +413,29 @@ La edición propuesta conserva RF-01 a RF-21, las cinco validaciones, el núcleo
 - [x] Contrastados siete procesos, cinco validaciones, integración de compras/inventario, doble verificación e historia inmutable.
 - [x] Revisados POO, State/Strategy y cuatro reportes distintos, sin reemplazar el modelo coherente.
 - [x] Evaluadas A consola, B web renderizada en Python, C API Python + frontend independiente y D escritorio con los criterios pedidos.
-- [x] Backend exclusivamente Python preservado en todas las alternativas; tecnología frontend sin elección definitiva.
+- [x] DN-10 acordada: React + Vite, API Flask Python y SQLite; AC-01 a AC-07 sincronizados.
 - [x] DN-01 a DN-11 analizadas con problema/origen, alternativas y balance, recomendación, impacto, fases, responsable y prioridad/límite.
 - [x] Identificadas políticas adicionales de compras, devoluciones, multibulto y multirremito, sin atribuirlas al docente.
 - [x] Preguntas humanas y aclaraciones docentes documentadas; cortes antes de F-01 diferenciados de decisiones posteriores.
-- [x] Cambios a P recomendados, sin aplicarlos.
+- [x] Sincronización autorizada de P/D/R aplicada; políticas no acordadas siguen pendientes.
 - [x] Verificados al cierre enlaces locales, tablas Markdown, once DN y secciones A a K.
-- [x] Confirmadas huellas de los tres originales y árbol Git con sólo DECISIONES_F00.md nuevo.
+- [x] Control final de las tres documentaciones y preservación de AGENTS.md/tema3.pdf registrado.
 
 ### K.2 Acuerdos para habilitar implementación
 
 - [ ] Equipo/usuario acepta límites y decisiones de H, con responsables identificados.
-- [ ] Se aprueba interfaz/tecnología o se autoriza expresamente F-01 de dominio con frontend diferido.
+- [x] Interfaz React + Vite/API Flask/SQLite acordada para planificación por S.
+- [ ] Se fijan JS/TS, versiones compatibles y modalidad inicial DN-11 antes de implementar.
 - [ ] Se registran políticas mínimas de catálogo y representación monetaria.
 - [ ] Si aparece restricción académica concreta, se resuelve su impacto antes de implementar lo afectado.
 - [ ] Usuario autoriza iniciar F-01. Esta revisión no contiene tal autorización.
 
-**Cierre diferenciado:** el trabajo documental puede terminar con acuerdos pendientes visibles. El cierre operativo de F-00 y el inicio de F-01 dependen de K.2; no se declaran aprobados por el agente. Las preguntas de G y decisiones de I conservan sus propios límites y no bloquean fases ajenas.
+**Cierre diferenciado:** el trabajo documental puede terminar con acuerdos pendientes visibles. El cierre operativo de F-00 y el inicio de F-01 dependen de los ítems aún pendientes de K.2; sólo DN-10 fue resuelta por S. Las preguntas de G y decisiones de I conservan sus propios límites y no bloquean fases ajenas.
 
-### K.3 Evidencia de verificación de esta revisión
+### K.3 Evidencia de verificación de la sincronización
 
-Comprobaciones documentales: inventario con `rg --files --hidden -g '!**/.git/**'`, estado con `git status --short`, seguimiento con `git ls-files`, lectura completa de fuentes, extracción mediante pypdf y renderizado de ambas páginas con Poppler en memoria. Se consultaron las referencias técnicas primarias enlazadas en D.2; no acreditan permisos docentes.
+Los controles de elaboración inicial son históricos. En esta edición se contrastan P/D/R, acuerdos AC-01 a AC-07, DN-10, ADR y pendientes por fase; se revisan enlaces actuales, tablas, secciones y diff. Se editan únicamente las tres documentaciones.
 
-Huellas SHA-256 iniciales de los originales, para cotejo final:
+Fuentes protegidas: AGENTS.md (SHA-256 85D78E7F375CDD38228EC8DE3B86741BB3C63732DB23ACA03F9A1D3D0EEAE3C7) y docs/tema3.pdf (6D0C46624D97402BE7A7B9CC59F7C11BD96741D4D63885E4B6855755904FABC6). Sus huellas deben permanecer intactas. No se registran huellas cruzadas de documentos editados como si siguieran siendo originales inmutables.
 
-| Archivo | SHA-256 |
-| --- | --- |
-| tema3.pdf | 6D0C46624D97402BE7A7B9CC59F7C11BD96741D4D63885E4B6855755904FABC6 |
-| AGENTS.md | 85D78E7F375CDD38228EC8DE3B86741BB3C63732DB23ACA03F9A1D3D0EEAE3C7 |
-| PLANIFICACION_TP_POO.md | 077611B31C49788EC40CFE1C0342D595D9C6D15268E0E864F9B9492609988F4B |
-
-**Resultado:** control estructural mediante Python de lectura: 11 secciones A a K, 11 decisiones DN, sus campos de análisis, 16 tablas con columnas consistentes y 5 enlaces locales existentes; sin espacios finales ni caracteres de reemplazo. Las tres huellas finales coinciden con las iniciales. El inventario contiene sólo los tres originales y este documento. `git status --short` muestra únicamente `?? DECISIONES_F00.md`; `git diff --check` no informa problemas en archivos versionados. La revisión adicional del archivo nuevo con `git diff --no-index --check -- NUL DECISIONES_F00.md` no mostró errores de espacios; su salida de diferencia y aviso de conversión LF/CRLF no representan una modificación de originales.
-
-No se renderizó este Markdown: se verificó su estructura, no su apariencia en todos los visores. No se ejecutaron tests de aplicación: no existe aplicación/suite y la tarea es sólo análisis. No se instalaron dependencias, crearon estructuras funcionales, hicieron commits, push ni despliegues. Ninguna capacidad futura se declara verificada en runtime.
+Control documental ejecutado mediante Python de lectura: 7 acuerdos AC idénticos en los tres documentos, 11 DN, 8 fases y catálogo completo RF/RB/RT/RNF/T preservado. Verificados 51 tablas y 14 enlaces locales; sin espacios finales ni cercos desbalanceados. Revisado diff y git diff --check sin errores de formato. Inventario limitado a las tres documentaciones y las dos fuentes protegidas; huellas de AGENTS.md/tema3.pdf intactas. No se ejecutaron aplicación, suite, build o instalaciones ni se afirma renderizado Markdown/Mermaid. No se atribuye aceptación docente.
