@@ -2,13 +2,14 @@ import { useEffect, useState } from 'react';
 import { catalogoAPI } from './api';
 import EstadoConexion from './EstadoConexion';
 import SeccionCatalogo from './SeccionCatalogo';
+import SeccionMinimos from './SeccionMinimos';
 
 export default function App() {
   const [datos, setDatos] = useState({ categorias: [], productos: [], proveedores: [], ubicaciones: [] });
   const [revision, setRevision] = useState(0);
   const [carga, setCarga] = useState({ estado: 'cargando' });
   const [ocupados, setOcupados] = useState({
-    categorias: false, productos: false, proveedores: false, ubicaciones: false,
+    categorias: false, productos: false, proveedores: false, ubicaciones: false, minimos: false,
   });
   const bloqueado = carga.estado === 'cargando' || Object.values(ocupados).some(Boolean);
 
@@ -51,7 +52,7 @@ export default function App() {
   return (
     <main className="app">
       <header className="page-header">
-        <p className="eyebrow">DAO 2026 · F-01.4</p>
+        <p className="eyebrow">DAO 2026 · F-01.5</p>
         <h1>Administración del catálogo</h1>
         <p>Administrá categorías, productos, proveedores, locales y Centro de Distribución.</p>
       </header>
@@ -79,6 +80,11 @@ export default function App() {
             onActividad={(recurso, valor) => setOcupados((actual) => ({ ...actual, [recurso]: valor }))}
           />
         ))}
+        <SeccionMinimos
+          productos={datos.productos} ubicaciones={datos.ubicaciones}
+          bloqueado={bloqueado} estadoCatalogo={carga.estado}
+          onActividad={(valor) => setOcupados((actual) => ({ ...actual, minimos: valor }))}
+        />
       </div>
       <EstadoConexion />
     </main>

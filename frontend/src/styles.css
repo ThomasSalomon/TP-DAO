@@ -12,7 +12,7 @@ body { margin: 0; padding: 32px 24px; }
 .app { max-width: 1440px; margin: 0 auto; }
 .catalog-grid { display: grid; grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.35fr); gap: 24px; align-items: start; }
 .catalog-section { min-width: 0; padding: 24px; border: 1px solid #d6dce5; border-radius: 10px; background: white; }
-.catalog-section.proveedores, .catalog-section.ubicaciones { grid-column: 1 / -1; }
+.catalog-section.proveedores, .catalog-section.ubicaciones, .catalog-section.minimos { grid-column: 1 / -1; }
 .catalog-toolbar, .section-heading, .actions { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
 .catalog-toolbar { margin: 20px 0; }
 .section-heading { padding-bottom: 16px; border-bottom: 1px solid #e2e8f0; margin-bottom: 20px; }

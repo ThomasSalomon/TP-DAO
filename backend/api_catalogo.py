@@ -6,6 +6,8 @@ from werkzeug.exceptions import BadRequest
 from .dominio import CentroDistribucionDuplicadoError, CodigoDuplicadoError
 
 api_catalogo = Blueprint("catalogo", __name__, url_prefix="/api")
+# El cliente JSON usa Number: no aceptar cantidades que perderían precisión.
+MAXIMO_ENTERO_JSON = 2**53 - 1
 
 
 class ErrorCatalogoAPI(Exception):
@@ -39,7 +41,9 @@ def _datos_json(campos):
             errores[campo] = "Este campo es obligatorio."
         elif type(datos[campo]) is not tipo:
             errores[campo] = (
-                "Debe ser texto." if tipo is str else "Debe ser un identificador entero."
+                "Debe ser texto." if tipo is str else
+                "Debe ser un entero." if campo == "minimo" else
+                "Debe ser un identificador entero."
             )
     for campo in datos.keys() - campos.keys():
         errores[campo] = "Este campo no está permitido."
@@ -282,4 +286,48 @@ def modificar_ubicacion(identificador):
             _catalogo().modificar_ubicacion, identificador, datos["codigo"], datos["nombre"]
         )
         resultado = _ubicacion_json(ubicacion)
+    return jsonify(resultado)
+
+
+def _validar_minimo_json(minimo):
+    if minimo > MAXIMO_ENTERO_JSON:
+        raise ErrorCatalogoAPI(
+            400, "El mínimo excede el rango entero exacto del cliente JSON.",
+            {"minimo": f"El máximo admitido por HTTP es {MAXIMO_ENTERO_JSON}."},
+        )
+
+
+def _minimo_json(producto, minimo):
+    _validar_minimo_json(minimo)
+    return {
+        "producto": {
+            "id": producto.identificador,
+            "codigo": producto.codigo,
+            "nombre": producto.nombre,
+        },
+        "minimo": minimo,
+    }
+
+
+@api_catalogo.get("/ubicaciones/<int:identificador>/minimos")
+def consultar_minimos(identificador):
+    with current_app.extensions["catalogo_lock"]:
+        local = _ubicacion(identificador)
+        configuraciones = _dominio(_catalogo().listar_minimos, identificador)
+        datos = [_minimo_json(producto, minimo) for producto, minimo in configuraciones]
+        resultado = {"ubicacion": _ubicacion_json(local), "minimos": datos}
+    return jsonify(resultado)
+
+
+@api_catalogo.put("/ubicaciones/<int:identificador>/minimos/<int:producto_id>")
+def establecer_minimo(identificador, producto_id):
+    datos = _datos_json({"minimo": int})
+    _validar_minimo_json(datos["minimo"])
+    with current_app.extensions["catalogo_lock"]:
+        local = _ubicacion(identificador)
+        producto = _producto(producto_id)
+        minimo = _dominio(
+            _catalogo().establecer_minimo, identificador, producto_id, datos["minimo"]
+        )
+        resultado = {"ubicacion": _ubicacion_json(local), **_minimo_json(producto, minimo)}
     return jsonify(resultado)

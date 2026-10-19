@@ -1,8 +1,8 @@
-# TP DAO 2026 — catálogo y ubicaciones React/API (F-01.4)
+# TP DAO 2026 — catálogo y mínimos por local React/API (F-01.5)
 
-React + Vite y API Flask Python permiten registrar, consultar y modificar categorías, productos, proveedores y ubicaciones del catálogo POO. Las ubicaciones distinguen Locales y Centro de Distribución. `GET /api/health` sigue devolviendo HTTP 200 y `{"status":"ok"}` como comprobación técnica de disponibilidad.
+React + Vite y API Flask Python permiten registrar, consultar y modificar categorías, productos, proveedores y ubicaciones del catálogo POO, y configurar mínimos por producto/local. Las ubicaciones distinguen Locales y Centro de Distribución. `GET /api/health` sigue devolviendo HTTP 200 y `{"status":"ok"}` como comprobación técnica de disponibilidad.
 
-Los datos se administran temporalmente en memoria desde Python. No contiene mínimos, bajas, compras, relaciones producto–proveedor, inventario, logística, ventas, devoluciones, reportes, autenticación, ORM ni esquema SQLite.
+Los datos se administran temporalmente en memoria desde Python. Los mínimos son configuración administrativa; no hay existencias reales, movimientos, alertas ni reposición. Tampoco hay bajas, compras, relaciones producto–proveedor, logística, ventas, devoluciones, reportes, autenticación, ORM ni esquema SQLite.
 
 ## Estructura
 
@@ -10,7 +10,7 @@ Los datos se administran temporalmente en memoria desde Python. No contiene mín
 backend/
   __init__.py          fábrica Flask y servido del frontend compilado
   api.py               Blueprint /api y endpoint técnico de salud
-  api_catalogo.py      HTTP/JSON de categorías, productos, proveedores y ubicaciones
+  api_catalogo.py      HTTP/JSON de maestros y configuración de mínimos
   dominio/
     __init__.py        clases del catálogo y excepción de código duplicado
     catalogo.py        objetos, registro en memoria y validaciones
@@ -20,6 +20,7 @@ frontend/
   src/
     App.jsx            datos consultados y coordinación de la pantalla
     SeccionCatalogo.jsx listados y consulta para edición
+    SeccionMinimos.jsx configuración y consulta por producto/local
     FormularioCatalogo.jsx formularios del catálogo; tipo fijo al editar ubicación
     EstadoConexion.jsx estado técnico secundario
     api.js             cliente fetch, errores y cancelación
@@ -35,6 +36,8 @@ tests/test_proveedores.py invariantes y códigos históricos de proveedores
 tests/test_api_proveedores.py contratos HTTP y concurrencia de proveedores
 tests/test_ubicaciones.py invariantes de ubicaciones y cardinalidad del CD
 tests/test_api_ubicaciones.py contratos HTTP, aislamiento y concurrencia de ubicaciones
+tests/test_minimos.py  reglas y relación producto/local encapsulada
+tests/test_api_minimos.py contratos, precisión JSON, aislamiento y concurrencia
 pytest.ini
 docs/                  enunciado y planificación previa, conservados
 ```
@@ -98,7 +101,7 @@ assert catalogo.buscar_proveedor_por_codigo("0001") is None
 
 El catálogo puede estar vacío, admite múltiples locales y **como máximo un CD por catálogo/aplicación**. `Catalogo` controla esa cardinalidad y la unicidad del código entre todos los locales y el CD. Un segundo CD produce `CentroDistribucionDuplicadoError`, derivada de `ValueError`; un código ocupado o histórico produce `CodigoDuplicadoError`. Los códigos reemplazados quedan reservados como en proveedores, incluso frente al intento de recuperarlos para la ubicación original. Las búsquedas por código sólo consideran el vigente.
 
-Los datos inválidos y los conflictos se rechazan antes de cambiar el objeto o reservar códigos. Un alta fallida no consume ID ni la posibilidad de registrar el CD. Se puede editar administrativamente el CD existente. No se puede convertir Local en CD ni a la inversa. No se agregaron direcciones, personas, existencia, mínimos ni operaciones logísticas.
+Los datos inválidos y los conflictos se rechazan antes de cambiar el objeto o reservar códigos. Un alta fallida no consume ID ni la posibilidad de registrar el CD. Se puede editar administrativamente el CD existente. No se puede convertir Local en CD ni a la inversa. No se agregaron direcciones, personas ni operaciones logísticas; la configuración de mínimos de F-01.5 se detalla a continuación.
 
 ```python
 local = catalogo.crear_ubicacion("0001", "Local Centro", "LOCAL")
@@ -109,7 +112,27 @@ assert catalogo.buscar_ubicacion_por_codigo(" cd01 ") is cd
 # Registrar otro CD produce CentroDistribucionDuplicadoError.
 ```
 
-## API HTTP/JSON de F-01.2 a F-01.4
+## F-01.5: mínimos por producto/local
+
+`Catalogo` encapsula un diccionario cuya clave es `(local_id, producto_id)` y cuyo valor es un entero no negativo. La relación no necesita una clase con identidad o ciclo de vida propios: sus reglas y las referencias registradas son responsabilidad del catálogo. No se creó `Existencia` ni se agregaron campos de saldo a productos o ubicaciones.
+
+- `establecer_minimo(local_id, producto_id, minimo)` valida ambos IDs contra este catálogo, exige ubicación `LOCAL` y entero no negativo, reemplaza el valor del par y devuelve el entero confirmado. Repetir la operación no agrega configuraciones.
+- `obtener_minimo(local_id, producto_id)` valida las mismas referencias y devuelve `None` si no hay configuración, o el entero, incluido `0`.
+- `listar_minimos(local_id)` valida el local y devuelve una tupla de pares `(producto registrado, minimo)` sólo de ese local, sin exponer el diccionario interno. Un local sin configuraciones devuelve `()`.
+
+El mismo producto puede tener valores independientes en varios locales. Se rechazan negativos, `float` incluso como `1.0`, booleanos, textos y otros tipos. Una referencia inexistente produce `KeyError`; el CD se rechaza con `ValueError` tanto para consulta como para escritura. Validar todo antes de asignar evita cambios parciales. Los cambios administrativos de código/nombre no afectan la configuración porque se mantienen los IDs; las consultas muestran los datos actuales de los objetos.
+
+```python
+assert catalogo.obtener_minimo(local.identificador, producto.identificador) is None
+catalogo.establecer_minimo(local.identificador, producto.identificador, 0)
+assert catalogo.obtener_minimo(local.identificador, producto.identificador) == 0
+catalogo.establecer_minimo(local.identificador, producto.identificador, 8)
+assert catalogo.listar_minimos(local.identificador) == ((producto, 8),)
+```
+
+Convenciones confirmadas por el pedido para las fases que tengan existencias reales: **en el mínimo** significa disponible `<=` mínimo; **faltante**, disponible `<` mínimo; **déficit**, `max(mínimo - disponible, 0)`. Se aplicarán con mínimo configurado y existencia real. Hoy no se calculan ni se muestran esos indicadores, ni se toma ausencia de configuración como cero o un mínimo como cantidad disponible.
+
+## API HTTP/JSON de F-01.2 a F-01.5
 
 La API valida el formato del transporte y delega creación, modificación, unicidad, referencias y precios al dominio. Los cuerpos de escritura deben ser objetos JSON con todos los campos indicados y sin campos adicionales. `id` técnico y `codigo` comercial son conceptos distintos. `PUT` reemplaza los campos editables completos; no hay `PATCH` ni `DELETE` de catálogo.
 
@@ -131,6 +154,25 @@ La API valida el formato del transporte y delega creación, modificación, unici
 | `POST /api/ubicaciones` | `codigo`, `nombre`, `tipo`: textos | 201, ubicación; cabecera `Location` con su consulta. |
 | `GET /api/ubicaciones/<id>` | ID técnico en ruta | 200, ubicación. |
 | `PUT /api/ubicaciones/<id>` | Únicamente `codigo`, `nombre`: textos | 200, ubicación actualizada, mismo ID y tipo. |
+| `GET /api/ubicaciones/<id>/minimos` | ID del local | 200, `ubicacion` y lista `minimos` de configuraciones existentes. |
+| `PUT /api/ubicaciones/<id>/minimos/<producto_id>` | Únicamente `minimo`: entero JSON | 200, ubicación, producto y mínimo confirmado; establece o reemplaza el mismo par. |
+
+Las dos rutas de mínimos siguen las ubicaciones/productos existentes y usan sus IDs. `GET` devuelve, por ejemplo:
+
+```json
+{
+  "ubicacion": {"id": 1, "codigo": "L1", "nombre": "Centro", "tipo": "LOCAL"},
+  "minimos": [
+    {"producto": {"id": 1, "codigo": "001", "nombre": "Arroz"}, "minimo": 0}
+  ]
+}
+```
+
+Un producto registrado sin configuración **no tiene fila** en `minimos`; una lista vacía significa que ese local no tiene mínimos configurados. Un cero explícito sí tiene fila con `"minimo":0`. No se inventan configuraciones cero para completar productos ausentes. La UI cruza este listado con los productos del catálogo y muestra “Sin configurar” sólo después de una consulta exitosa.
+
+`PUT` recibe `{"minimo":8}` y devuelve `{"ubicacion":{...},"producto":{"id":1,"codigo":"001","nombre":"Arroz"},"minimo":8}`. Devuelve 200 también al establecer por primera vez: es la asignación repetible de un recurso identificado por el par, no un alta con ID nuevo. No hay endpoint para borrar/desconfigurar el mínimo ni para consultar inventario.
+
+El transporte HTTP admite mínimos entre `0` y `9007199254740991` (`2**53 - 1`), para conservar el entero exacto en JSON/JavaScript. Python mantiene enteros no negativos sin ese límite del cliente. El adaptador rechaza con 400 valores superiores, tanto al recibir como al serializar configuraciones creadas directamente desde Python, evitando redondeos silenciosos; el límite no cambia precios ni otros contratos. `true`, `1.0`, `"8"`, `null`, campos extra y JSON inválido producen 400. Un local/producto inexistente produce 404 y el CD produce 400. No se modifican configuraciones ante estos errores.
 
 Para proveedores, alta y modificación reciben únicamente `{"codigo":"0001","nombre":"Distribuidora"}` y devuelven `{"id":1,"codigo":"0001","nombre":"Distribuidora"}`. Un código vigente duplicado o uno histórico reservado produce 409; no se serializan el catálogo, sus reservas ni atributos privados. Los campos faltantes, adicionales o de tipo incorrecto producen 400.
 
@@ -170,13 +212,15 @@ Los IDs de ruta enteros pero inválidos, como `0`, producen 400 por validación 
 
 `create_app` crea un `Catalogo` en `app.extensions["catalogo"]` y un `Lock` propio. La API utiliza esa misma instancia entre solicitudes; el bloqueo abarca las operaciones de dominio y la construcción de las respuestas para evitar carreras sobre códigos, IDs y referencias. No hay Singleton ni catálogo global compartido entre aplicaciones. Los tests crean aplicaciones aisladas.
 
-**Reiniciar Flask elimina todos los registros y las reservas de códigos de proveedores/ubicaciones.** La no reutilización y el máximo de un CD están garantizados en esta memoria, no entre ejecuciones o procesos independientes. Recargar React conserva los registros del backend, pero descarta los borradores locales. Cada proceso/aplicación tiene su propia memoria; no se usa esta solución como almacenamiento compartido entre workers o instalaciones. SQLite se mantiene para F-02, donde deberán persistirse también las reservas y la restricción del CD.
+**Reiniciar Flask elimina todos los registros, mínimos y reservas de códigos de proveedores/ubicaciones.** La no reutilización y el máximo de un CD están garantizados en esta memoria, no entre ejecuciones o procesos independientes. Recargar React conserva los registros del backend, pero descarta los borradores locales. Cada proceso/aplicación tiene su propia memoria; no se usa esta solución como almacenamiento compartido entre workers o instalaciones. SQLite se mantiene para F-02, donde deberán persistirse también mínimos, reservas y la restricción del CD.
 
 La pantalla consulta categorías/productos/proveedores/ubicaciones, ofrece selectores de categorías registradas para productos y permite consultar por ID antes de editar. Proveedores y ubicaciones reutilizan `SeccionCatalogo`, `FormularioCatalogo`, `fetch` y estilos. En ubicaciones, el alta tiene selector de tipo y el listado diferencia Local/CD; al editar, el tipo aparece como texto fijo. El segundo CD se rechaza desde Python con un mensaje junto al selector; las opciones permanecen disponibles para que ese control siga siendo efectivo aun con información cliente desactualizada.
 
 Conserva los campos ante un error, muestra carga/éxito/error/vacío y bloquea envíos mientras están pendientes. La ayuda del código de proveedor/ubicación explica su reserva al reemplazarlo. Los precios permanecen como texto; no se calculan ni redondean en JavaScript. Después de guardar se reconsultan los listados, incluyendo los nombres actuales de categorías referenciadas. Un fallo de esa lectura se informa por separado del guardado ya confirmado.
 
-El cliente `fetch` tiene un límite de 10 segundos, cancela lecturas obsoletas y no reintenta escrituras automáticamente. Si no se pudo confirmar una escritura por un fallo de conexión, consultar el listado antes de reenviar. “Actualizar listados” permite consultar cambios hechos desde otra pestaña; no hay actualización en tiempo real. El estado técnico de `/api/health` está disponible en una sección desplegable secundaria.
+`SeccionMinimos` tiene selectores de locales registrados (excluye CD) y productos con código/nombre, muestra el mínimo vigente y el listado de configuraciones del local, y permite establecer o reemplazar un valor. Distingue ausencia, cero, carga y error; no afirma “Sin configurar” si falló la consulta. Conserva la entrada ante errores, cancela consultas obsoletas y bloquea los controles durante el guardado. Tras confirmar, usa la respuesta de Python para actualizar el par sin duplicarlo. “Actualizar mínimos” vuelve a consultar el local; las actualizaciones de maestros también reconsultan sus configuraciones sin borrar el borrador numérico. Cambiar manualmente de local o producto limpia ese borrador para trabajar sobre la nueva selección.
+
+El cliente `fetch` tiene un límite de 10 segundos, cancela lecturas obsoletas y no reintenta escrituras automáticamente. Si no se pudo confirmar una escritura por un fallo de conexión, consultar el listado antes de reenviar. “Actualizar listados” y “Actualizar mínimos” permiten consultar cambios hechos desde otra pestaña; no hay actualización en tiempo real ni resolución de conflictos entre ediciones. Los `PUT` al mismo mínimo se serializan: queda el último procesado. El estado técnico de `/api/health` está disponible en una sección desplegable secundaria.
 
 ## Versiones utilizadas
 
@@ -228,7 +272,7 @@ cd frontend
 npm run dev
 ```
 
-Abrir [frontend de desarrollo](http://127.0.0.1:5173/). La pantalla permite administrar categorías, productos, proveedores y ubicaciones. El estado de salud permanece accesible en “Estado técnico de conexión”. Los comandos de desarrollo se conservan en F-01.4.
+Abrir [frontend de desarrollo](http://127.0.0.1:5173/). La pantalla permite administrar categorías, productos, proveedores, ubicaciones y mínimos por local. El estado de salud permanece accesible en “Estado técnico de conexión”. Los comandos de desarrollo se conservan en F-01.5.
 
 Camino de la solicitud: navegador → `http://127.0.0.1:5173/api/health` → proxy Vite → `http://127.0.0.1:5000/api/health`. Se conserva `/api`, sin transformación ni lógica de aplicación en el proxy. No es necesario configurar CORS para este camino.
 
@@ -280,15 +324,21 @@ Desde la raíz:
 .\.venv\Scripts\python.exe -m pytest -q
 ```
 
-Verificación de F-01.4 el 19/10/2026: **271 casos aprobados**. Antes de editar se comprobaron los 185 de F-01.3. Se agregaron 43 casos de dominio y 43 de API de ubicaciones: Local/CD, varios locales, segundo CD, códigos normalizados y ceros, reservas históricas, ID/tipo inmutables, JSON/campos/tipos, consultas inexistentes, edición sin efectos parciales, memoria entre solicitudes y aislamiento. Las solicitudes concurrentes verifican tanto el máximo de un CD como códigos equivalentes e IDs únicos. Se conservaron las regresiones de categorías/productos/proveedores y salud. La comprobación con Python `-I -S` también crea y modifica ubicaciones sin paquetes externos ni carga de Flask/SQLite. No se instalaron dependencias nuevas.
+Verificación de F-01.5 el 19/10/2026: **335 casos aprobados**. Antes de editar se comprobaron los 271 de F-01.4. Se agregaron 30 casos de dominio y 34 de API de mínimos: ausencia/cero, independencia entre locales/productos, reemplazo repetido, tipos/valores inválidos, referencias inexistentes, rechazo del CD, ausencia de cambios parciales, precisión de enteros JSON, aislamiento y concurrencia. Se conservan las regresiones de categorías/productos/proveedores/ubicaciones y salud. La prueba con Python `-I -S` también consulta y establece mínimos sin paquetes externos ni carga de Flask/SQLite. No se instalaron dependencias nuevas.
 
 Para ejecutar sólo el dominio:
 
 ```powershell
-.\.venv\Scripts\python.exe -m pytest tests/test_catalogo.py tests/test_proveedores.py tests/test_ubicaciones.py -q
+.\.venv\Scripts\python.exe -m pytest tests/test_catalogo.py tests/test_proveedores.py tests/test_ubicaciones.py tests/test_minimos.py -q
 ```
 
-Para ejecutar sólo los contratos HTTP del catálogo: `.\.venv\Scripts\python.exe -m pytest tests/test_api_catalogo.py tests/test_api_proveedores.py tests/test_api_ubicaciones.py -q`.
+Para ejecutar sólo los nuevos contratos: `.\.venv\Scripts\python.exe -m pytest tests/test_api_minimos.py -q`. Los demás archivos `test_api*.py` conservan los contratos previos.
+
+Validación real de F-01.5: altas de categoría, producto, proveedor, dos locales y CD desde React mediante el proxy Vite; consulta inicial sin configurar, cero explícito, valor distinto para el mismo producto en otro local, fracción rechazada con entrada conservada y guardado con Enter. El selector excluyó al CD. Las consultas HTTP directas confirmaron valores independientes, salud 200 y CD rechazado con 400 JSON.
+
+Se observaron “Cargando mínimos…” y “Guardando mínimo…” con controles deshabilitados durante la escritura, usando otra instancia Flask de prueba en puerto 5001 con demora de un segundo sólo para estas rutas. Se detuvo esa instancia: el proxy respondió 502 y React mantuvo local/producto/cantidad, sin mostrar éxito. Ese proceso, su configuración temporal de proxy y la demora no se incorporaron a archivos del proyecto; ambos servidores de prueba se detuvieron.
+
+`npm run build` terminó correctamente. Con Vite y la instancia temporal detenidos, el build servido por Flask permitió consultar, modificar un mínimo a 5 y luego a 0, recargar y comprobar el cero conservado. Salud operativa y consola sin errores ni advertencias en ese recorrido. Se verificaron etiquetas, Enter/Tab y layout a 390 px mediante el DOM: campos apilados y sin desbordamiento horizontal de página. La captura de pantalla de esa comprobación móvil no estuvo disponible por un fallo de la herramienta; las verificaciones DOM y de teclado sí se ejecutaron. No se afirma certificación completa de accesibilidad ni se agregó un framework de pruebas de UI.
 
 Validación real de F-01.4: alta de Local/CD mediante React y proxy Vite, tipos visibles en listado, segundo CD rechazado con formulario completo conservado, código duplicado entre tipos rechazado, consulta para edición con tipo fijo, nombre vacío rechazado sin alterar el listado y guardado válido con Enter manteniendo ID/tipo. Se observó carga con controles deshabilitados. También se registraron categoría, producto y proveedor desde la pantalla ampliada. Una solicitud HTTP directa a Flask para crear un segundo CD devolvió 409 JSON y conservó el catálogo.
 
@@ -311,7 +361,8 @@ Guion manual reproducible, con una aplicación local de demostración:
 5. Preparar un borrador y detener Flask. Intentar guardar: debe aparecer el error sin limpiar campos ni mostrar éxito. Reiniciar Flask y actualizar listados: el catálogo estará vacío; volver a registrar datos en esa nueva ejecución.
 6. Registrar proveedor `0001` / `Distribuidora` y otro `ABC` con el mismo nombre. Intentar ` abc `: debe devolver conflicto conservando campos. Consultar/editar el primero; probar nombre con espacios, luego cambiar a código `0002` y nombre válido. Comprobar mismo ID y rechazo al volver a asignar `0001`.
 7. Registrar ubicación `0001` / `Local Centro` de tipo Local y `CD01` / `Depósito central` de tipo CD. Intentar otro CD: comprobar error sin perder campos. Intentar un Local con código ` cd01 `: comprobar conflicto. Consultar el primer Local: el tipo debe ser fijo; probar nombre vacío y luego cambiar código/nombre válidos con Enter. El ID y el tipo deben mantenerse.
-8. Generar el build, detener Vite y repetir alta/consulta/edición de ubicaciones en `http://127.0.0.1:5000/`. Registrar otro local y editar el CD. Recargar y comprobar registros. Abrir la sección técnica y comprobar salud.
+8. Registrar otro local. En mínimos, elegir el primero y un producto: comprobar “Sin configurar”. Guardar `0`: debe mostrar “0 unidades”. Elegir el segundo local y el mismo producto: sigue sin configurar; guardar `12` y volver al primero: debe conservar cero. Probar `1.5`: debe mostrar error conservando la entrada. El CD no debe figurar entre los locales seleccionables.
+9. Generar el build, detener Vite y repetir consulta/modificación de mínimos en `http://127.0.0.1:5000/`. Recargar, volver a seleccionar el par y comprobar el valor confirmado. Abrir la sección técnica y comprobar salud.
 
 Resultados del incremento técnico inicial, conservados como antecedente:
 
@@ -332,8 +383,8 @@ Las pruebas de API usan el cliente Flask y archivos temporales; la verificación
 
 ## Alcance actual frente a la planificación
 
-Los tres Markdown de `docs/` y los originales académicos se conservaron sin cambios. Sus frases “sin implementación” describen la planificación anterior; las instrucciones posteriores del usuario autorizaron la base técnica y F-01.1 a F-01.4. JavaScript fue elegido para el frontend. Este README registra el estado actual sin presentar las fases restantes como implementadas.
+Los tres Markdown de `docs/` y los originales académicos se conservaron sin cambios. Sus frases “sin implementación” describen la planificación anterior; las instrucciones posteriores del usuario autorizaron la base técnica y F-01.1 a F-01.5. JavaScript fue elegido para el frontend. Este README registra el estado actual sin presentar las fases restantes como implementadas.
 
-Para F-01.1 quedaron aprobados identificadores y normalización de categorías/productos, categoría registrada obligatoria, precio positivo exacto en ARS, alta/consulta/modificación y almacenamiento temporal. El pedido de F-01.3 confirmó ID inmutable, código textual único no reutilizable, normalización y datos mínimos de proveedores. El de F-01.4 autorizó `Ubicacion`, Local/CD, código único entre ubicaciones con reservas, ID/tipo inmutables y máximo de un CD. Se eligieron los valores técnicos `LOCAL`/`CD` documentados arriba. DN-06 (unidades/mínimos), DN-08 (bajas de F-01.6), DN-09 (costos/fechas/economía), identificadores de documentos posteriores y DN-11 mantienen sus pendientes.
+Para F-01.1 quedaron aprobados identificadores y normalización de categorías/productos, categoría registrada obligatoria, precio positivo exacto en ARS, alta/consulta/modificación y almacenamiento temporal. El pedido de F-01.3 confirmó identidad y datos de proveedores. F-01.4 autorizó `Ubicacion`, Local/CD, códigos con reservas, ID/tipo inmutables y máximo de un CD. F-01.5 confirmó DN-06 para mínimos: enteros no negativos, ausencia distinta de cero, ámbito producto/local sin CD y convenciones futuras de umbral/déficit. La representación HTTP usa el rango entero exacto documentado; es una decisión técnica de interoperabilidad. No se extrapoló la unidad a movimientos aún no definidos. DN-08, DN-09 (costos/fechas/economía), identificadores de documentos posteriores y DN-11 mantienen sus pendientes.
 
-F-01.1 a F-01.4 están completos; F-01 completa aún no está terminada. Para preparar F-01.5 (mínimos de existencia), acordar DN-06: unidad de cantidad, mínimo global o por producto/ubicación, si alcanza también al CD, valor cero, enteros/fracciones y comparación frente al umbral. Precisar los casos normales, límites y errores antes del modelo POO y sus pruebas, sin adelantar stock operativo ni compras. Requiere nueva autorización; no se inició F-01.5 ni se incorporó SQLite.
+F-01.1 a F-01.5 están completos; F-01 completa aún no está terminada. Para preparar F-01.6, acordar DN-08: entidades alcanzadas por bajas, baja administrativa o borrado físico permitido, tratamiento de referencias y mínimos existentes, consultas/selecciones de inactivos y eventual reactivación. Conservar las identidades y reservas de códigos ya aprobadas; definir los casos de baja con referencias antes de implementar. No se inició F-01.6 ni se incorporó SQLite.

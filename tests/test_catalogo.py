@@ -307,6 +307,10 @@ ubicacion = catalogo.crear_ubicacion('CD', 'Central', 'CD')
 ubicacion.modificar('CD01', 'Central actualizada')
 assert catalogo.obtener_ubicacion(ubicacion.identificador) is ubicacion
 assert ubicacion.tipo == 'CD'
+local = catalogo.crear_ubicacion('L1', 'Centro', 'LOCAL')
+assert catalogo.obtener_minimo(local.identificador, producto.identificador) is None
+catalogo.establecer_minimo(local.identificador, producto.identificador, 0)
+assert catalogo.listar_minimos(local.identificador) == ((producto, 0),)
 assert 'flask' not in sys.modules
 assert 'sqlite3' not in sys.modules
 print('dominio independiente')

@@ -219,6 +219,39 @@ class Catalogo:
         self._codigos_proveedores = {}
         self._ubicaciones = {}
         self._codigos_ubicaciones = {}
+        self._minimos = {}
+
+    def _local_para_minimos(self, identificador):
+        local = self.obtener_ubicacion(identificador)
+        if local.tipo != "LOCAL":
+            raise ValueError("Los mínimos sólo se configuran en locales, no en el CD.")
+        return local
+
+    def establecer_minimo(self, local_id, producto_id, minimo):
+        """Configura unidades del par registrado; no modifica existencias."""
+        local = self._local_para_minimos(local_id)
+        producto = self.obtener_producto(producto_id)
+        if type(minimo) is not int:
+            raise TypeError("El mínimo debe ser un entero de unidades.")
+        if minimo < 0:
+            raise ValueError("El mínimo no puede ser negativo.")
+        self._minimos[(local.identificador, producto.identificador)] = minimo
+        return minimo
+
+    def obtener_minimo(self, local_id, producto_id):
+        """None indica ausencia; cero es una configuración explícita."""
+        local = self._local_para_minimos(local_id)
+        producto = self.obtener_producto(producto_id)
+        return self._minimos.get((local.identificador, producto.identificador))
+
+    def listar_minimos(self, local_id):
+        """Devuelve pares (producto registrado, mínimo) sin exponer el diccionario."""
+        local = self._local_para_minimos(local_id)
+        return tuple(
+            (self.obtener_producto(producto_id), minimo)
+            for (ubicacion_id, producto_id), minimo in self._minimos.items()
+            if ubicacion_id == local.identificador
+        )
 
     def reservar_codigo_ubicacion(self, codigo, ubicacion):
         """Protege máximo de un CD y códigos históricos de todas las ubicaciones."""

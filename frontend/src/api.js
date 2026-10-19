@@ -71,6 +71,14 @@ export const catalogoAPI = {
   proveedores: proveedoresAPI, ubicaciones: ubicacionesAPI,
 };
 
+export const minimosAPI = {
+  listar: (localId, signal) => solicitar(`/api/ubicaciones/${localId}/minimos`, { signal }),
+  establecer: (localId, productoId, minimo) => solicitar(
+    `/api/ubicaciones/${localId}/minimos/${productoId}`,
+    { method: 'PUT', body: JSON.stringify({ minimo }) },
+  ),
+};
+
 export async function consultarSalud(signal) {
   const datos = await solicitar(HEALTH_PATH, { signal });
   if (datos.status !== 'ok') throw new ErrorAPI('La respuesta de salud no es la esperada.');
