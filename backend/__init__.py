@@ -1,14 +1,15 @@
-"""Creación de la aplicación HTTP; todavía no hay lógica de dominio."""
+"""Creación explícita de la aplicación HTTP, separada del dominio."""
 
 from pathlib import Path
 
-from flask import Flask, request, send_from_directory
-from werkzeug.exceptions import HTTPException
-
-from .api import api
-
 
 def create_app(frontend_dist=None):
+    # Importar el dominio no debe cargar las dependencias de presentación HTTP.
+    from flask import Flask, request, send_from_directory
+    from werkzeug.exceptions import HTTPException
+
+    from .api import api
+
     if frontend_dist is None:
         frontend_dist = Path(__file__).resolve().parent.parent / "frontend" / "dist"
     frontend_dist = Path(frontend_dist).resolve()
