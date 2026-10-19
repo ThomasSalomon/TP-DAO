@@ -1,22 +1,29 @@
 import { useEffect, useState } from 'react';
-import { categoriasAPI, productosAPI } from './api';
+import { catalogoAPI } from './api';
 import EstadoConexion from './EstadoConexion';
 import SeccionCatalogo from './SeccionCatalogo';
 
 export default function App() {
-  const [datos, setDatos] = useState({ categorias: [], productos: [] });
+  const [datos, setDatos] = useState({ categorias: [], productos: [], proveedores: [], ubicaciones: [] });
   const [revision, setRevision] = useState(0);
   const [carga, setCarga] = useState({ estado: 'cargando' });
-  const [ocupados, setOcupados] = useState({ categorias: false, productos: false });
-  const bloqueado = carga.estado === 'cargando' || ocupados.categorias || ocupados.productos;
+  const [ocupados, setOcupados] = useState({
+    categorias: false, productos: false, proveedores: false, ubicaciones: false,
+  });
+  const bloqueado = carga.estado === 'cargando' || Object.values(ocupados).some(Boolean);
 
   useEffect(() => {
     const controller = new AbortController();
     setCarga({ estado: 'cargando' });
-    Promise.all([categoriasAPI.listar(controller.signal), productosAPI.listar(controller.signal)])
-      .then(([categorias, productos]) => {
+    Promise.all([
+      catalogoAPI.categorias.listar(controller.signal),
+      catalogoAPI.productos.listar(controller.signal),
+      catalogoAPI.proveedores.listar(controller.signal),
+      catalogoAPI.ubicaciones.listar(controller.signal),
+    ])
+      .then(([categorias, productos, proveedores, ubicaciones]) => {
         if (!controller.signal.aborted) {
-          setDatos({ categorias, productos });
+          setDatos({ categorias, productos, proveedores, ubicaciones });
           setCarga({ estado: 'lista' });
         }
       })
@@ -27,7 +34,7 @@ export default function App() {
   }, [revision]);
 
   async function guardar(tipo, id, entrada) {
-    const api = tipo === 'productos' ? productosAPI : categoriasAPI;
+    const api = catalogoAPI[tipo];
     const resultado = id ? await api.modificar(id, entrada) : await api.crear(entrada);
     setDatos((actual) => {
       const existe = actual[tipo].some((item) => item.id === resultado.id);
@@ -44,9 +51,9 @@ export default function App() {
   return (
     <main className="app">
       <header className="page-header">
-        <p className="eyebrow">DAO 2026 · F-01.2</p>
-        <h1>Catálogo de productos</h1>
-        <p>Administrá categorías, productos y precios vigentes.</p>
+        <p className="eyebrow">DAO 2026 · F-01.4</p>
+        <h1>Administración del catálogo</h1>
+        <p>Administrá categorías, productos, proveedores, locales y Centro de Distribución.</p>
       </header>
       <p className="memory-note">Datos temporales: reiniciar el backend vacía el catálogo.</p>
       <div className="catalog-toolbar">
@@ -65,7 +72,7 @@ export default function App() {
         </div>
       )}
       <div className="catalog-grid">
-        {['categorias', 'productos'].map((tipo) => (
+        {['categorias', 'productos', 'proveedores', 'ubicaciones'].map((tipo) => (
           <SeccionCatalogo
             key={tipo} tipo={tipo} registros={datos[tipo]} categorias={datos.categorias}
             bloqueado={bloqueado} estadoConsulta={carga.estado} onGuardar={guardar}

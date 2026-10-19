@@ -1,8 +1,8 @@
-# TP DAO 2026 — categorías y productos React/API (F-01.2)
+# TP DAO 2026 — catálogo y ubicaciones React/API (F-01.4)
 
-React + Vite y API Flask Python permiten registrar, consultar y modificar categorías y productos del dominio desarrollado en F-01.1. `GET /api/health` sigue devolviendo HTTP 200 y `{"status":"ok"}` como comprobación técnica de disponibilidad.
+React + Vite y API Flask Python permiten registrar, consultar y modificar categorías, productos, proveedores y ubicaciones del catálogo POO. Las ubicaciones distinguen Locales y Centro de Distribución. `GET /api/health` sigue devolviendo HTTP 200 y `{"status":"ok"}` como comprobación técnica de disponibilidad.
 
-Los datos se administran temporalmente en memoria desde Python. No contiene proveedores, ubicaciones, mínimos, bajas, compras, inventario, logística, ventas, devoluciones, reportes, autenticación, ORM ni esquema SQLite.
+Los datos se administran temporalmente en memoria desde Python. No contiene mínimos, bajas, compras, relaciones producto–proveedor, inventario, logística, ventas, devoluciones, reportes, autenticación, ORM ni esquema SQLite.
 
 ## Estructura
 
@@ -10,7 +10,7 @@ Los datos se administran temporalmente en memoria desde Python. No contiene prov
 backend/
   __init__.py          fábrica Flask y servido del frontend compilado
   api.py               Blueprint /api y endpoint técnico de salud
-  api_catalogo.py      HTTP/JSON de categorías y productos
+  api_catalogo.py      HTTP/JSON de categorías, productos, proveedores y ubicaciones
   dominio/
     __init__.py        clases del catálogo y excepción de código duplicado
     catalogo.py        objetos, registro en memoria y validaciones
@@ -20,7 +20,7 @@ frontend/
   src/
     App.jsx            datos consultados y coordinación de la pantalla
     SeccionCatalogo.jsx listados y consulta para edición
-    FormularioCatalogo.jsx formularios de categorías/productos
+    FormularioCatalogo.jsx formularios del catálogo; tipo fijo al editar ubicación
     EstadoConexion.jsx estado técnico secundario
     api.js             cliente fetch, errores y cancelación
     styles.css         presentación responsive
@@ -31,6 +31,10 @@ frontend/
 tests/test_api.py      pruebas HTTP y de estáticos con pytest
 tests/test_catalogo.py pruebas de dominio e independencia de frameworks
 tests/test_api_catalogo.py contratos HTTP, memoria y aislamiento
+tests/test_proveedores.py invariantes y códigos históricos de proveedores
+tests/test_api_proveedores.py contratos HTTP y concurrencia de proveedores
+tests/test_ubicaciones.py invariantes de ubicaciones y cardinalidad del CD
+tests/test_api_ubicaciones.py contratos HTTP, aislamiento y concurrencia de ubicaciones
 pytest.ini
 docs/                  enunciado y planificación previa, conservados
 ```
@@ -70,7 +74,42 @@ assert producto.precio_centavos == 14025
 
 Cada instancia de `Catalogo` tiene sus propios registros. El dominio puede usarse con Python estándar, sin instalar dependencias; pytest sigue siendo necesario para ejecutar sus pruebas.
 
-## F-01.2: API HTTP/JSON
+## F-01.3: proveedores en el mismo catálogo
+
+`Proveedor` protege su ID técnico inmutable, código comercial y nombre. `Catalogo.crear_proveedor(codigo, nombre)` asigna el siguiente ID de proveedores; `obtener_proveedor(id)`, `buscar_proveedor_por_codigo(codigo)` y `listar_proveedores()` mantienen los mismos contratos de consulta que categorías/productos. `modificar_proveedor(id, codigo, nombre)` y `Proveedor.modificar(codigo, nombre)` conservan la misma instancia y validan todos los datos antes de cambiarla. Las propiedades son de lectura.
+
+Código y nombre son textos obligatorios recortados en los extremos. La unicidad del código es exclusiva de proveedores y usa `casefold()`; se conservan ceros iniciales y escritura. Se permiten nombres iguales con códigos distintos. No se requieren CUIT, contacto, dirección ni datos bancarios.
+
+**Los códigos de proveedores no se reutilizan durante la vida del catálogo.** Se puede mantener el código vigente, incluso cambiar su capitalización, o sustituirlo por uno nunca registrado. El reemplazado queda reservado: no puede asignarse a otro proveedor ni recuperarse para el original. Las búsquedas por código consultan sólo el código vigente. Una operación inválida no reserva códigos ni consume IDs. El registro de códigos históricos pertenece a `Catalogo`, no al frontend ni al adaptador HTTP. No se modificó la política previa de códigos de categorías/productos.
+
+```python
+proveedor = catalogo.crear_proveedor("0001", "Distribuidora")
+catalogo.modificar_proveedor(proveedor.identificador, "0002", "Distribuidora Norte")
+assert catalogo.buscar_proveedor_por_codigo("0002") is proveedor
+assert catalogo.buscar_proveedor_por_codigo("0001") is None
+# Un nuevo intento de asignar "0001" produce CodigoDuplicadoError.
+```
+
+## F-01.4: Locales y Centro de Distribución
+
+`Ubicacion` representa ambos tipos mediante un atributo validado, sin herencia ni Singleton. Tiene ID técnico inmutable, código comercial y nombre obligatorios, y tipo inmutable `LOCAL` o `CD`. El tipo se recibe como texto, se recorta en sus extremos y sólo admite esos dos valores en mayúsculas. Código y nombre usan la normalización existente: recorte de extremos y comparación del código con `casefold()`, preservando ceros iniciales. Se permiten nombres iguales con códigos distintos.
+
+`Catalogo.crear_ubicacion(codigo, nombre, tipo)` registra y asigna el siguiente ID entre todas las ubicaciones. `obtener_ubicacion(id)`, `buscar_ubicacion_por_codigo(codigo)` y `listar_ubicaciones()` conservan los contratos de consulta del catálogo. `modificar_ubicacion(id, codigo, nombre)` y `Ubicacion.modificar(codigo, nombre)` sólo cambian código/nombre, conservando la misma instancia, ID y tipo. Las propiedades son de lectura y los listados son tuplas.
+
+El catálogo puede estar vacío, admite múltiples locales y **como máximo un CD por catálogo/aplicación**. `Catalogo` controla esa cardinalidad y la unicidad del código entre todos los locales y el CD. Un segundo CD produce `CentroDistribucionDuplicadoError`, derivada de `ValueError`; un código ocupado o histórico produce `CodigoDuplicadoError`. Los códigos reemplazados quedan reservados como en proveedores, incluso frente al intento de recuperarlos para la ubicación original. Las búsquedas por código sólo consideran el vigente.
+
+Los datos inválidos y los conflictos se rechazan antes de cambiar el objeto o reservar códigos. Un alta fallida no consume ID ni la posibilidad de registrar el CD. Se puede editar administrativamente el CD existente. No se puede convertir Local en CD ni a la inversa. No se agregaron direcciones, personas, existencia, mínimos ni operaciones logísticas.
+
+```python
+local = catalogo.crear_ubicacion("0001", "Local Centro", "LOCAL")
+cd = catalogo.crear_ubicacion("CD01", "Depósito central", "CD")
+catalogo.modificar_ubicacion(local.identificador, "0002", "Local Norte")
+assert local.tipo == "LOCAL"
+assert catalogo.buscar_ubicacion_por_codigo(" cd01 ") is cd
+# Registrar otro CD produce CentroDistribucionDuplicadoError.
+```
+
+## API HTTP/JSON de F-01.2 a F-01.4
 
 La API valida el formato del transporte y delega creación, modificación, unicidad, referencias y precios al dominio. Los cuerpos de escritura deben ser objetos JSON con todos los campos indicados y sin campos adicionales. `id` técnico y `codigo` comercial son conceptos distintos. `PUT` reemplaza los campos editables completos; no hay `PATCH` ni `DELETE` de catálogo.
 
@@ -84,6 +123,20 @@ La API valida el formato del transporte y delega creación, modificación, unici
 | `POST /api/productos` | `codigo`, `nombre`, `precio`: textos; `categoria_id`: entero | 201, producto; cabecera `Location` con su consulta. |
 | `GET /api/productos/<id>` | ID técnico en ruta | 200, producto. |
 | `PUT /api/productos/<id>` | Los mismos cuatro campos del alta | 200, producto actualizado, mismo ID. |
+| `GET /api/proveedores` | Sin cuerpo | 200, `{"proveedores": [...]}`. |
+| `POST /api/proveedores` | `codigo`, `nombre`: textos | 201, proveedor; cabecera `Location` con su consulta. |
+| `GET /api/proveedores/<id>` | ID técnico en ruta | 200, proveedor. |
+| `PUT /api/proveedores/<id>` | `codigo`, `nombre`: textos | 200, proveedor actualizado, mismo ID. |
+| `GET /api/ubicaciones` | Sin cuerpo | 200, `{"ubicaciones": [...]}`. |
+| `POST /api/ubicaciones` | `codigo`, `nombre`, `tipo`: textos | 201, ubicación; cabecera `Location` con su consulta. |
+| `GET /api/ubicaciones/<id>` | ID técnico en ruta | 200, ubicación. |
+| `PUT /api/ubicaciones/<id>` | Únicamente `codigo`, `nombre`: textos | 200, ubicación actualizada, mismo ID y tipo. |
+
+Para proveedores, alta y modificación reciben únicamente `{"codigo":"0001","nombre":"Distribuidora"}` y devuelven `{"id":1,"codigo":"0001","nombre":"Distribuidora"}`. Un código vigente duplicado o uno histórico reservado produce 409; no se serializan el catálogo, sus reservas ni atributos privados. Los campos faltantes, adicionales o de tipo incorrecto producen 400.
+
+Ejemplo de alta de ubicación: `{"codigo":"0001","nombre":"Local Centro","tipo":"LOCAL"}`; respuesta: `{"id":1,"codigo":"0001","nombre":"Local Centro","tipo":"LOCAL"}`. Para el CD se usa `"tipo":"CD"`. El `PUT` recibe únicamente `{"codigo":"0002","nombre":"Local Norte"}`: enviar `tipo` o `id`, aunque sean los valores actuales, produce 400 por campo no editable. La respuesta siempre incluye el tipo confirmado por Python.
+
+El intento de registrar un segundo CD produce 409 JSON con `error.fields.tipo`; un código de ubicación duplicado o reservado produce 409 con `error.fields.codigo`. La API usa las excepciones del dominio, sin repetir esas reglas. Todas las operaciones y su serialización usan el mismo catálogo y bloqueo existentes.
 
 Una categoría se representa como `{"id":1,"codigo":"ALM","nombre":"Almacén"}`. Un producto incluye su categoría actual y el precio decimal como texto:
 
@@ -103,21 +156,25 @@ Ejemplo de cuerpo para registrar o modificar un producto: `{"codigo":"001","nomb
 | Estado | Significado |
 | --- | --- |
 | 400 | JSON mal formado, objeto/campos/tipos incorrectos o datos rechazados por el dominio. |
-| 404 | Categoría/producto inexistente, incluida la categoría referida por un producto. |
-| 409 | Código duplicado según la regla del dominio. |
+| 404 | Categoría/producto/proveedor/ubicación inexistente, incluida la categoría referida por un producto. |
+| 409 | Código duplicado en el catálogo, código histórico de proveedor/ubicación o intento de registrar un segundo CD. |
 | 415 | Cuerpo no enviado como `application/json`. |
 | 405 | Método no disponible; se conserva la cabecera `Allow`. |
 | 500 | Fallo inesperado; respuesta genérica sin detalle interno ni éxito falso. |
 
 Los errores usan `{"error":{"code":400,"message":"..."}}`, con `fields` opcional para señalar campos del formulario. Ejemplo de conflicto: `{"error":{"code":409,"message":"Ya existe una categoría con ese código.","fields":{"codigo":"Ya existe una categoría con ese código."}}}`. Las trazas y objetos internos no se serializan al cliente.
 
+Los IDs de ruta enteros pero inválidos, como `0`, producen 400 por validación de dominio. Un entero positivo inexistente produce 404; rutas con segmentos que no coinciden con el conversor entero de Flask también producen 404 JSON.
+
 ## Memoria, pantalla y límites actuales
 
 `create_app` crea un `Catalogo` en `app.extensions["catalogo"]` y un `Lock` propio. La API utiliza esa misma instancia entre solicitudes; el bloqueo abarca las operaciones de dominio y la construcción de las respuestas para evitar carreras sobre códigos, IDs y referencias. No hay Singleton ni catálogo global compartido entre aplicaciones. Los tests crean aplicaciones aisladas.
 
-**Reiniciar Flask elimina todos los registros.** Recargar React conserva los registros del backend, pero descarta los borradores locales. Cada proceso/aplicación tiene su propia memoria; no se usa esta solución como almacenamiento compartido entre workers o instalaciones. SQLite se mantiene para F-02.
+**Reiniciar Flask elimina todos los registros y las reservas de códigos de proveedores/ubicaciones.** La no reutilización y el máximo de un CD están garantizados en esta memoria, no entre ejecuciones o procesos independientes. Recargar React conserva los registros del backend, pero descarta los borradores locales. Cada proceso/aplicación tiene su propia memoria; no se usa esta solución como almacenamiento compartido entre workers o instalaciones. SQLite se mantiene para F-02, donde deberán persistirse también las reservas y la restricción del CD.
 
-La pantalla consulta categorías/productos, ofrece selectores de categorías registradas y permite consultar por ID antes de editar. Conserva los campos ante un error, muestra carga/éxito/error y bloquea envíos mientras están pendientes. Los precios permanecen como texto; no se calculan ni redondean en JavaScript. Después de guardar se reconsultan los listados, incluyendo los nombres actuales de categorías referenciadas. Un fallo de esa lectura se informa por separado del guardado ya confirmado.
+La pantalla consulta categorías/productos/proveedores/ubicaciones, ofrece selectores de categorías registradas para productos y permite consultar por ID antes de editar. Proveedores y ubicaciones reutilizan `SeccionCatalogo`, `FormularioCatalogo`, `fetch` y estilos. En ubicaciones, el alta tiene selector de tipo y el listado diferencia Local/CD; al editar, el tipo aparece como texto fijo. El segundo CD se rechaza desde Python con un mensaje junto al selector; las opciones permanecen disponibles para que ese control siga siendo efectivo aun con información cliente desactualizada.
+
+Conserva los campos ante un error, muestra carga/éxito/error/vacío y bloquea envíos mientras están pendientes. La ayuda del código de proveedor/ubicación explica su reserva al reemplazarlo. Los precios permanecen como texto; no se calculan ni redondean en JavaScript. Después de guardar se reconsultan los listados, incluyendo los nombres actuales de categorías referenciadas. Un fallo de esa lectura se informa por separado del guardado ya confirmado.
 
 El cliente `fetch` tiene un límite de 10 segundos, cancela lecturas obsoletas y no reintenta escrituras automáticamente. Si no se pudo confirmar una escritura por un fallo de conexión, consultar el listado antes de reenviar. “Actualizar listados” permite consultar cambios hechos desde otra pestaña; no hay actualización en tiempo real. El estado técnico de `/api/health` está disponible en una sección desplegable secundaria.
 
@@ -171,7 +228,7 @@ cd frontend
 npm run dev
 ```
 
-Abrir [frontend de desarrollo](http://127.0.0.1:5173/). La pantalla consulta categorías/productos y permite administrarlos. El estado de salud permanece accesible en “Estado técnico de conexión”. No se necesita cambiar los comandos de desarrollo para F-01.2.
+Abrir [frontend de desarrollo](http://127.0.0.1:5173/). La pantalla permite administrar categorías, productos, proveedores y ubicaciones. El estado de salud permanece accesible en “Estado técnico de conexión”. Los comandos de desarrollo se conservan en F-01.4.
 
 Camino de la solicitud: navegador → `http://127.0.0.1:5173/api/health` → proxy Vite → `http://127.0.0.1:5000/api/health`. Se conserva `/api`, sin transformación ni lógica de aplicación en el proxy. No es necesario configurar CORS para este camino.
 
@@ -223,15 +280,23 @@ Desde la raíz:
 .\.venv\Scripts\python.exe -m pytest -q
 ```
 
-Verificación de F-01.2 el 19/10/2026: **127 casos aprobados**. Se conservan los 90 de F-01.1 y se agregan 37 de API: altas/consultas/ediciones, JSON/campos/tipos, duplicados, categorías inexistentes, precios inválidos, ausencia de efectos parciales, memoria entre requests, aislamiento, solicitudes concurrentes y error inesperado sin exposición interna. Sigue aprobada la comprobación del dominio con Python `-I -S`, sin paquetes externos ni carga de Flask/SQLite. No se instalaron dependencias nuevas.
+Verificación de F-01.4 el 19/10/2026: **271 casos aprobados**. Antes de editar se comprobaron los 185 de F-01.3. Se agregaron 43 casos de dominio y 43 de API de ubicaciones: Local/CD, varios locales, segundo CD, códigos normalizados y ceros, reservas históricas, ID/tipo inmutables, JSON/campos/tipos, consultas inexistentes, edición sin efectos parciales, memoria entre solicitudes y aislamiento. Las solicitudes concurrentes verifican tanto el máximo de un CD como códigos equivalentes e IDs únicos. Se conservaron las regresiones de categorías/productos/proveedores y salud. La comprobación con Python `-I -S` también crea y modifica ubicaciones sin paquetes externos ni carga de Flask/SQLite. No se instalaron dependencias nuevas.
 
 Para ejecutar sólo el dominio:
 
 ```powershell
-.\.venv\Scripts\python.exe -m pytest tests/test_catalogo.py -q
+.\.venv\Scripts\python.exe -m pytest tests/test_catalogo.py tests/test_proveedores.py tests/test_ubicaciones.py -q
 ```
 
-Para ejecutar sólo los contratos HTTP del catálogo: `.\.venv\Scripts\python.exe -m pytest tests/test_api_catalogo.py -q`.
+Para ejecutar sólo los contratos HTTP del catálogo: `.\.venv\Scripts\python.exe -m pytest tests/test_api_catalogo.py tests/test_api_proveedores.py tests/test_api_ubicaciones.py -q`.
+
+Validación real de F-01.4: alta de Local/CD mediante React y proxy Vite, tipos visibles en listado, segundo CD rechazado con formulario completo conservado, código duplicado entre tipos rechazado, consulta para edición con tipo fijo, nombre vacío rechazado sin alterar el listado y guardado válido con Enter manteniendo ID/tipo. Se observó carga con controles deshabilitados. También se registraron categoría, producto y proveedor desde la pantalla ampliada. Una solicitud HTTP directa a Flask para crear un segundo CD devolvió 409 JSON y conservó el catálogo.
+
+`npm run build` terminó correctamente. Se comprobó que Vite dejó de escuchar y se abrió el build servido por Flask: alta de otro local, consulta y cambio de código/nombre del CD, recarga con registros conservados y salud conectada. La consola del recorrido del build no tuvo errores ni advertencias. A 390 px se verificaron campos apilados, etiquetas/ayuda asociadas, recorrido con Tab hasta el selector de tipo y ausencia de desbordamiento horizontal de la página. Se mantienen las limitaciones de la verificación manual de accesibilidad.
+
+Validación real de F-01.3: alta, consulta y edición de proveedores desde React mediante el proxy Vite; alta con Enter, ceros iniciales, mismo nombre con distintos códigos, conflicto 409 al normalizar mayúsculas/espacios, nombre vacío rechazado sin perder borrador ni alterar el listado y código reemplazado reservado. Se observó “Guardando proveedor…” con controles deshabilitados. Categorías y productos se registraron correctamente desde la misma pantalla.
+
+El build se generó correctamente con `npm run build`. Con Vite detenido, Flask sirvió el build y permitió alta/consulta/edición de un proveedor; la recarga conservó los datos. Salud directa y desde React: HTTP 200 / `{"status":"ok"}`. La consola del recorrido del build no presentó errores ni advertencias. Se verificaron etiquetas y ayuda asociadas, Enter/Tab y viewport de 390 px sin desbordamiento horizontal de la página. Las tablas conservan desplazamiento interno. La verificación de UI es manual en navegador real, sin nueva biblioteca ni certificación completa de accesibilidad.
 
 Validación real de integración de F-01.2: creación y edición de categorías/productos desde React mediante Vite, precio de tres decimales rechazado sin perder el borrador, duplicado 409 visible, cambio de categoría y precio textual grande sin pérdida de precisión. Se comprobó la caída de Flask con error 502 y conservación del formulario, recuperación y catálogo vacío después de reiniciar. El estado de guardado y los controles deshabilitados se observaron con una demora temporal de prueba de un segundo, sólo en el proceso de verificación y sin modificar archivos del proyecto.
 
@@ -244,7 +309,9 @@ Guion manual reproducible, con una aplicación local de demostración:
 3. Consultar/editar `ALM`, intentar cambiar el código a ` beb `: comprobar el conflicto y los datos conservados. Usar un código libre o conservar `ALM` y cambiar el nombre: comprobar el cambio en productos.
 4. Consultar/editar el producto, seleccionar `BEB`, cambiar nombre/precio y guardar con Enter. Actualizar listados y recargar: los valores confirmados deben conservarse mientras siga el mismo backend.
 5. Preparar un borrador y detener Flask. Intentar guardar: debe aparecer el error sin limpiar campos ni mostrar éxito. Reiniciar Flask y actualizar listados: el catálogo estará vacío; volver a registrar datos en esa nueva ejecución.
-6. Generar el build, detener Vite y repetir alta/consulta/edición en `http://127.0.0.1:5000/`. Abrir la sección técnica y comprobar salud.
+6. Registrar proveedor `0001` / `Distribuidora` y otro `ABC` con el mismo nombre. Intentar ` abc `: debe devolver conflicto conservando campos. Consultar/editar el primero; probar nombre con espacios, luego cambiar a código `0002` y nombre válido. Comprobar mismo ID y rechazo al volver a asignar `0001`.
+7. Registrar ubicación `0001` / `Local Centro` de tipo Local y `CD01` / `Depósito central` de tipo CD. Intentar otro CD: comprobar error sin perder campos. Intentar un Local con código ` cd01 `: comprobar conflicto. Consultar el primer Local: el tipo debe ser fijo; probar nombre vacío y luego cambiar código/nombre válidos con Enter. El ID y el tipo deben mantenerse.
+8. Generar el build, detener Vite y repetir alta/consulta/edición de ubicaciones en `http://127.0.0.1:5000/`. Registrar otro local y editar el CD. Recargar y comprobar registros. Abrir la sección técnica y comprobar salud.
 
 Resultados del incremento técnico inicial, conservados como antecedente:
 
@@ -265,8 +332,8 @@ Las pruebas de API usan el cliente Flask y archivos temporales; la verificación
 
 ## Alcance actual frente a la planificación
 
-Los tres Markdown de `docs/` y los originales académicos se conservaron sin cambios. Sus frases “sin implementación” describen la planificación anterior; las instrucciones posteriores del usuario autorizaron la base técnica, F-01.1 y F-01.2. JavaScript fue elegido para el frontend. Este README registra el estado actual sin presentar las fases restantes como implementadas.
+Los tres Markdown de `docs/` y los originales académicos se conservaron sin cambios. Sus frases “sin implementación” describen la planificación anterior; las instrucciones posteriores del usuario autorizaron la base técnica y F-01.1 a F-01.4. JavaScript fue elegido para el frontend. Este README registra el estado actual sin presentar las fases restantes como implementadas.
 
-Para F-01.1 quedaron aprobados identificadores y normalización de categorías/productos, categoría registrada obligatoria, precio positivo exacto en ARS, alta/consulta/modificación y almacenamiento temporal. El resto de DN-02 (otros maestros), DN-06 (unidades/mínimos), DN-08 (bajas de F-01.6), DN-09 (costos/fechas/economía) y DN-11 mantiene sus pendientes.
+Para F-01.1 quedaron aprobados identificadores y normalización de categorías/productos, categoría registrada obligatoria, precio positivo exacto en ARS, alta/consulta/modificación y almacenamiento temporal. El pedido de F-01.3 confirmó ID inmutable, código textual único no reutilizable, normalización y datos mínimos de proveedores. El de F-01.4 autorizó `Ubicacion`, Local/CD, código único entre ubicaciones con reservas, ID/tipo inmutables y máximo de un CD. Se eligieron los valores técnicos `LOCAL`/`CD` documentados arriba. DN-06 (unidades/mínimos), DN-08 (bajas de F-01.6), DN-09 (costos/fechas/economía), identificadores de documentos posteriores y DN-11 mantienen sus pendientes.
 
-F-01.1 y F-01.2 están completos; F-01 completa aún no está terminada. El siguiente incremento recomendado es F-01.3 (proveedores), sujeto a nueva autorización y a cerrar su identidad/datos administrativos pendientes. No se incorporan proveedores, SQLite, compras ni otras fases automáticamente.
+F-01.1 a F-01.4 están completos; F-01 completa aún no está terminada. Para preparar F-01.5 (mínimos de existencia), acordar DN-06: unidad de cantidad, mínimo global o por producto/ubicación, si alcanza también al CD, valor cero, enteros/fracciones y comparación frente al umbral. Precisar los casos normales, límites y errores antes del modelo POO y sus pruebas, sin adelantar stock operativo ni compras. Requiere nueva autorización; no se inició F-01.5 ni se incorporó SQLite.

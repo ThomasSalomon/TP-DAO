@@ -299,6 +299,14 @@ producto = catalogo.crear_producto('001', 'Arroz', categoria, '0.01')
 producto.cambiar_precio('12.50')
 assert producto.precio_centavos == 1250
 assert producto.categoria is categoria
+proveedor = catalogo.crear_proveedor('0001', 'Distribuidora')
+proveedor.modificar('0002', 'Distribuidora actualizada')
+assert catalogo.obtener_proveedor(proveedor.identificador) is proveedor
+assert proveedor.codigo == '0002'
+ubicacion = catalogo.crear_ubicacion('CD', 'Central', 'CD')
+ubicacion.modificar('CD01', 'Central actualizada')
+assert catalogo.obtener_ubicacion(ubicacion.identificador) is ubicacion
+assert ubicacion.tipo == 'CD'
 assert 'flask' not in sys.modules
 assert 'sqlite3' not in sys.modules
 print('dominio independiente')

@@ -1,9 +1,9 @@
-"""Adaptador HTTP de categorías y productos. Las reglas pertenecen al dominio."""
+"""Adaptador HTTP del catálogo. Las reglas pertenecen al dominio."""
 
 from flask import Blueprint, current_app, jsonify, request, url_for
 from werkzeug.exceptions import BadRequest
 
-from .dominio import CodigoDuplicadoError
+from .dominio import CentroDistribucionDuplicadoError, CodigoDuplicadoError
 
 api_catalogo = Blueprint("catalogo", __name__, url_prefix="/api")
 
@@ -53,6 +53,8 @@ def _dominio(operacion, *argumentos):
         return operacion(*argumentos)
     except CodigoDuplicadoError as error:
         raise ErrorCatalogoAPI(409, str(error), {"codigo": str(error)}) from None
+    except CentroDistribucionDuplicadoError as error:
+        raise ErrorCatalogoAPI(409, str(error), {"tipo": str(error)}) from None
     except (TypeError, ValueError) as error:
         raise ErrorCatalogoAPI(400, str(error)) from None
 
@@ -83,6 +85,21 @@ def _categoria_json(categoria):
         "id": categoria.identificador,
         "codigo": categoria.codigo,
         "nombre": categoria.nombre,
+    }
+
+
+def _proveedor(identificador):
+    try:
+        return _dominio(_catalogo().obtener_proveedor, identificador)
+    except KeyError:
+        raise ErrorCatalogoAPI(404, "No existe el proveedor solicitado.") from None
+
+
+def _proveedor_json(proveedor):
+    return {
+        "id": proveedor.identificador,
+        "codigo": proveedor.codigo,
+        "nombre": proveedor.nombre,
     }
 
 
@@ -177,4 +194,92 @@ def modificar_producto(identificador):
             identificador, datos["codigo"], datos["nombre"], categoria, datos["precio"],
         )
         resultado = _producto_json(producto)
+    return jsonify(resultado)
+
+
+@api_catalogo.get("/proveedores")
+def listar_proveedores():
+    with current_app.extensions["catalogo_lock"]:
+        datos = [_proveedor_json(item) for item in _catalogo().listar_proveedores()]
+    return jsonify(proveedores=datos)
+
+
+@api_catalogo.post("/proveedores")
+def crear_proveedor():
+    datos = _datos_json({"codigo": str, "nombre": str})
+    with current_app.extensions["catalogo_lock"]:
+        proveedor = _dominio(_catalogo().crear_proveedor, datos["codigo"], datos["nombre"])
+        resultado = _proveedor_json(proveedor)
+    return _respuesta_alta(resultado, "catalogo.consultar_proveedor")
+
+
+@api_catalogo.get("/proveedores/<int:identificador>")
+def consultar_proveedor(identificador):
+    with current_app.extensions["catalogo_lock"]:
+        datos = _proveedor_json(_proveedor(identificador))
+    return jsonify(datos)
+
+
+@api_catalogo.put("/proveedores/<int:identificador>")
+def modificar_proveedor(identificador):
+    datos = _datos_json({"codigo": str, "nombre": str})
+    with current_app.extensions["catalogo_lock"]:
+        _proveedor(identificador)
+        proveedor = _dominio(
+            _catalogo().modificar_proveedor, identificador, datos["codigo"], datos["nombre"]
+        )
+        resultado = _proveedor_json(proveedor)
+    return jsonify(resultado)
+
+
+def _ubicacion(identificador):
+    try:
+        return _dominio(_catalogo().obtener_ubicacion, identificador)
+    except KeyError:
+        raise ErrorCatalogoAPI(404, "No existe la ubicación solicitada.") from None
+
+
+def _ubicacion_json(ubicacion):
+    return {
+        "id": ubicacion.identificador,
+        "codigo": ubicacion.codigo,
+        "nombre": ubicacion.nombre,
+        "tipo": ubicacion.tipo,
+    }
+
+
+@api_catalogo.get("/ubicaciones")
+def listar_ubicaciones():
+    with current_app.extensions["catalogo_lock"]:
+        datos = [_ubicacion_json(item) for item in _catalogo().listar_ubicaciones()]
+    return jsonify(ubicaciones=datos)
+
+
+@api_catalogo.post("/ubicaciones")
+def crear_ubicacion():
+    datos = _datos_json({"codigo": str, "nombre": str, "tipo": str})
+    with current_app.extensions["catalogo_lock"]:
+        ubicacion = _dominio(
+            _catalogo().crear_ubicacion, datos["codigo"], datos["nombre"], datos["tipo"]
+        )
+        resultado = _ubicacion_json(ubicacion)
+    return _respuesta_alta(resultado, "catalogo.consultar_ubicacion")
+
+
+@api_catalogo.get("/ubicaciones/<int:identificador>")
+def consultar_ubicacion(identificador):
+    with current_app.extensions["catalogo_lock"]:
+        datos = _ubicacion_json(_ubicacion(identificador))
+    return jsonify(datos)
+
+
+@api_catalogo.put("/ubicaciones/<int:identificador>")
+def modificar_ubicacion(identificador):
+    datos = _datos_json({"codigo": str, "nombre": str})
+    with current_app.extensions["catalogo_lock"]:
+        _ubicacion(identificador)
+        ubicacion = _dominio(
+            _catalogo().modificar_ubicacion, identificador, datos["codigo"], datos["nombre"]
+        )
+        resultado = _ubicacion_json(ubicacion)
     return jsonify(resultado)

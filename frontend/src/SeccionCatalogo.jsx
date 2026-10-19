@@ -1,12 +1,19 @@
 import { useEffect, useRef, useState } from 'react';
-import { categoriasAPI, productosAPI } from './api';
+import { catalogoAPI } from './api';
 import FormularioCatalogo from './FormularioCatalogo';
 
 export default function SeccionCatalogo({
   tipo, registros, categorias, bloqueado, estadoConsulta, onGuardar, onActividad,
 }) {
   const esProducto = tipo === 'productos';
-  const singular = esProducto ? 'producto' : 'categoría';
+  const esUbicacion = tipo === 'ubicaciones';
+  const singular = {
+    categorias: 'categoría', productos: 'producto', proveedores: 'proveedor', ubicaciones: 'ubicación',
+  }[tipo];
+  const titulo = {
+    categorias: 'Categorías', productos: 'Productos', proveedores: 'Proveedores', ubicaciones: 'Ubicaciones',
+  }[tipo];
+  const listado = `${titulo} ${tipo === 'categorias' || esUbicacion ? 'registradas' : 'registrados'}`;
   const [edicion, setEdicion] = useState(null);
   const [consultando, setConsultando] = useState(false);
   const [errorConsulta, setErrorConsulta] = useState('');
@@ -20,7 +27,7 @@ export default function SeccionCatalogo({
     setConsultando(true);
     setErrorConsulta('');
     try {
-      const api = esProducto ? productosAPI : categoriasAPI;
+      const api = catalogoAPI[tipo];
       const registro = await api.obtener(id, controller.signal);
       if (!controller.signal.aborted) setEdicion(registro);
     } catch (error) {
@@ -31,9 +38,9 @@ export default function SeccionCatalogo({
   }
 
   return (
-    <section className="catalog-section" aria-labelledby={`${tipo}-title`}>
+    <section className={`catalog-section ${tipo}`} aria-labelledby={`${tipo}-title`}>
       <div className="section-heading">
-        <h2 id={`${tipo}-title`}>{esProducto ? 'Productos' : 'Categorías'}</h2>
+        <h2 id={`${tipo}-title`}>{titulo}</h2>
         <span className="count">{registros.length} registros</span>
       </div>
       {errorConsulta && <p className="notice error" role="alert">{errorConsulta}</p>}
@@ -45,21 +52,22 @@ export default function SeccionCatalogo({
         onCancelar={() => setEdicion(null)}
         onActividad={(valor) => onActividad(tipo, valor)}
       />
-      <h3>{esProducto ? 'Productos registrados' : 'Categorías registradas'}</h3>
+      <h3>{listado}</h3>
       {!registros.length ? (
         <p className="empty">
           {estadoConsulta === 'cargando' ? `Cargando ${tipo}…`
             : estadoConsulta === 'error' ? 'No se pudieron cargar los registros.'
-              : `Todavía no hay ${esProducto ? 'productos registrados' : 'categorías registradas'}.`}
+              : `Todavía no hay ${listado.toLowerCase()}.`}
         </p>
       ) : (
         <div className="table-scroll" role="region" aria-label={`Listado de ${tipo}`} tabIndex="0">
           <table>
-            <caption className="sr-only">{esProducto ? 'Productos' : 'Categorías'} del catálogo</caption>
+            <caption className="sr-only">{titulo} del catálogo</caption>
             <thead>
               <tr>
                 <th scope="col">ID</th><th scope="col">Código</th><th scope="col">Nombre</th>
                 {esProducto && <><th scope="col">Categoría</th><th scope="col">Precio ARS</th></>}
+                {esUbicacion && <th scope="col">Tipo</th>}
                 <th scope="col">Acción</th>
               </tr>
             </thead>
@@ -68,6 +76,7 @@ export default function SeccionCatalogo({
                 <tr key={item.id}>
                   <td>{item.id}</td><td>{item.codigo}</td><td>{item.nombre}</td>
                   {esProducto && <><td>{item.categoria.nombre}</td><td className="price">{item.precio}</td></>}
+                  {esUbicacion && <td>{item.tipo === 'CD' ? <strong>Centro de Distribución (CD)</strong> : 'Local'}</td>}
                   <td>
                     <button
                       className="secondary compact" type="button"

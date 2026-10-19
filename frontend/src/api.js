@@ -64,6 +64,12 @@ function recurso(nombre) {
 
 export const categoriasAPI = recurso('categorias');
 export const productosAPI = recurso('productos');
+export const proveedoresAPI = recurso('proveedores');
+export const ubicacionesAPI = recurso('ubicaciones');
+export const catalogoAPI = {
+  categorias: categoriasAPI, productos: productosAPI,
+  proveedores: proveedoresAPI, ubicaciones: ubicacionesAPI,
+};
 
 export async function consultarSalud(signal) {
   const datos = await solicitar(HEALTH_PATH, { signal });

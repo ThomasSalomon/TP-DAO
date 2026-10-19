@@ -5,6 +5,7 @@ function valoresIniciales(registro) {
     codigo: registro?.codigo || '', nombre: registro?.nombre || '',
     categoria_id: registro?.categoria ? String(registro.categoria.id) : '',
     precio: registro?.precio || '',
+    tipo: registro?.tipo || '',
   };
 }
 
@@ -12,8 +13,15 @@ export default function FormularioCatalogo({
   tipo, registro, categorias, bloqueado, onGuardar, onCancelar, onActividad,
 }) {
   const esProducto = tipo === 'productos';
-  const singular = esProducto ? 'producto' : 'categoría';
-  const prefijo = esProducto ? 'producto' : 'categoria';
+  const esCategoria = tipo === 'categorias';
+  const esUbicacion = tipo === 'ubicaciones';
+  const singular = {
+    categorias: 'categoría', productos: 'producto', proveedores: 'proveedor', ubicaciones: 'ubicación',
+  }[tipo];
+  const titulo = {
+    categorias: 'Categoría', productos: 'Producto', proveedores: 'Proveedor', ubicaciones: 'Ubicación',
+  }[tipo];
+  const prefijo = esCategoria ? 'categoria' : esUbicacion ? 'ubicacion' : singular;
   const [datos, setDatos] = useState(() => valoresIniciales(registro));
   const [error, setError] = useState(null);
   const [exito, setExito] = useState('');
@@ -45,12 +53,13 @@ export default function FormularioCatalogo({
       entrada.categoria_id = Number(datos.categoria_id);
       entrada.precio = datos.precio;
     }
+    if (esUbicacion && !registro) entrada.tipo = datos.tipo;
     try {
       const resultado = await onGuardar(registro?.id, entrada);
       setDatos(valoresIniciales(registro ? resultado : null));
-      const accion = esProducto
-        ? (registro ? 'actualizado' : 'registrado') : (registro ? 'actualizada' : 'registrada');
-      setExito(`${esProducto ? 'Producto' : 'Categoría'} ${accion}.`);
+      const accion = esCategoria || esUbicacion
+        ? (registro ? 'actualizada' : 'registrada') : (registro ? 'actualizado' : 'registrado');
+      setExito(`${titulo} ${accion}.`);
     } catch (fallo) {
       setError(fallo);
     } finally {
@@ -67,6 +76,8 @@ export default function FormularioCatalogo({
       required: true, 'aria-invalid': tieneError || undefined,
       'aria-describedby': [
         campo === 'precio' ? 'producto-precio-ayuda' : '',
+        (tipo === 'proveedores' || esUbicacion) && campo === 'codigo' ? `${prefijo}-codigo-ayuda` : '',
+        esUbicacion && campo === 'tipo' ? 'ubicacion-tipo-ayuda' : '',
         tieneError ? `${prefijo}-${campo}-error` : '',
         error && !tieneError ? `${prefijo}-error` : '',
       ].filter(Boolean).join(' ') || undefined,
@@ -93,6 +104,11 @@ export default function FormularioCatalogo({
           <div>
             <label htmlFor={`${prefijo}-codigo`}>Código de {singular}</label>
             <input {...atributos('codigo')} type="text" autoComplete="off" />
+            {(tipo === 'proveedores' || esUbicacion) && (
+              <p id={`${prefijo}-codigo-ayuda`} className="detail">
+                Si cambiás el código, el anterior queda reservado y no puede volver a usarse.
+              </p>
+            )}
             {errorCampo('codigo')}
           </div>
           <div>
@@ -100,6 +116,29 @@ export default function FormularioCatalogo({
             <input {...atributos('nombre')} type="text" autoComplete="off" />
             {errorCampo('nombre')}
           </div>
+          {esUbicacion && (
+            <div>
+              {registro ? (
+                <>
+                  <p>Tipo de ubicación: <strong>
+                    {registro.tipo === 'CD' ? 'Centro de Distribución (CD)' : 'Local o sucursal'}
+                  </strong></p>
+                  <p className="detail">El tipo no puede modificarse.</p>
+                </>
+              ) : (
+                <>
+                  <label htmlFor="ubicacion-tipo">Tipo de ubicación</label>
+                  <select {...atributos('tipo')}>
+                    <option value="">Elegí un tipo</option>
+                    <option value="LOCAL">Local o sucursal</option>
+                    <option value="CD">Centro de Distribución (CD)</option>
+                  </select>
+                  <p id="ubicacion-tipo-ayuda" className="detail">Sólo se permite un Centro de Distribución.</p>
+                  {errorCampo('tipo')}
+                </>
+              )}
+            </div>
+          )}
           {esProducto && (
             <>
               <div>

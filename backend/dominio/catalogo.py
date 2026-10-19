@@ -1,8 +1,12 @@
-"""Categorías y productos de F-01.1. Los precios se expresan en ARS."""
+"""Catálogo en memoria de productos y datos administrativos. Precios en ARS."""
 
 
 class CodigoDuplicadoError(ValueError):
     """Un código comercial ya está registrado dentro del mismo tipo."""
+
+
+class CentroDistribucionDuplicadoError(ValueError):
+    """El catálogo ya tiene un Centro de Distribución registrado."""
 
 
 def _texto_no_vacio(valor, campo):
@@ -133,12 +137,165 @@ class Producto:
         self._precio_centavos = _precio_a_centavos(precio)
 
 
+class Proveedor:
+    """Datos administrativos, con identidad estable y códigos no reutilizables."""
+
+    def __init__(self, identificador, codigo, nombre, catalogo):
+        _validar_identificador(identificador)
+        if not isinstance(catalogo, Catalogo):
+            raise TypeError("El catálogo debe ser un Catalogo.")
+        self._identificador = identificador
+        self._catalogo = catalogo
+        self.modificar(codigo, nombre)
+
+    @property
+    def identificador(self):
+        return self._identificador
+
+    @property
+    def codigo(self):
+        return self._codigo
+
+    @property
+    def nombre(self):
+        return self._nombre
+
+    def modificar(self, codigo, nombre):
+        """Valida todo antes de reservar el código y actualizar la misma instancia."""
+        codigo = _texto_no_vacio(codigo, "código")
+        nombre = _texto_no_vacio(nombre, "nombre")
+        self._catalogo.reservar_codigo_proveedor(codigo, self)
+        self._codigo = codigo
+        self._nombre = nombre
+
+
+class Ubicacion:
+    """Local o CD con identidad y tipo estables; sin existencias ni logística."""
+
+    def __init__(self, identificador, codigo, nombre, tipo, catalogo):
+        _validar_identificador(identificador)
+        if not isinstance(catalogo, Catalogo):
+            raise TypeError("El catálogo debe ser un Catalogo.")
+        tipo = _texto_no_vacio(tipo, "tipo de ubicación")
+        if tipo not in ("LOCAL", "CD"):
+            raise ValueError("El tipo de ubicación debe ser LOCAL o CD.")
+        self._identificador = identificador
+        self._tipo = tipo
+        self._catalogo = catalogo
+        self.modificar(codigo, nombre)
+
+    @property
+    def identificador(self):
+        return self._identificador
+
+    @property
+    def tipo(self):
+        return self._tipo
+
+    @property
+    def codigo(self):
+        return self._codigo
+
+    @property
+    def nombre(self):
+        return self._nombre
+
+    def modificar(self, codigo, nombre):
+        """Cambia sólo datos administrativos después de validar la operación."""
+        codigo = _texto_no_vacio(codigo, "código")
+        nombre = _texto_no_vacio(nombre, "nombre")
+        self._catalogo.reservar_codigo_ubicacion(codigo, self)
+        self._codigo = codigo
+        self._nombre = nombre
+
+
 class Catalogo:
     """Registro local de objetos. No persiste datos ni comparte estado global."""
 
     def __init__(self):
         self._categorias = {}
         self._productos = {}
+        self._proveedores = {}
+        self._codigos_proveedores = {}
+        self._ubicaciones = {}
+        self._codigos_ubicaciones = {}
+
+    def reservar_codigo_ubicacion(self, codigo, ubicacion):
+        """Protege máximo de un CD y códigos históricos de todas las ubicaciones."""
+        if ubicacion.tipo == "CD" and any(
+            item.tipo == "CD" and item is not ubicacion
+            for item in self._ubicaciones.values()
+        ):
+            raise CentroDistribucionDuplicadoError(
+                "Ya existe un Centro de Distribución registrado."
+            )
+        clave = _texto_no_vacio(codigo, "código").casefold()
+        existente = self._codigos_ubicaciones.get(clave)
+        if existente is not None and (
+            existente is not ubicacion or existente.codigo.casefold() != clave
+        ):
+            raise CodigoDuplicadoError("El código de ubicación ya fue registrado.")
+        self._codigos_ubicaciones[clave] = ubicacion
+
+    def crear_ubicacion(self, codigo, nombre, tipo):
+        identificador = len(self._ubicaciones) + 1
+        ubicacion = Ubicacion(identificador, codigo, nombre, tipo, self)
+        self._ubicaciones[identificador] = ubicacion
+        return ubicacion
+
+    def obtener_ubicacion(self, identificador):
+        _validar_identificador(identificador)
+        return self._ubicaciones[identificador]
+
+    def buscar_ubicacion_por_codigo(self, codigo):
+        clave = _texto_no_vacio(codigo, "código").casefold()
+        for ubicacion in self._ubicaciones.values():
+            if ubicacion.codigo.casefold() == clave:
+                return ubicacion
+        return None
+
+    def listar_ubicaciones(self):
+        return tuple(self._ubicaciones.values())
+
+    def modificar_ubicacion(self, identificador, codigo, nombre):
+        ubicacion = self.obtener_ubicacion(identificador)
+        ubicacion.modificar(codigo, nombre)
+        return ubicacion
+
+    def reservar_codigo_proveedor(self, codigo, proveedor):
+        """Conserva códigos históricos; sólo permite mantener el código vigente."""
+        clave = _texto_no_vacio(codigo, "código").casefold()
+        existente = self._codigos_proveedores.get(clave)
+        if existente is not None and (
+            existente is not proveedor or existente.codigo.casefold() != clave
+        ):
+            raise CodigoDuplicadoError("El código de proveedor ya fue registrado.")
+        self._codigos_proveedores[clave] = proveedor
+
+    def crear_proveedor(self, codigo, nombre):
+        identificador = len(self._proveedores) + 1
+        proveedor = Proveedor(identificador, codigo, nombre, self)
+        self._proveedores[identificador] = proveedor
+        return proveedor
+
+    def obtener_proveedor(self, identificador):
+        _validar_identificador(identificador)
+        return self._proveedores[identificador]
+
+    def buscar_proveedor_por_codigo(self, codigo):
+        clave = _texto_no_vacio(codigo, "código").casefold()
+        for proveedor in self._proveedores.values():
+            if proveedor.codigo.casefold() == clave:
+                return proveedor
+        return None
+
+    def listar_proveedores(self):
+        return tuple(self._proveedores.values())
+
+    def modificar_proveedor(self, identificador, codigo, nombre):
+        proveedor = self.obtener_proveedor(identificador)
+        proveedor.modificar(codigo, nombre)
+        return proveedor
 
     def crear_categoria(self, codigo, nombre):
         identificador = len(self._categorias) + 1
