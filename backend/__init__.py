@@ -7,8 +7,11 @@ def create_app(frontend_dist=None):
     # Importar el dominio no debe cargar las dependencias de presentación HTTP.
     from flask import Flask, request, send_from_directory
     from werkzeug.exceptions import HTTPException
+    from threading import Lock
 
     from .api import api
+    from .api_catalogo import api_catalogo
+    from .dominio import Catalogo
 
     if frontend_dist is None:
         frontend_dist = Path(__file__).resolve().parent.parent / "frontend" / "dist"
@@ -20,6 +23,9 @@ def create_app(frontend_dist=None):
         static_url_path="/assets",
     )
     app.register_blueprint(api)
+    app.extensions["catalogo"] = Catalogo()
+    app.extensions["catalogo_lock"] = Lock()
+    app.register_blueprint(api_catalogo)
 
     @app.get("/")
     def frontend():

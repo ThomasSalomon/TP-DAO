@@ -1,6 +1,10 @@
 """Categorías y productos de F-01.1. Los precios se expresan en ARS."""
 
 
+class CodigoDuplicadoError(ValueError):
+    """Un código comercial ya está registrado dentro del mismo tipo."""
+
+
 def _texto_no_vacio(valor, campo):
     if not isinstance(valor, str):
         raise TypeError(f"El {campo} debe ser un texto.")
@@ -65,7 +69,7 @@ class Categoria:
         nombre = _texto_no_vacio(nombre, "nombre")
         existente = self._catalogo.buscar_categoria_por_codigo(codigo)
         if existente is not None and existente is not self:
-            raise ValueError("Ya existe una categoría con ese código.")
+            raise CodigoDuplicadoError("Ya existe una categoría con ese código.")
 
         self._codigo = codigo
         self._nombre = nombre
@@ -118,7 +122,7 @@ class Producto:
         centavos = _precio_a_centavos(precio)
         existente = self._catalogo.buscar_producto_por_codigo(codigo)
         if existente is not None and existente is not self:
-            raise ValueError("Ya existe un producto con ese código.")
+            raise CodigoDuplicadoError("Ya existe un producto con ese código.")
 
         self._codigo = codigo
         self._nombre = nombre

@@ -1,79 +1,79 @@
 import { useEffect, useState } from 'react';
-import { consultarSalud, HEALTH_PATH } from './api';
+import { categoriasAPI, productosAPI } from './api';
+import EstadoConexion from './EstadoConexion';
+import SeccionCatalogo from './SeccionCatalogo';
 
 export default function App() {
-  const [intento, setIntento] = useState(0);
-  const [conexion, setConexion] = useState({ estado: 'cargando' });
+  const [datos, setDatos] = useState({ categorias: [], productos: [] });
+  const [revision, setRevision] = useState(0);
+  const [carga, setCarga] = useState({ estado: 'cargando' });
+  const [ocupados, setOcupados] = useState({ categorias: false, productos: false });
+  const bloqueado = carga.estado === 'cargando' || ocupados.categorias || ocupados.productos;
 
   useEffect(() => {
     const controller = new AbortController();
-    let vigente = true;
-    let agotado = false;
-    setConexion({ estado: 'cargando' });
-
-    const timeout = setTimeout(() => {
-      agotado = true;
-      controller.abort();
-    }, 10000);
-
-    consultarSalud(controller.signal)
-      .then((respuesta) => {
-        if (vigente) setConexion({ estado: 'conectada', respuesta });
-      })
-      .catch((error) => {
-        if (vigente) {
-          setConexion({
-            estado: 'error',
-            detalle: agotado ? 'La consulta superó los 10 segundos.' : error.message,
-          });
+    setCarga({ estado: 'cargando' });
+    Promise.all([categoriasAPI.listar(controller.signal), productosAPI.listar(controller.signal)])
+      .then(([categorias, productos]) => {
+        if (!controller.signal.aborted) {
+          setDatos({ categorias, productos });
+          setCarga({ estado: 'lista' });
         }
       })
-      .finally(() => clearTimeout(timeout));
+      .catch((error) => {
+        if (!controller.signal.aborted) setCarga({ estado: 'error', mensaje: error.message });
+      });
+    return () => controller.abort();
+  }, [revision]);
 
-    return () => {
-      vigente = false;
-      clearTimeout(timeout);
-      controller.abort();
-    };
-  }, [intento]);
-
-  const cargando = conexion.estado === 'cargando';
+  async function guardar(tipo, id, entrada) {
+    const api = tipo === 'productos' ? productosAPI : categoriasAPI;
+    const resultado = id ? await api.modificar(id, entrada) : await api.crear(entrada);
+    setDatos((actual) => {
+      const existe = actual[tipo].some((item) => item.id === resultado.id);
+      const registros = existe
+        ? actual[tipo].map((item) => item.id === resultado.id ? resultado : item)
+        : [...actual[tipo], resultado];
+      return { ...actual, [tipo]: registros };
+    });
+    // La reconsulta obtiene las referencias actuales; su fallo no desconfirma el guardado.
+    setRevision((valor) => valor + 1);
+    return resultado;
+  }
 
   return (
-    <main className="panel">
-      <p className="eyebrow">DAO 2026 · Incremento técnico</p>
-      <h1>Conexión con la API</h1>
-      <p>Comprobación de comunicación entre React y Flask.</p>
-
-      <section className="connection" aria-labelledby="connection-title">
-        <h2 id="connection-title">Estado de conexión</h2>
-        <div role="status" aria-live="polite" aria-atomic="true">
-          {cargando && <p className="status">Consultando la API…</p>}
-          {conexion.estado === 'conectada' && (
-            <p className="status success">Conectada · La API está disponible.</p>
-          )}
-          {conexion.estado === 'error' && (
-            <>
-              <p className="status error">Sin conexión con la API.</p>
-              <p>Comprobá que Flask esté ejecutándose y volvé a intentar.</p>
-              <p className="detail">{conexion.detalle}</p>
-            </>
-          )}
-        </div>
-
-        {conexion.estado === 'conectada' && (
-          <div>
-            <p className="detail">Respuesta de GET {HEALTH_PATH}</p>
-            <pre>{JSON.stringify(conexion.respuesta, null, 2)}</pre>
-          </div>
-        )}
-
-        <button disabled={cargando} onClick={() => setIntento((actual) => actual + 1)}>
-          {cargando ? 'Consultando…' : 'Volver a comprobar'}
+    <main className="app">
+      <header className="page-header">
+        <p className="eyebrow">DAO 2026 · F-01.2</p>
+        <h1>Catálogo de productos</h1>
+        <p>Administrá categorías, productos y precios vigentes.</p>
+      </header>
+      <p className="memory-note">Datos temporales: reiniciar el backend vacía el catálogo.</p>
+      <div className="catalog-toolbar">
+        <p role="status" aria-live="polite">
+          {carga.estado === 'cargando' ? 'Cargando catálogo…' : 'Catálogo en memoria'}
+        </p>
+        <button className="secondary" type="button" disabled={bloqueado} onClick={() => setRevision((valor) => valor + 1)}>
+          Actualizar listados
         </button>
-      </section>
-
-      <p className="footnote">Prueba técnica de conexión. Aún no hay funciones de negocio.</p>
+      </div>
+      {carga.estado === 'error' && (
+        <div className="notice error" role="alert">
+          <p>La última consulta del catálogo falló.</p>
+          <p>{carga.mensaje}</p>
+          <p>Los borradores se conservan. Actualizá los listados para volver a consultar.</p>
+        </div>
+      )}
+      <div className="catalog-grid">
+        {['categorias', 'productos'].map((tipo) => (
+          <SeccionCatalogo
+            key={tipo} tipo={tipo} registros={datos[tipo]} categorias={datos.categorias}
+            bloqueado={bloqueado} estadoConsulta={carga.estado} onGuardar={guardar}
+            onActividad={(recurso, valor) => setOcupados((actual) => ({ ...actual, [recurso]: valor }))}
+          />
+        ))}
+      </div>
+      <EstadoConexion />
     </main>
   );
 }
