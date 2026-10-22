@@ -3,8 +3,9 @@ import { catalogoAPI } from './api';
 import EstadoConexion from './EstadoConexion';
 import SeccionCatalogo from './SeccionCatalogo';
 import SeccionCompras from './SeccionCompras';
+import SeccionLogistica from './SeccionLogistica';
 import SeccionMinimos from './SeccionMinimos';
-import SeccionStockCD from './SeccionStockCD';
+import SeccionStock from './SeccionStock';
 
 export default function App() {
   const [datos, setDatos] = useState({ categorias: [], productos: [], proveedores: [], ubicaciones: [] });
@@ -12,7 +13,7 @@ export default function App() {
   const [revisionStock, setRevisionStock] = useState(0);
   const [carga, setCarga] = useState({ estado: 'cargando' });
   const [ocupados, setOcupados] = useState({
-    categorias: false, productos: false, proveedores: false, ubicaciones: false, minimos: false, compras: false,
+    categorias: false, productos: false, proveedores: false, ubicaciones: false, minimos: false, compras: false, logistica: false,
   });
   const bloqueado = carga.estado === 'cargando' || Object.values(ocupados).some(Boolean);
 
@@ -64,9 +65,9 @@ export default function App() {
   return (
     <main className="app">
       <header className="page-header">
-        <p className="eyebrow">DAO 2026 · F-02.3</p>
-        <h1>Catálogo, compras y stock del CD</h1>
-        <p>Administrá el catálogo, registrá compras a proveedores y consultá el stock del Centro de Distribución.</p>
+        <p className="eyebrow">DAO 2026 · F-03.3</p>
+        <h1>Catálogo, compras y logística</h1>
+        <p>Administrá el catálogo, registrá compras al Centro de Distribución y abastecé a los locales con bultos verificados.</p>
       </header>
       <p className="memory-note">Los datos se guardan en SQLite y se conservan al reiniciar el backend. Los borradores de los formularios no se guardan hasta confirmarlos.</p>
       <div className="catalog-toolbar">
@@ -104,7 +105,13 @@ export default function App() {
           onActividad={(valor) => setOcupados((actual) => ({ ...actual, compras: valor }))}
           onRegistrada={() => setRevisionStock((valor) => valor + 1)}
         />
-        <SeccionStockCD
+        <SeccionLogistica
+          productos={datos.productos} ubicaciones={datos.ubicaciones}
+          bloqueado={bloqueado} estadoCatalogo={carga.estado}
+          onActividad={(valor) => setOcupados((actual) => ({ ...actual, logistica: valor }))}
+          onCambio={() => setRevisionStock((valor) => valor + 1)}
+        />
+        <SeccionStock
           ubicaciones={datos.ubicaciones} productos={datos.productos}
           bloqueado={bloqueado} estadoCatalogo={carga.estado} revisionStock={revisionStock}
         />

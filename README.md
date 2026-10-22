@@ -1,4 +1,4 @@
-# TP DAO 2026 — catálogo, compras y logística CD–locales en SQLite (F-03.2)
+# TP DAO 2026 — catálogo, compras y logística CD–locales en SQLite (F-03.3)
 
 React + Vite y API Flask Python permiten registrar, consultar, modificar y desactivar lógicamente categorías, productos, proveedores y locales del catálogo POO, y configurar mínimos por producto/local. Las ubicaciones distinguen Locales y Centro de Distribución (CD). El CD se puede registrar, consultar y editar, pero su baja queda bloqueada hasta aprobar una política de reemplazo. `GET /api/health` sigue devolviendo HTTP 200 y `{"status":"ok"}` como comprobación técnica de disponibilidad.
 
@@ -38,7 +38,11 @@ frontend/
     SeccionCatalogo.jsx filtros, consulta, edición y confirmación de baja
     SeccionMinimos.jsx configuración activa y consulta histórica por producto/local
     SeccionCompras.jsx borrador de compra con líneas, confirmación y compras registradas
-    SeccionStockCD.jsx existencias, costo de referencia y movimientos del CD
+    SeccionLogistica.jsx carga de necesidades, órdenes, bultos y remitos y operaciones de a una
+    PanelReposicion.jsx necesidades de los locales y consolidación de órdenes
+    PanelBultos.jsx    preparación, acciones por estado, doble verificación e historial
+    SeccionStock.jsx   saldos por condición, costo de referencia y movimientos por ubicación
+    etiquetas.js       textos de estados y condiciones devueltos por Python
     FormularioCatalogo.jsx formularios y consultas de inactivos sin edición
     EstadoConexion.jsx estado técnico secundario
     api.js             cliente fetch, errores y cancelación
@@ -290,7 +294,7 @@ La compra responde `{"id","proveedor","centro","instante","lineas":[{"linea","pr
 
 ## F-03.1: dominio de reposición y logística
 
-Aplica DN-01, DN-02 y DN-04 aprobadas (sección M de `docs/DECISIONES_F00.md`). F-03.2 agrega su persistencia y su API; las pantallas React llegan en F-03.3.
+Aplica DN-01, DN-02 y DN-04 aprobadas (sección M de `docs/DECISIONES_F00.md`). F-03.2 agrega su persistencia y su API, y F-03.3 sus pantallas React.
 
 - **Reposición.** `RegistroReposicion` registra necesidades de un local activo (producto activo, entero positivo) y las consolida en una `OrdenReposicion` con origen en el CD y un solo local destino. La orden compone un `DetalleReposicion` por producto, que suma las cantidades y conserva qué necesidades lo originaron. Asignado y pendiente se calculan desde los bultos no anulados; la orden pasa de Abierta a Completa sin un atributo que pueda desincronizarse.
 - **State.** `Bulto` es el contexto y `EstadoBulto` una ABC cuyas operaciones (`precintar`, `despachar`, `recibir`, `verificar`, `anular`) se rechazan por defecto. Cada estado concreto (`Preparado`, `Precintado`, `EnTransito`, `Recibido`, `Verificado`, `Rechazado`, `Anulado`) redefine sólo las que admite y decide la transición. El bulto delega el mismo mensaje en su estado actual; no hay condicionales por estado fuera de las clases de estado. Un único método interno cambia el estado y agrega un `EventoEstadoBulto` de sólo lectura.
@@ -334,6 +338,25 @@ Las acciones sin datos reciben `{}`; un campo de más es 400. Una transición qu
 
 Una base creada con F-02 recibe la columna `bulto_id` por `ALTER TABLE` al iniciar, porque `CREATE TABLE IF NOT EXISTS` no modifica tablas existentes; los datos previos se conservan. El índice y el trigger se crean después. La pantalla de stock del CD ya distingue el documento de cada movimiento (compra o bulto) y su cambio de condición.
 
+## F-03.3: pantallas de reposición, bultos y remitos
+
+`SeccionLogistica` consulta juntos necesidades, órdenes, bultos y remitos, ejecuta una operación por vez y, cuando Python la confirma, vuelve a consultarlos y avisa a la sección de stock. Mientras guarda, bloquea los controles de toda la pantalla.
+
+- **Reposición** (`PanelReposicion`): registrar una necesidad (local y producto activos, cantidad entera positiva comprobada antes de enviar) y consolidar una orden marcando las necesidades pendientes del local elegido. La tabla de órdenes muestra, por producto, lo pedido, lo que ya está en bultos y lo pendiente.
+- **Bultos** (`PanelBultos`): preparar un bulto de una orden abierta indicando cantidades por producto pendiente. Cada bulto se muestra como tarjeta con su estado, precinto, remito, contenido con costo de referencia e historial desplegable, y ofrece sólo la acción que admite su estado:
+
+| Estado | Acción en pantalla |
+| --- | --- |
+| Preparado | Precintar con el número del sello; anular con confirmación explícita. |
+| Precintado | Despachar desde el CD. |
+| En tránsito | Recepción: local que recibe (el destino por defecto), precinto leído y estado del precinto (intacto o roto, sin opción preseleccionada). |
+| Recibido | Verificar contenedor. |
+| Verificado, remito emitido | Verificar remito; recién entonces el stock queda disponible. |
+| Verificado, Rechazado o Anulado | Texto con el resultado; el rechazo muestra el motivo y que el contenido queda en custodia. |
+
+  La pantalla no decide transiciones: si Python rechaza una acción (por ejemplo, recibir en otro local), se muestra el mensaje en la tarjeta y se conserva el borrador.
+- **Stock** (`SeccionStock`, antes `SeccionStockCD`): permite elegir cualquier ubicación (el CD por defecto) y muestra una fila por producto con las condiciones que tienen saldo (disponible, reservado, en tránsito, pendiente de verificación, rechazado), el costo de referencia y los movimientos con su documento de origen.
+
 ## Memoria, persistencia, pantalla y límites actuales
 
 `create_app` crea un `Catalogo` en `app.extensions["catalogo"]` y un `Lock` propio. La API utiliza esa misma instancia entre solicitudes; el bloqueo abarca las operaciones de dominio y la construcción de las respuestas para evitar carreras sobre códigos, IDs y referencias, incluida la comprobación de activos y su desactivación. No hay Singleton ni catálogo global compartido entre aplicaciones. Los tests crean aplicaciones aisladas. El dominio no añade sincronización para clientes Python externos: el adaptador HTTP es responsable de este bloqueo.
@@ -362,7 +385,7 @@ Conserva los campos ante un error, muestra carga/éxito/error/vacío y bloquea e
 
 `SeccionCompras` (F-02.3) arma la compra como borrador del formulario: proveedor activo y una o más líneas con producto activo, cantidad y costo unitario, que se agregan o quitan sin consultar a Python. El destino es el CD registrado y se muestra como texto; sin CD, el formulario queda deshabilitado con aviso. Antes de enviar sólo se comprueba que cada cantidad sea un entero seguro mayor que cero; el costo viaja como texto y Python valida el importe exacto. Los errores de Python identifican la línea («Línea 2: …») y, si son de formato o de referencia, marcan el campo con `aria-invalid`. Ante un error el borrador se conserva; tras confirmar se limpia, se informa número y total devueltos por Python y se agrega la compra al listado, del más reciente al más antiguo. JavaScript no calcula subtotales ni totales. Cada campo de línea tiene un nombre accesible con su número.
 
-`SeccionStockCD` consulta las existencias y los movimientos del CD cuando carga la pantalla, cuando cambia el catálogo, después de cada compra confirmada y con “Actualizar stock”. Muestra disponible y costo de referencia (“Sin costo registrado” si Python devuelve `null`) y los movimientos con su compra y línea de origen. Los instantes se presentan como `dd/mm/aaaa hh:mm:ss` tomando el texto que registró Python, sin conversiones de zona horaria en el navegador.
+`SeccionStockCD` (desde F-03.3, `SeccionStock`, con selector de ubicación) consultaba las existencias y los movimientos del CD cuando carga la pantalla, cuando cambia el catálogo, después de cada compra confirmada y con “Actualizar stock”. Muestra disponible y costo de referencia (“Sin costo registrado” si Python devuelve `null`) y los movimientos con su compra y línea de origen. Los instantes se presentan como `dd/mm/aaaa hh:mm:ss` tomando el texto que registró Python, sin conversiones de zona horaria en el navegador.
 
 `SeccionMinimos` permite configurar usando únicamente locales y productos activos (siempre excluye CD). “Consultar mínimos históricos (sólo lectura)” incluye inactivos identificados y bloquea el guardado. La tabla conserva las configuraciones y muestra el estado de cada producto, aun si está inactivo. Una selección que acaba de quedar inactiva se conserva para no perder el borrador, como opción deshabilitada fuera del modo histórico; no habilita escrituras. Distingue ausencia, cero, carga y error; no afirma “Sin configurar” si falló la consulta. Conserva la entrada ante errores, cancela consultas obsoletas y bloquea los controles durante el guardado. Tras confirmar, usa la respuesta de Python para actualizar el par sin duplicarlo. “Actualizar mínimos” vuelve a consultar el local; las actualizaciones de maestros también reconsultan sus configuraciones sin borrar el borrador numérico. Cambiar manualmente de local o producto limpia ese borrador para trabajar sobre la nueva selección.
 
@@ -473,6 +496,19 @@ Desde la raíz:
 .\.venv\Scripts\python.exe -m pytest -q
 ```
 
+Verificación de F-03.3 el 21/10/2026: no hubo cambios de backend, así que la suite sigue con los 555 casos aprobados de F-03.2; `npm run build` terminó correctamente. Prueba manual en el navegador integrado con el build servido por Flask y `TP_DAO_DB` temporal:
+
+- tres necesidades de L1 registradas y consolidadas en una orden (arroz 6 y fideos 3, sumados por producto);
+- bulto con 7 de arroz rechazado por superar lo pendiente, con el borrador conservado; luego bulto de 6 y 3 preparado, con la reserva visible en el CD;
+- precintado con remito R-000001 y despacho;
+- recepción en L2 rechazada con el mensaje de local destino; recepción en L1 con precinto intacto;
+- con el contenedor verificado, L1 mostraba 6 y 3 unidades pendientes de verificación y 0 disponibles; al verificar el remito pasaron a disponibles, y los movimientos de L1 mostraron cada cambio de condición con el bulto de origen;
+- un segundo bulto hacia L2 recibido con precinto roto quedó rechazado, con el remito rechazado y el motivo visible;
+- un tercer bulto anulado con confirmación liberó su reserva y la orden volvió a quedar abierta;
+- a 390 px, sin desbordes horizontales fuera de las tablas desplazables.
+
+La consola sólo registró los dos 409 provocados a propósito. No se probó con Vite en modo desarrollo ni se agregó un framework de pruebas frontend.
+
 Verificación de F-03.2 el 21/10/2026: **555 casos aprobados** con la suite completa. Antes de editar se hizo commit de F-03.1. Se agregaron 37 casos en `tests/test_api_logistica.py`: circuito completo por API con doble verificación, reinicio después de cada etapa con comparación de todas las consultas y continuidad de IDs, rechazo persistido, transiciones inválidas con 409 sin efectos, recepción en otro local o inexistente, anulación, nueve formatos inválidos, 404, reglas del dominio como 400 o 409 sin efectos, falta de CD, precinto repetido, fallo de guardado de una transición con 500 sin cambios en memoria ni en la base, ocho preparaciones concurrentes sobre una orden de 10 (tres aceptadas), once violaciones del esquema y migración de una base de F-02. En `tests/test_api_compras.py` se actualizaron la forma del movimiento y los casos de esquema por la nueva columna; los que probaban `CHECK` pasaron a ser `UPDATE` para aislar cada restricción. Con procesos Flask reales y `TP_DAO_DB` temporal se recorrió el circuito reiniciando Flask después de cada paso logístico: el local terminó con 6 unidades disponibles, el CD con 4 y el historial con sus cinco estados. `npm run build` terminó correctamente.
 
 Verificación de F-03.1 el 21/10/2026: **517 casos aprobados** con la suite completa; los 489 previos siguen pasando tras generalizar `MovimientoStock` (la propiedad `detalle` pasó a llamarse `documento`). Se agregaron 28 casos en `tests/test_logistica.py`: consolidación por producto con trazabilidad de necesidades, mezcla de locales, repetición y reutilización de necesidades, validaciones de necesidad, circuito completo con saldos por condición en cada paso, stock sin habilitar con el bulto verificado y el remito emitido, rechazo por precinto roto y por número distinto, recepción en otro local, todas las transiciones inválidas de los siete estados sin efectos, orden de las dos verificaciones, entregas parciales, stock insuficiente sin reservas parciales, contenido inválido, anulación con liberación de reserva, precinto único, costo de preparación histórico, conservación de unidades y la ABC no instanciable. Python `-I -S` confirma que el dominio sigue sin cargar Flask ni SQLite.
@@ -568,4 +604,4 @@ F-02 queda completa con F-02.3: pantallas React de compras y de stock y movimien
 
 Siguen abiertas las aclaraciones docentes G-01 (si el ingreso manual de compras y el margen estimado alcanzan) y DN-08 (si se exige borrado físico además de la baja lógica).
 
-F-03 está en curso: F-03.1 (dominio con State y doble verificación) y F-03.2 (SQLite y API) están implementadas; falta F-03.3 (pantallas React del circuito). Fuera de F-03: ventas (F-04), devoluciones (F-05) y reportes con Strategy (F-06). No hay pagos a proveedores, recepciones parciales ni costo promedio o FIFO.
+F-03 está completa: F-03.1 (dominio con State y doble verificación), F-03.2 (SQLite y API) y F-03.3 (pantallas React del circuito). Siguen abiertas las consultas docentes G-02 (orden multilocal) y G-03 (un remito por bulto). Fuera de F-03: ventas (F-04), devoluciones (F-05) y reportes con Strategy (F-06). No hay pagos a proveedores, recepciones parciales ni costo promedio o FIFO.

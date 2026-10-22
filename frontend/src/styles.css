@@ -13,7 +13,36 @@ body { margin: 0; padding: 32px 24px; }
 .catalog-grid { display: grid; grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.35fr); gap: 24px; align-items: start; }
 .catalog-section { min-width: 0; padding: 24px; border: 1px solid #d6dce5; border-radius: 10px; background: white; }
 .catalog-section.proveedores, .catalog-section.ubicaciones, .catalog-section.minimos,
-.catalog-section.compras, .catalog-section.stock { grid-column: 1 / -1; }
+.catalog-section.compras, .catalog-section.stock, .catalog-section.logistica { grid-column: 1 / -1; }
+.subsection { padding-top: 8px; margin-top: 16px; border-top: 1px solid #e2e8f0; }
+.subsection > h3 { margin-top: 12px; }
+h4 { font-size: 0.95rem; margin: 0 0 12px; }
+h5 { font-size: 1rem; margin: 0; }
+.two-forms { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px; }
+.two-forms label { margin-top: 10px; }
+.checklist { margin-top: 12px; }
+.checklist legend, .radio-group legend { font-size: 0.9rem; font-weight: 600; margin-bottom: 4px; }
+.check-option { display: flex; align-items: center; gap: 8px; font-weight: 400; margin: 4px 0; }
+.check-option input { width: auto; }
+.compact-lines { grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); margin-top: 12px; }
+.parcel-list { list-style: none; padding: 0; margin: 0; display: grid; gap: 16px; }
+.parcel { padding: 16px; border: 1px solid #d6dce5; border-left: 4px solid #8493a7; border-radius: 0; background: #fbfcfd; }
+.parcel.estado-verificado { border-left-color: #14633d; }
+.parcel.estado-rechazado { border-left-color: #a22525; }
+.parcel.estado-en_transito, .parcel.estado-recibido { border-left-color: #244e80; }
+.parcel-heading { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.badge { font-size: 0.8rem; font-weight: 600; padding: 2px 10px; border: 1px solid currentColor; border-radius: 999px; color: #244e80; }
+.estado-verificado .badge { color: #14633d; }
+.estado-rechazado .badge { color: #a22525; }
+.parcel-actions { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 12px; margin: 12px 0; }
+.inline-form, .reception-form { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 12px; padding: 0; margin: 0; border: 0; }
+.inline-form input { width: 14rem; }
+.reception-form > div { min-width: 12rem; }
+.radio-group { display: flex; gap: 16px; align-items: center; flex-wrap: wrap; }
+.confirm { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 8px 12px; border: 1px solid #a22525; border-radius: 5px; }
+.confirm p { margin: 0; flex-basis: 100%; }
+.history { margin: 8px 0 0; padding-left: 20px; font-size: 0.9rem; }
+.stock-selector { max-width: 360px; margin-bottom: 8px; }
 .purchase-line { padding: 12px 0; border-top: 1px solid #e2e8f0; margin-top: 16px; }
 .purchase-line legend { font-weight: 600; font-size: 0.9rem; }
 .line-fields { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 1fr) minmax(0, 1fr) auto; gap: 12px; align-items: end; }
@@ -96,6 +125,8 @@ button:disabled { cursor: default; opacity: 0.6; }
   .catalog-section { padding: 18px; }
   .form-fields { grid-template-columns: minmax(0, 1fr); }
   .line-fields { grid-template-columns: minmax(0, 1fr); }
+  .two-forms { grid-template-columns: minmax(0, 1fr); }
+  .inline-form input, .reception-form > div { width: 100%; }
   .actions { align-items: stretch; flex-direction: column; }
   .panel { padding: 24px 20px; }
 }

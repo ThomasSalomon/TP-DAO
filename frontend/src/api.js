@@ -91,7 +91,29 @@ export const comprasAPI = {
 
 export const stockAPI = {
   existencias: (ubicacionId, signal) => solicitar(`/api/ubicaciones/${ubicacionId}/existencias`, { signal }),
+  saldos: (ubicacionId, signal) => solicitar(`/api/ubicaciones/${ubicacionId}/saldos`, { signal }),
   movimientos: (ubicacionId, signal) => solicitar(`/api/ubicaciones/${ubicacionId}/movimientos`, { signal }),
+};
+
+function enviar(ruta, datos = {}) {
+  return solicitar(ruta, { method: 'POST', body: JSON.stringify(datos) });
+}
+
+export const logisticaAPI = {
+  listar: async (signal) => {
+    const [necesidades, ordenes, bultos, remitos] = await Promise.all(
+      ['necesidades', 'ordenes', 'bultos', 'remitos'].map((nombre) => solicitar(`/api/${nombre}`, { signal })),
+    );
+    return {
+      necesidades: necesidades.necesidades, ordenes: ordenes.ordenes, bultos: bultos.bultos, remitos: remitos.remitos,
+    };
+  },
+  registrarNecesidad: (datos) => enviar('/api/necesidades', datos),
+  consolidar: (localId, necesidadIds) => enviar('/api/ordenes', { local_id: localId, necesidad_ids: necesidadIds }),
+  prepararBulto: (ordenId, lineas) => enviar(`/api/ordenes/${ordenId}/bultos`, { lineas }),
+  // accion: precintar, despachar, recibir, verificar o anular.
+  operarBulto: (bultoId, accion, datos) => enviar(`/api/bultos/${bultoId}/${accion}`, datos),
+  verificarRemito: (remitoId) => enviar(`/api/remitos/${remitoId}/verificar`),
 };
 
 // Presenta el instante tal como lo registró Python, sin convertir zonas en el navegador.
