@@ -1,5 +1,8 @@
 """Catálogo en memoria de productos y datos administrativos. Precios en ARS."""
 
+# Mayor entero que SQLite almacena exactamente (64 bits con signo): 92233720368547758.07 pesos.
+PRECIO_MAXIMO_CENTAVOS = 2**63 - 1
+
 
 class CodigoDuplicadoError(ValueError):
     """Un código comercial ya está registrado dentro del mismo tipo."""
@@ -63,6 +66,8 @@ def _precio_a_centavos(precio):
         centavos += int(partes[1].ljust(2, "0"))
     if centavos <= 0:
         raise ValueError("El precio debe ser estrictamente positivo.")
+    if centavos > PRECIO_MAXIMO_CENTAVOS:
+        raise ValueError("El precio supera el máximo admitido de 92233720368547758.07.")
     return centavos
 
 

@@ -1,8 +1,8 @@
-# TP DAO 2026 — catálogo React/API completo en memoria (F-01.6)
+# TP DAO 2026 — catálogo React/API persistido en SQLite (F-02.1)
 
 React + Vite y API Flask Python permiten registrar, consultar, modificar y desactivar lógicamente categorías, productos, proveedores y locales del catálogo POO, y configurar mínimos por producto/local. Las ubicaciones distinguen Locales y Centro de Distribución (CD). El CD se puede registrar, consultar y editar, pero su baja queda bloqueada hasta aprobar una política de reemplazo. `GET /api/health` sigue devolviendo HTTP 200 y `{"status":"ok"}` como comprobación técnica de disponibilidad.
 
-Los datos se administran temporalmente en memoria desde Python. Los mínimos son configuración administrativa; no hay existencias reales, movimientos, alertas ni reposición. No hay eliminación física, reactivación, compras, relaciones producto–proveedor, logística, ventas, devoluciones, reportes, autenticación, ORM ni esquema SQLite. F-01 está completa dentro de este alcance; F-02 no se inició.
+Desde F-02.1 el catálogo, sus estados, los mínimos, las reservas de códigos y la restricción de un único CD se guardan en SQLite mediante `sqlite3` y SQL parametrizado, y se conservan al reiniciar Flask. Los mínimos son configuración administrativa; todavía no hay compras, existencias reales, movimientos, alertas ni reposición (F-02.2 y siguientes). No hay eliminación física, reactivación, relaciones producto–proveedor, logística, ventas, devoluciones, reportes, autenticación ni ORM. Las decisiones DN-03, DN-09 y DN-11 aprobadas para F-02 están en la sección L de `docs/DECISIONES_F00.md`.
 
 ## Estructura
 
@@ -14,6 +14,10 @@ backend/
   dominio/
     __init__.py        clases del catálogo y excepciones de dominio
     catalogo.py        objetos, registro en memoria y validaciones
+  persistencia/
+    __init__.py        funciones públicas de acceso a datos
+    base_datos.py      conexión, esquema, ruta y transacciones SQLite
+    catalogo_sqlite.py carga del catálogo y guardado de cada maestro
   requirements.txt     dependencia de ejecución Python
   requirements-dev.txt dependencia de pruebas
 frontend/
@@ -40,21 +44,23 @@ tests/test_minimos.py  reglas y relación producto/local encapsulada
 tests/test_api_minimos.py contratos, precisión JSON, aislamiento y concurrencia
 tests/test_bajas.py    estados, referencias, mínimos e historial de códigos
 tests/test_api_bajas.py contratos de baja, filtros, aislamiento y concurrencia
+tests/test_persistencia_catalogo.py reinicio, restricciones SQL, rollback y fallos de guardado
+tests/conftest.py      base temporal por aplicación; los tests nunca usan la base real
 pytest.ini
 docs/                  enunciado y planificación previa, conservados
 ```
 
-La presentación HTTP vive en `backend/api.py` y `backend/api_catalogo.py`; la creación/configuración de Flask, en `backend/__init__.py`; el dominio, en `backend/dominio`. Los imports HTTP se ejecutan al llamar a `create_app`, por lo que importar y usar el dominio no requiere Flask instalado. React captura datos y presenta respuestas de Python. Node ejecuta herramientas frontend; no hay backend, SSR, BFF, reglas ni persistencia en Node.
+La presentación HTTP vive en `backend/api.py` y `backend/api_catalogo.py`; la creación/configuración de Flask, en `backend/__init__.py`; el dominio, en `backend/dominio`; el acceso a SQLite, en `backend/persistencia`. El dominio no importa SQLite ni Flask. Los imports HTTP se ejecutan al llamar a `create_app`, por lo que importar y usar el dominio no requiere Flask instalado. React captura datos y presenta respuestas de Python. Node ejecuta herramientas frontend; no hay backend, SSR, BFF, reglas ni persistencia en Node.
 
 ## F-01.1: contrato del catálogo en memoria
 
 `Catalogo` registra objetos, asigna identificadores técnicos y permite consultar por identificador o código. `Categoria` mantiene código/nombre; `Producto` mantiene código/nombre, una referencia a categoría registrada y precio ARS. Los objetos colaboran con su catálogo para controlar unicidad también al modificarse directamente mediante sus métodos públicos.
 
-Crear los registros mediante `Catalogo.crear_categoria` y `Catalogo.crear_producto`. Los identificadores son enteros positivos, secuenciales dentro de cada tipo y catálogo, y no se reasignan al editar. No son identificadores persistentes ni globales entre ejecuciones. La categoría debe ser la instancia registrada en ese mismo catálogo: una instancia externa con igual ID no es válida.
+Crear los registros mediante `Catalogo.crear_categoria` y `Catalogo.crear_producto`. Los identificadores son enteros positivos, secuenciales dentro de cada tipo y catálogo, y no se reasignan al editar. Desde F-02.1 se conservan entre ejecuciones porque las filas nunca se borran; no son globales entre tipos. La categoría debe ser la instancia registrada en ese mismo catálogo: una instancia externa con igual ID no es válida.
 
 Los códigos y nombres son textos no vacíos, recortados en sus extremos. La comparación de códigos usa `casefold()`; conserva ceros iniciales y la escritura del código almacenado. La unicidad es por tipo, no por nombre. Los códigos pueden modificarse mediante las operaciones validadas; las búsquedas reflejan el código vigente. Desde F-01.6, también en categorías y productos, todos los códigos originales y reemplazados quedan reservados durante la vida del catálogo, incluso después de la baja.
 
-Los precios de entrada son **textos en pesos ARS**: `"12"`, `"12.5"` o `"12.50"`. Se utiliza punto decimal, sin separadores de miles, signos ni notación científica. No se aceptan `float`, enteros u otros tipos como entrada para evitar ambigüedad entre pesos y centavos. Se rechazan cero, negativos y más de dos decimales, incluso `"1.230"`; no se redondea. `precio_centavos` devuelve un entero exacto y `precio` devuelve texto con dos decimales. Conversión y formato utilizan enteros y cadenas, sin punto flotante ni dependencias adicionales.
+Los precios de entrada son **textos en pesos ARS**: `"12"`, `"12.5"` o `"12.50"`. Se utiliza punto decimal, sin separadores de miles, signos ni notación científica. No se aceptan `float`, enteros u otros tipos como entrada para evitar ambigüedad entre pesos y centavos. Se rechazan cero, negativos y más de dos decimales, incluso `"1.230"`; no se redondea. Desde F-02.1 el máximo es `92233720368547758.07` (2⁶³−1 centavos), el mayor entero que SQLite guarda exactamente; un valor mayor se rechaza con 400. `precio_centavos` devuelve un entero exacto y `precio` devuelve texto con dos decimales. Conversión y formato utilizan enteros y cadenas, sin punto flotante ni dependencias adicionales.
 
 Las propiedades de los objetos son de lectura; las modificaciones pasan por `modificar` o `cambiar_precio`. `Catalogo.modificar_categoria` recibe ID, código y nombre; `Catalogo.modificar_producto` recibe ID, código, nombre, categoría y precio. Validan todos los datos antes de cambiar el estado y conservan la misma instancia. Renombrar una categoría se refleja en los productos que la referencian. F-01.6 agrega `desactivar` y la propiedad de lectura `activo`; no hay reactivación ni eliminación física.
 
@@ -235,11 +241,21 @@ Los errores usan `{"error":{"code":400,"message":"..."}}`, con `fields` opcional
 
 Los IDs de ruta enteros pero inválidos, como `0`, producen 400 por validación de dominio. Un entero positivo inexistente produce 404; rutas con segmentos que no coinciden con el conversor entero de Flask también producen 404 JSON.
 
-## Memoria, pantalla y límites actuales
+## Memoria, persistencia, pantalla y límites actuales
 
 `create_app` crea un `Catalogo` en `app.extensions["catalogo"]` y un `Lock` propio. La API utiliza esa misma instancia entre solicitudes; el bloqueo abarca las operaciones de dominio y la construcción de las respuestas para evitar carreras sobre códigos, IDs y referencias, incluida la comprobación de activos y su desactivación. No hay Singleton ni catálogo global compartido entre aplicaciones. Los tests crean aplicaciones aisladas. El dominio no añade sincronización para clientes Python externos: el adaptador HTTP es responsable de este bloqueo.
 
-**Reiniciar Flask elimina todos los registros, estados administrativos, mínimos y reservas de códigos de los cuatro tipos.** La no reutilización y el máximo de un CD están garantizados en esta memoria, no entre ejecuciones o procesos independientes. Recargar React conserva los registros del backend, pero descarta los borradores locales. Cada proceso/aplicación tiene su propia memoria; no se usa esta solución como almacenamiento compartido entre workers o instalaciones. SQLite se mantiene para F-02, donde deberán persistirse también estados, referencias, mínimos, reservas y la restricción del CD.
+**Persistencia (F-02.1).** `create_app(frontend_dist=None, base_datos=None)` abre la base indicada o la ruta predeterminada, crea las tablas faltantes (`CREATE TABLE IF NOT EXISTS`, sin borrar datos) y reconstruye el `Catalogo` con la API del dominio, que vuelve a validar cada fila. Las bajas se aplican al final de la carga para restablecer antes referencias y mínimos. En cada escritura, el dominio valida y modifica la memoria y luego `_guardar` confirma la fila completa de esa entidad y su código en una transacción: abre la conexión, ejecuta, hace `commit()` o `rollback()` y la cierra. Si el guardado falla, la memoria se reemplaza por el último estado confirmado y la API responde 500 JSON sin informar éxito; consultar antes de reintentar.
+
+| Tabla | Contenido y restricciones |
+| --- | --- |
+| `categorias`, `proveedores` | ID, código vigente, nombre y `activo` (0/1). |
+| `productos` | Además, `categoria_id` con clave foránea y `precio_centavos > 0`. |
+| `ubicaciones` | Además, `tipo` LOCAL/CD; un índice único parcial impide un segundo CD. |
+| `minimos` | Clave (local, producto) con claves foráneas y `minimo >= 0`. |
+| `codigos_reservados` | Códigos vigentes e históricos por tipo, con clave `casefold()`; nunca se liberan. |
+
+Las claves foráneas se activan en cada conexión (`PRAGMA foreign_keys = ON`). La base es la fuente entre ejecuciones; el dominio sigue siendo la autoridad de las reglas y las restricciones SQL son una segunda barrera. Un solo proceso Flask escribe la base (DN-11); el `Lock` serializa las solicitudes de ese proceso. No se usa la base como almacenamiento compartido entre instalaciones. Recargar React conserva los registros del backend, pero descarta los borradores locales.
 
 La pantalla consulta los cuatro maestros con `estado=todos` y presenta un filtro independiente Activos/Inactivos/Todos por sección, con Activos por defecto y una columna de estado. Ofrece sólo categorías activas para asociar productos y consulta por ID antes de editar. Los inactivos tienen consulta de sólo lectura, sin Guardar; la categoría histórica de un producto inactivo sigue visible aunque también esté inactiva. Proveedores y ubicaciones reutilizan `SeccionCatalogo`, `FormularioCatalogo`, `fetch` y estilos. En ubicaciones, el alta tiene selector de tipo y el listado diferencia Local/CD; al editar, el tipo aparece como texto fijo. El segundo CD se rechaza desde Python con un mensaje junto al selector; las opciones permanecen disponibles para que ese control siga siendo efectivo aun con información cliente desactualizada.
 
@@ -323,6 +339,7 @@ Para detener un servidor, usar Ctrl+C en su terminal. Si `npm.cmd` pregunta si d
 | Destino del proxy | `http://127.0.0.1:5000` | `API_PROXY_TARGET` en `frontend/.env.local`; debe coincidir con Flask. |
 | Dirección de escucha | `127.0.0.1` | Configuración local deliberada; no se expone por LAN en este incremento. |
 | Ruta del build | `frontend/dist` | Calculada desde la ubicación del backend, no desde el directorio de ejecución. |
+| Base SQLite | `%LOCALAPPDATA%\TP-DAO\tp_dao.db` | Variable de entorno `TP_DAO_DB` antes de iniciar Flask, por ejemplo `$env:TP_DAO_DB = "C:\datos\tp.db"`. La carpeta se crea si falta. |
 
 No se necesita ningún `.env` para los valores predeterminados. Para cambiar puertos, copiar `frontend/.env.example` a `frontend/.env.local`, modificarlo y reiniciar Vite. El puerto Vite es estricto: si está ocupado, el servidor falla visiblemente en vez de elegir otro. Las dos variables del ejemplo son configuración de Vite, no secretos ni variables `VITE_*` inyectadas en la aplicación cliente.
 
@@ -341,6 +358,8 @@ cd ..
 
 Si Flask ya está ejecutándose, no iniciar otra instancia: alcanza con generar el build. Detener Vite y abrir [frontend compilado](http://127.0.0.1:5000/). Flask sirve `index.html`, los recursos de `/assets` y la API desde el mismo origen. Las solicitudes relativas `/api/health` siguen funcionando; Node no participa en la ejecución del backend ni del build ya servido.
 
+La base predeterminada queda fuera de la carpeta del repositorio, que puede estar sincronizada con OneDrive: no sincronizar ni compartir un archivo SQLite abierto. Para empezar con datos vacíos, detener Flask y usar otra ruta en `TP_DAO_DB` o borrar ese archivo manualmente.
+
 Antes de compilar, `/` devuelve 404 y `/api/health` funciona igualmente. No se implementó un router SPA: rutas no definidas y archivos inexistentes devuelven 404. Los errores bajo `/api` son JSON y nunca se reemplazan por HTML. Sólo se publican el índice y los recursos de `dist/assets`, no el repositorio ni archivos privados.
 
 `npm run preview` está disponible para inspeccionar estáticos, pero no configura este proxy ni reemplaza la demostración con Python. Los servidores usados son de desarrollo local, no un despliegue de producción.
@@ -352,6 +371,8 @@ Desde la raíz:
 ```powershell
 .\.venv\Scripts\python.exe -m pytest -q
 ```
+
+Verificación de F-02.1 el 21/10/2026: **412 casos aprobados** con la suite completa (`.\.venv\Scripts\python.exe -m pytest -q`). Antes de editar se comprobaron los 396 de F-01.6 en una `.venv` nueva con las dependencias fijadas. Se agregaron 15 casos en `tests/test_persistencia_catalogo.py`: reinicio con maestros, estados, mínimos y referencias; códigos históricos y continuidad de IDs tras reiniciar; único CD y reglas de inactivos después de recargar; fallo de guardado con 500, sin cambios en memoria ni en la base; rollback de una transacción; siete violaciones del esquema; inicialización repetida; ruta predeterminada y aislamiento de la base real. El caso de precio grande de dominio y API pasó a usar el máximo representable, y se agregó el rechazo del primer valor que lo supera. `tests/conftest.py` asigna una base temporal nueva a cada `create_app()` sin ruta, de modo que las pruebas previas conservan su aislamiento. También se comprobó con un proceso Flask real y `TP_DAO_DB` temporal que un CD registrado persiste tras reiniciar y bloquea un segundo CD con 409. No se modificó el frontend.
 
 Verificación de F-01.6 el 19/10/2026: **396 casos aprobados** con la suite completa. Antes de editar se comprobaron los 335 de F-01.5. Se agregaron 25 casos de dominio y 36 de API: bajas repetidas, consultas/filtros, identidad y referencias conservadas, códigos históricos de los cuatro tipos, modificaciones/asociaciones bloqueadas, categoría con productos activos, mínimos históricos, excepción del CD, entradas inválidas, ausencia de cambios parciales, aislamiento y concurrencia. Las carreras cubren baja repetida, alta de producto frente a baja de categoría y escritura de mínimo frente a baja de producto. Se actualizaron las expectativas exactas de DTOs anteriores para incorporar `activo`, conservando sus comprobaciones. La prueba con Python `-I -S` también desactiva entidades y consulta mínimos conservados sin paquetes externos ni carga de Flask/SQLite. No se instalaron dependencias nuevas.
 

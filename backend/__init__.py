@@ -3,7 +3,7 @@
 from pathlib import Path
 
 
-def create_app(frontend_dist=None):
+def create_app(frontend_dist=None, base_datos=None):
     # Importar el dominio no debe cargar las dependencias de presentación HTTP.
     from flask import Flask, request, send_from_directory
     from werkzeug.exceptions import HTTPException
@@ -11,7 +11,12 @@ def create_app(frontend_dist=None):
 
     from .api import api
     from .api_catalogo import api_catalogo
-    from .dominio import Catalogo
+    from .persistencia import BaseDatos, cargar_catalogo, ruta_base_datos_predeterminada
+
+    if base_datos is None:
+        base_datos = ruta_base_datos_predeterminada()
+    base_datos = BaseDatos(base_datos)
+    base_datos.inicializar()
 
     if frontend_dist is None:
         frontend_dist = Path(__file__).resolve().parent.parent / "frontend" / "dist"
@@ -23,7 +28,8 @@ def create_app(frontend_dist=None):
         static_url_path="/assets",
     )
     app.register_blueprint(api)
-    app.extensions["catalogo"] = Catalogo()
+    app.extensions["base_datos"] = base_datos
+    app.extensions["catalogo"] = base_datos.consultar(cargar_catalogo)
     app.extensions["catalogo_lock"] = Lock()
     app.register_blueprint(api_catalogo)
 

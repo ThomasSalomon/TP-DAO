@@ -140,6 +140,8 @@ Prioridades: **P0**, impacto inmediato en el inicio autorizado de F-01; **P1**, 
 
 ### DN-03. Compra, recepción y costo de referencia
 
+- **Estado:** aprobada por el usuario el 21/10/2026 para F-02; política vigente en la sección L.
+
 - **Problema y origen:** integrar abastecimiento y economía sin inventar un módulo contable. E1/E6; P RF-05, G.2, F.6, K.1. OP-01 de E3 no reemplaza la compra básica.
 - **Alternativas y balance:** (a) compra manual e ingreso total controlado: pocas operaciones y efecto trazable; no gestiona entregas parciales. (b) compra con recepciones parciales separadas: sigue pendientes del proveedor; más documentos y límites acumulados. Para costo: último confirmado es simple pero estimativo; promedio ponderado requiere mantener valuación y reglas de devoluciones; FIFO exige asignación de consumos y más trazabilidad de costo.
 - **Recomendación técnica:** mínimo manual con proveedor, líneas, cantidades/costos e ingreso total confirmado una vez. Verificación de ingreso integrada a esa acción, sin exigir bulto/remito interno al proveedor. Último costo confirmado como referencia estimada con fecha/orden estable; precio y costo quedan conservados por línea de venta. No introducir pagos a proveedores o recepción parcial sin necesidad acordada.
@@ -200,6 +202,8 @@ Prioridades: **P0**, impacto inmediato en el inicio autorizado de F-01; **P1**, 
 
 ### DN-09. Importes, fechas y resultado económico
 
+- **Estado:** aprobada por el usuario el 21/10/2026 para F-02; política vigente en la sección L.
+
 - **Problema y origen:** representar dinero/tiempo y definir indicadores explicables. E1/E5; P E.1, F.6, G.11, K.1. Rechazo y merma no tienen equivalencia obligatoria en E4/E5.
 - **Alternativas y balance:** (a) una moneda y enteros en su unidad mínima: sumas exactas y simples; exige escala/conversión acordada. (b) Decimal con redondeo explícito: admite fracciones y tasas; más reglas de conversión/almacenamiento. Fechas locales uniformes simplifican demostración; instantes con zona explícita facilitan acceso desde ubicaciones distintas. Para resultado: margen comercial estimado es proporcional; utilidad contable integral requiere gastos, impuestos y políticas ausentes.
 - **Recomendación técnica:** una moneda, escala definida e importes exactos; proponer enteros si DN-06 mantiene unidades enteras. Acordar redondeo de cualquier cálculo que produzca fracciones. Instantes con criterio uniforme y períodos inicio incluido/fin excluido; registrar devolución en su fecha sin reescribir venta. La zona de esta revisión es America/Buenos_Aires; adoptarla para la aplicación sigue siendo decisión del equipo. Último costo y margen se vinculan a DN-03.
@@ -221,6 +225,8 @@ Prioridades: **P0**, impacto inmediato en el inicio autorizado de F-01; **P1**, 
 - **Cierre verificable:** decisiones y restricciones coinciden en los tres documentos; runtime, instalación y build se verificarán en fases futuras autorizadas.
 
 ### DN-11. Modalidad operativa, simultaneidad y entrega
+
+- **Estado:** modalidad y simultaneidad aprobadas por el usuario el 21/10/2026 para F-02; política vigente en la sección L. Fecha, integrantes y formato de entrega siguen pendientes.
 
 - **Problema y origen:** saber si “varios locales” son entidades en una demostración o usuarios reales en distintas máquinas. E1/E2.1 describe negocio, no topología. P A.3/D.3/K.1 usa instalación local/un escritor como supuesto. No hay rúbrica, integrantes ni fecha de entrega aportados.
 - **Alternativas y balance:** (a) una computadora, ubicaciones lógicas: menor operación y suficiente para simular flujos; no demuestra acceso remoto. (b) servidor Python central y navegadores de locales: datos centrales reales; requiere concurrencia, acceso y seguridad adecuados. (c) instalaciones con sincronización: complejidad de consistencia sin obligación confirmada; no recomendada. Las primeras dos son opciones proporcionadas si responden a la modalidad real.
@@ -439,3 +445,34 @@ Los controles de elaboración inicial son históricos. En esta edición se contr
 Fuentes protegidas: AGENTS.md (SHA-256 85D78E7F375CDD38228EC8DE3B86741BB3C63732DB23ACA03F9A1D3D0EEAE3C7) y docs/tema3.pdf (6D0C46624D97402BE7A7B9CC59F7C11BD96741D4D63885E4B6855755904FABC6). Sus huellas deben permanecer intactas. No se registran huellas cruzadas de documentos editados como si siguieran siendo originales inmutables.
 
 Control documental ejecutado mediante Python de lectura: 7 acuerdos AC idénticos en los tres documentos, 11 DN, 8 fases y catálogo completo RF/RB/RT/RNF/T preservado. Verificados 51 tablas y 14 enlaces locales; sin espacios finales ni cercos desbalanceados. Revisado diff y git diff --check sin errores de formato. Inventario limitado a las tres documentaciones y las dos fuentes protegidas; huellas de AGENTS.md/tema3.pdf intactas. No se ejecutaron aplicación, suite, build o instalaciones ni se afirma renderizado Markdown/Mermaid. No se atribuye aceptación docente.
+
+## L. Decisiones aprobadas para F-02 (21/10/2026)
+
+El usuario aprobó las propuestas concretas de DN-03, DN-09 y DN-11. Reemplazan las alternativas abiertas de esas tres decisiones; el resto de las DN conserva su estado. Las consultas docentes G-01 y G-06 siguen abiertas y pueden ampliar el alcance.
+
+### L.1 DN-03. Compra, ingreso al CD y costo de referencia
+
+- Compra manual: proveedor activo, el CD, al menos una línea y, por línea, producto activo sin repetir, cantidad entera positiva y costo unitario positivo en centavos.
+- El borrador se arma en el formulario; Python registra la compra sólo al confirmarla. No hay borradores persistidos ni borrado físico de compras.
+- La confirmación ingresa todas las cantidades como disponibles en el CD en una única transacción: compra, detalles, existencias y movimientos. No hay recepciones parciales. Para compras externas no se usan remito ni bulto.
+- Una compra confirmada no se modifica ni se vuelve a confirmar; un fallo revierte todo.
+- Costo de referencia: costo unitario de la última compra confirmada del producto, ordenada por instante de confirmación e identificador. Se calcula al consultar y se copia en los documentos que lo usan. Un producto sin compras no tiene costo: se informa, nunca se asume cero.
+- Fuera de alcance: pagos a proveedores, notas de crédito, devoluciones a proveedor, costo promedio, FIFO y fecha de factura del proveedor.
+
+### L.2 DN-09. Importes, fechas y resultado económico
+
+- Una moneda (ARS), importes enteros en centavos; la API intercambia texto decimal con hasta dos decimales.
+- Redondeo sólo de presentación, a dos decimales, con `ROUND_HALF_EVEN` de `Decimal`, si un cálculo produce fracciones.
+- Instantes ISO 8601 con desplazamiento, en America/Buenos_Aires, asignados por el backend al confirmar.
+- Períodos con inicio incluido y fin excluido en esa zona; período invertido o vacío es un error de datos.
+- La devolución afecta su propio período sin reescribir la venta.
+- Margen comercial estimado = venta neta − costo de referencia de las unidades netas vendidas. Compras y caja se informan aparte; no incluye gastos, impuestos ni pagos a proveedores.
+- Un rechazo logístico se informa como valor bloqueado, no como merma.
+
+### L.3 DN-11. Modalidad operativa y simultaneidad
+
+- Una instalación local: un proceso Flask, un archivo SQLite y el navegador en `127.0.0.1`. CD y locales son ubicaciones lógicas; sin cuentas, red, despliegue ni sincronización.
+- Un operador, posiblemente con varias pestañas. Cada escritura se valida y confirma dentro de una transacción; un conflicto se rechaza sin efectos parciales.
+- Ruta de la base configurable con la variable de entorno `TP_DAO_DB`. Por defecto `%LOCALAPPDATA%\TP-DAO\tp_dao.db`, fuera de la carpeta sincronizada; el archivo no se versiona.
+- Las pruebas usan bases temporales y nunca la base real.
+- Entrega: build servido por Flask en `http://127.0.0.1:5000/` con instrucciones verificadas. Fecha, integrantes y formato quedan pendientes.

@@ -1,9 +1,14 @@
 """Adaptador HTTP del catálogo. Las reglas pertenecen al dominio."""
 
+import sqlite3
+
 from flask import Blueprint, current_app, jsonify, request, url_for
 from werkzeug.exceptions import BadRequest
 
 from .dominio import CentroDistribucionDuplicadoError, CodigoDuplicadoError, ConflictoCatalogoError
+from .persistencia import (
+    cargar_catalogo, guardar_categoria, guardar_minimo, guardar_producto, guardar_proveedor, guardar_ubicacion,
+)
 
 api_catalogo = Blueprint("catalogo", __name__, url_prefix="/api")
 # El cliente JSON usa Number: no aceptar cantidades que perderían precisión.
@@ -68,6 +73,24 @@ def _dominio(operacion, *argumentos):
 
 def _catalogo():
     return current_app.extensions["catalogo"]
+
+
+def _guardar(operacion, *argumentos):
+    """Confirma en SQLite el cambio ya validado por el dominio.
+
+    Si la transacción falla, la memoria se reemplaza por el último estado confirmado;
+    sólo los errores de SQLite se informan como fallo de guardado.
+    """
+    base_datos = current_app.extensions["base_datos"]
+    try:
+        base_datos.ejecutar_transaccion(operacion, *argumentos)
+    except Exception as error:
+        current_app.extensions["catalogo"] = base_datos.consultar(cargar_catalogo)
+        if isinstance(error, sqlite3.Error):
+            raise ErrorCatalogoAPI(
+                500, "No se pudo guardar el cambio y no se aplicó. Consultá los datos antes de reintentar."
+            ) from None
+        raise
 
 
 def _categoria(identificador):
@@ -144,6 +167,7 @@ def crear_categoria():
     datos = _datos_json({"codigo": str, "nombre": str})
     with current_app.extensions["catalogo_lock"]:
         categoria = _dominio(_catalogo().crear_categoria, datos["codigo"], datos["nombre"])
+        _guardar(guardar_categoria, categoria)
         resultado = _categoria_json(categoria)
     return _respuesta_alta(resultado, "catalogo.consultar_categoria")
 
@@ -163,6 +187,7 @@ def modificar_categoria(identificador):
         categoria = _dominio(
             _catalogo().modificar_categoria, identificador, datos["codigo"], datos["nombre"]
         )
+        _guardar(guardar_categoria, categoria)
         resultado = _categoria_json(categoria)
     return jsonify(resultado)
 
@@ -184,6 +209,7 @@ def crear_producto():
             _catalogo().crear_producto,
             datos["codigo"], datos["nombre"], categoria, datos["precio"],
         )
+        _guardar(guardar_producto, producto)
         resultado = _producto_json(producto)
     return _respuesta_alta(resultado, "catalogo.consultar_producto")
 
@@ -205,6 +231,7 @@ def modificar_producto(identificador):
             _catalogo().modificar_producto,
             identificador, datos["codigo"], datos["nombre"], categoria, datos["precio"],
         )
+        _guardar(guardar_producto, producto)
         resultado = _producto_json(producto)
     return jsonify(resultado)
 
@@ -222,6 +249,7 @@ def crear_proveedor():
     datos = _datos_json({"codigo": str, "nombre": str})
     with current_app.extensions["catalogo_lock"]:
         proveedor = _dominio(_catalogo().crear_proveedor, datos["codigo"], datos["nombre"])
+        _guardar(guardar_proveedor, proveedor)
         resultado = _proveedor_json(proveedor)
     return _respuesta_alta(resultado, "catalogo.consultar_proveedor")
 
@@ -241,6 +269,7 @@ def modificar_proveedor(identificador):
         proveedor = _dominio(
             _catalogo().modificar_proveedor, identificador, datos["codigo"], datos["nombre"]
         )
+        _guardar(guardar_proveedor, proveedor)
         resultado = _proveedor_json(proveedor)
     return jsonify(resultado)
 
@@ -277,6 +306,7 @@ def crear_ubicacion():
         ubicacion = _dominio(
             _catalogo().crear_ubicacion, datos["codigo"], datos["nombre"], datos["tipo"]
         )
+        _guardar(guardar_ubicacion, ubicacion)
         resultado = _ubicacion_json(ubicacion)
     return _respuesta_alta(resultado, "catalogo.consultar_ubicacion")
 
@@ -296,6 +326,7 @@ def modificar_ubicacion(identificador):
         ubicacion = _dominio(
             _catalogo().modificar_ubicacion, identificador, datos["codigo"], datos["nombre"]
         )
+        _guardar(guardar_ubicacion, ubicacion)
         resultado = _ubicacion_json(ubicacion)
     return jsonify(resultado)
 
@@ -341,6 +372,7 @@ def establecer_minimo(identificador, producto_id):
         minimo = _dominio(
             _catalogo().establecer_minimo, identificador, producto_id, datos["minimo"]
         )
+        _guardar(guardar_minimo, identificador, producto_id, minimo)
         resultado = {"ubicacion": _ubicacion_json(local), **_minimo_json(producto, minimo)}
     return jsonify(resultado)
 
@@ -363,6 +395,7 @@ def desactivar_categoria(identificador):
     with current_app.extensions["catalogo_lock"]:
         _categoria(identificador)
         categoria = _dominio(_catalogo().desactivar_categoria, identificador)
+        _guardar(guardar_categoria, categoria)
         resultado = _categoria_json(categoria)
     return jsonify(resultado)
 
@@ -373,6 +406,7 @@ def desactivar_producto(identificador):
     with current_app.extensions["catalogo_lock"]:
         _producto(identificador)
         producto = _dominio(_catalogo().desactivar_producto, identificador)
+        _guardar(guardar_producto, producto)
         resultado = _producto_json(producto)
     return jsonify(resultado)
 
@@ -383,6 +417,7 @@ def desactivar_proveedor(identificador):
     with current_app.extensions["catalogo_lock"]:
         _proveedor(identificador)
         proveedor = _dominio(_catalogo().desactivar_proveedor, identificador)
+        _guardar(guardar_proveedor, proveedor)
         resultado = _proveedor_json(proveedor)
     return jsonify(resultado)
 
@@ -393,5 +428,6 @@ def desactivar_ubicacion(identificador):
     with current_app.extensions["catalogo_lock"]:
         _ubicacion(identificador)
         ubicacion = _dominio(_catalogo().desactivar_ubicacion, identificador)
+        _guardar(guardar_ubicacion, ubicacion)
         resultado = _ubicacion_json(ubicacion)
     return jsonify(resultado)

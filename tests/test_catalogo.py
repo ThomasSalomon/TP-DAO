@@ -112,8 +112,7 @@ def test_textos_invalidos_no_registran_objetos(entidad, campo, valor):
         ("1.2", 120, "1.20"),
         (" 12.50 ", 1250, "12.50"),
         ("000.01", 1, "0.01"),
-        ("123456789012345678901234567890.12", 12345678901234567890123456789012,
-         "123456789012345678901234567890.12"),
+        ("92233720368547758.07", 2**63 - 1, "92233720368547758.07"),
     ],
 )
 def test_precios_se_convierten_exactamente_sin_float(precio, centavos, texto):
@@ -130,7 +129,7 @@ def test_precios_se_convierten_exactamente_sin_float(precio, centavos, texto):
 @pytest.mark.parametrize(
     "precio",
     ["0", "0.00", "-1", "1.001", "1.230", "NaN", "Infinity", "1e2",
-     "1,25", "", " ", ".25", "1.", "1_000", "1.00.0"],
+     "1,25", "", " ", ".25", "1.", "1_000", "1.00.0", "92233720368547758.08"],
 )
 def test_importes_invalidos_no_crean_producto(precio):
     catalogo = Catalogo()
