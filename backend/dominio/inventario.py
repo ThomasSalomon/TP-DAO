@@ -5,6 +5,7 @@ from .compras import Compra, DetalleCompra
 from .errores import ConflictoOperacionError
 from .fechas import validar_instante
 from .logistica import Bulto, DetalleBulto
+from .ventas import DetalleVenta, Venta
 
 # Condiciones del modelo (DER). BLOQUEADO queda reservada para devoluciones no aptas (F-05).
 CONDICIONES = ("DISPONIBLE", "RESERVADO", "EN_TRANSITO", "PENDIENTE", "RECHAZADO", "BLOQUEADO")
@@ -17,6 +18,7 @@ CAUSAS = {
     "RECEPCION": DetalleBulto,
     "VERIFICACION": DetalleBulto,
     "RECHAZO": DetalleBulto,
+    "VENTA": DetalleVenta,
 }
 # Mayor entero que SQLite almacena exactamente.
 SALDO_MAXIMO = 2**63 - 1
@@ -208,6 +210,16 @@ class Inventario:
 
     def habilitar_bulto(self, bulto, instante):
         return self._mover_bulto(bulto, instante, "VERIFICACION", bulto.destino, "PENDIENTE", "DISPONIBLE")
+
+    def vender(self, venta):
+        """Salida del stock disponible del local; una línea insuficiente impide toda la venta."""
+        if not isinstance(venta, Venta):
+            raise TypeError("La venta debe ser una Venta.")
+        pasos = [
+            (venta.local, detalle.producto, detalle.cantidad, "DISPONIBLE", None, detalle)
+            for detalle in venta.detalles
+        ]
+        return self._aplicar(pasos, venta.instante, "VENTA")
 
     def restaurar_saldo(self, ubicacion, producto, condicion, cantidad):
         """Carga un saldo ya confirmado; no genera movimiento."""

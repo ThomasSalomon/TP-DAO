@@ -168,6 +168,8 @@ Prioridades: **P0**, impacto inmediato en el inicio autorizado de F-01; **P1**, 
 
 ### DN-05. Cobros, medios y comprobantes
 
+- **Estado:** aprobada por el usuario el 21/10/2026 para F-04; política vigente en la sección N.
+
 - **Problema y origen:** cerrar una venta y su impacto en caja con reglas de cobro claras. E2.7; E5; P G.8/G.11, DN-05.
 - **Alternativas y balance:** (a) un medio por venta y cobro total: simple, satisface uso de varios medios entre ventas; no combina medios en una venta. (b) varios cobros cuya suma cubre la venta: flexible, más casos de reintegro y reportes. (c) crédito/cobro diferido: agrega deuda y seguimiento; se relaciona con cuentas corrientes opcionales de E3 y no se recomienda para el mínimo.
 - **Recomendación técnica:** venta totalmente cobrada y comprobante interno consultable. Un medio por venta basta como base si el equipo lo acepta; pagos divididos se agregan sólo por una necesidad elegida. Catálogo de medios sin integración bancaria. Si se admite vuelto, distinguir entregado, vuelto y cobro neto; no ingresarlo entero como venta. Comprobante vinculado a la misma venta al reconsultar.
@@ -509,3 +511,37 @@ El usuario aprobó las propuestas concretas de DN-01, DN-02 (identificadores log
 - La reserva se hace al preparar el bulto: DISPONIBLE → RESERVADO en el CD, sin superar lo pendiente de la orden ni lo disponible. Una línea puede repartirse en varios bultos; la orden queda Completa cuando no hay pendientes. Anular un bulto Preparado libera su reserva y su cantidad vuelve a quedar pendiente.
 - Recorrido: despacho RESERVADO (CD) → EN_TRANSITO (local destino); recepción EN_TRANSITO → PENDIENTE; verificación del remito PENDIENTE → DISPONIBLE; rechazo EN_TRANSITO → RECHAZADO en custodia, sin merma automática. Cada paso deja movimientos con el bulto como origen.
 - Cada línea del bulto copia el costo de referencia al preparar (DN-09, para R-04); si no hay costo, queda informado como faltante.
+
+## N. Decisiones aprobadas para F-04 (21/10/2026)
+
+El usuario aprobó la propuesta de F-04 completa: DN-05, la numeración del comprobante (DN-02), la clave de operación contra envíos repetidos (RB-10) y los datos que F-04 debe guardar para DN-07. La consulta docente sobre el formato del comprobante sigue abierta.
+
+### N.1 Venta
+
+- La registra un local activo (nunca el CD), con una o más líneas de producto activo, cantidad entera positiva y sin productos repetidos.
+- Sólo descuenta stock DISPONIBLE del local; una línea insuficiente impide confirmar toda la venta.
+- Borrador en el formulario; Python confirma en una única transacción venta, líneas, salida de stock, cobros, caja y comprobante.
+- Precio unitario: el vigente del catálogo al confirmar, sin modificación manual. Promociones y listas de precios quedan fuera.
+- Una venta confirmada no se modifica ni se anula; su reversión es la devolución (F-05).
+
+### N.2 Cobros y medios (DN-05)
+
+- Uno o más cobros por venta, un medio distinto por cobro, cuya suma debe ser exactamente el total. Sin ventas pendientes, crédito ni cuentas corrientes.
+- Sin vuelto: se registra el importe aplicado a la venta.
+- Medios fijos precargados: Efectivo, Débito, Crédito y Transferencia; consultables, sin administración desde la pantalla ni integración bancaria.
+- Cada cobro genera un movimiento de caja de ingreso por local y medio; los reintegros de F-05 serán egresos.
+
+### N.3 Comprobante (DN-02)
+
+- Comprobante interno no fiscal, uno por venta, con número global secuencial `CV-00000001`.
+- Contiene número, local, instante, líneas con precio unitario y subtotal, total, cobros por medio y moneda.
+- Reconsultarlo o reimprimirlo no registra otra venta; se imprime desde el navegador, sin PDF.
+
+### N.4 Envío repetido (RB-10)
+
+- El formulario genera una clave única por borrador (`clave_operacion`). Si Python recibe una clave ya registrada, devuelve la venta existente sin crear otra; la base la guarda con `UNIQUE`.
+
+### N.5 Datos para devoluciones (DN-07)
+
+- Cada línea guarda su número, precio unitario y costo de referencia del momento de la venta (DN-03); los cambios posteriores no los alteran (RB-12).
+- Los cobros conservan su medio. El reparto de un reintegro entre medios de una venta con cobros divididos se define en DN-07 antes de F-05.

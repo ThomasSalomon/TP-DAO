@@ -23,6 +23,8 @@ backend/
     errores.py         ConflictoOperacionError para estados de documentos y stock
     reposicion.py      necesidades, órdenes de reposición por destino y su registro
     logistica.py       Bulto con patrón State, estados, eventos, Remito y su registro
+    ventas.py          Venta, DetalleVenta, Cobro, MedioPago, Comprobante y RegistroVentas
+    caja.py            Caja y MovimientoCaja por local y medio de pago
   persistencia/
     __init__.py        funciones públicas de acceso a datos
     base_datos.py      conexión, esquema, ruta y transacciones SQLite
@@ -67,6 +69,7 @@ tests/test_compras.py  dominio de compras, inventario y costo de referencia
 tests/test_api_compras.py contratos, reinicio, fallos, concurrencia y esquema de compras
 tests/test_logistica.py consolidación, ciclo del bulto, doble verificación y transiciones
 tests/test_api_logistica.py contratos, reinicio por etapa, fallos, migración y esquema logístico
+tests/test_ventas.py   ventas, cobros divididos, caja, comprobante y clave de operación
 tests/conftest.py      base temporal por aplicación; los tests nunca usan la base real
 pytest.ini
 docs/                  enunciado y planificación previa, conservados
@@ -357,6 +360,16 @@ Una base creada con F-02 recibe la columna `bulto_id` por `ALTER TABLE` al inici
   La pantalla no decide transiciones: si Python rechaza una acción (por ejemplo, recibir en otro local), se muestra el mensaje en la tarjeta y se conserva el borrador.
 - **Stock** (`SeccionStock`, antes `SeccionStockCD`): permite elegir cualquier ubicación (el CD por defecto) y muestra una fila por producto con las condiciones que tienen saldo (disponible, reservado, en tránsito, pendiente de verificación, rechazado), el costo de referencia y los movimientos con su documento de origen.
 
+## F-04.1: dominio de ventas, cobros y comprobante
+
+Aplica las decisiones de la sección N de `docs/DECISIONES_F00.md`. En esta parte sólo existe el dominio con sus pruebas: todavía no hay tablas, API ni pantalla de ventas (F-04.2 y F-04.3).
+
+- **Venta.** `Venta` es un documento confirmado que se construye completo y no se modifica. Compone sus `DetalleVenta`, `Cobro` y `Comprobante`, y valida todo antes de existir: local (nunca el CD), al menos una línea y un cobro, productos sin repetir, cantidades enteras positivas, un medio distinto por cobro e importes ARS exactos. Los cobros deben sumar exactamente el total; si no, el mensaje informa ambos importes. Los errores de una línea o un cobro indican su número.
+- **Registro.** `RegistroVentas.registrar` copia en cada línea el precio vigente del producto y su costo de referencia (última compra, o `None` si nunca se compró), exige local y productos activos, pide al `Inventario` la salida y a la `Caja` los ingresos, y recién entonces guarda la venta. Con una `clave_operacion` ya registrada devuelve la venta existente, sin efectos de stock ni de caja, e indica que no es nueva.
+- **Stock.** `Inventario.vender` descuenta sólo la condición DISPONIBLE del local, con causa `VENTA` y la línea como documento; comprueba todas las líneas antes de modificar ninguna. El stock pendiente, en tránsito, reservado o rechazado nunca es vendible.
+- **Caja.** `Caja` registra un `MovimientoCaja` de ingreso por cobro, con local, medio, importe y cobro de origen; el saldo por local y medio se calcula desde los movimientos. Los egresos por reintegro llegan con F-05.
+- **Medios y comprobante.** `RegistroVentas` trae los cuatro medios fijos (Efectivo, Débito, Crédito, Transferencia). El comprobante se numera `CV-00000001` a partir del identificador de la venta.
+
 ## Memoria, persistencia, pantalla y límites actuales
 
 `create_app` crea un `Catalogo` en `app.extensions["catalogo"]` y un `Lock` propio. La API utiliza esa misma instancia entre solicitudes; el bloqueo abarca las operaciones de dominio y la construcción de las respuestas para evitar carreras sobre códigos, IDs y referencias, incluida la comprobación de activos y su desactivación. No hay Singleton ni catálogo global compartido entre aplicaciones. Los tests crean aplicaciones aisladas. El dominio no añade sincronización para clientes Python externos: el adaptador HTTP es responsable de este bloqueo.
@@ -496,6 +509,8 @@ Desde la raíz:
 .\.venv\Scripts\python.exe -m pytest -q
 ```
 
+Verificación de F-04.1 el 21/10/2026: **583 casos aprobados** con la suite completa; los 555 previos siguen pasando. Se agregaron 28 casos en `tests/test_ventas.py`: venta de varias líneas con cobros divididos (subtotales, total, precios y costos copiados, comprobante, salida de stock y caja por medio), última unidad, una línea sin stock que impide toda la venta, stock pendiente, en tránsito, reservado o rechazado nunca vendible, venta de lo recibido sólo después de verificar bulto y remito, cobros que no cubren o exceden el total, medio repetido, importes y tipos inválidos, líneas inválidas, CD e inactivos, clave de operación repetida sin efectos y su validación, precio y costo históricos, costo faltante, sólo lectura, continuidad de identificadores, restauración y medios fijos. Python `-I -S` confirma que el dominio sigue sin cargar Flask ni SQLite. La suite completa tarda unos dos minutos por las bases SQLite temporales de los tests de API.
+
 Verificación de F-03.3 el 21/10/2026: no hubo cambios de backend, así que la suite sigue con los 555 casos aprobados de F-03.2; `npm run build` terminó correctamente. Prueba manual en el navegador integrado con el build servido por Flask y `TP_DAO_DB` temporal:
 
 - tres necesidades de L1 registradas y consolidadas en una orden (arroz 6 y fideos 3, sumados por producto);
@@ -604,4 +619,4 @@ F-02 queda completa con F-02.3: pantallas React de compras y de stock y movimien
 
 Siguen abiertas las aclaraciones docentes G-01 (si el ingreso manual de compras y el margen estimado alcanzan) y DN-08 (si se exige borrado físico además de la baja lógica).
 
-F-03 está completa: F-03.1 (dominio con State y doble verificación), F-03.2 (SQLite y API) y F-03.3 (pantallas React del circuito). Siguen abiertas las consultas docentes G-02 (orden multilocal) y G-03 (un remito por bulto). Fuera de F-03: ventas (F-04), devoluciones (F-05) y reportes con Strategy (F-06). No hay pagos a proveedores, recepciones parciales ni costo promedio o FIFO.
+F-03 está completa: F-03.1 (dominio con State y doble verificación), F-03.2 (SQLite y API) y F-03.3 (pantallas React del circuito). F-04 está en curso: F-04.1 (dominio de ventas, cobros, caja y comprobante) está implementada; faltan F-04.2 (SQLite y API) y F-04.3 (pantallas). Siguen abiertas las consultas docentes G-02 (orden multilocal) y G-03 (un remito por bulto). Fuera de F-04: devoluciones (F-05) y reportes con Strategy (F-06). No hay pagos a proveedores, recepciones parciales ni costo promedio o FIFO.
