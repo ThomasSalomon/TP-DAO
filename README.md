@@ -1,8 +1,8 @@
-# TP DAO 2026 — catálogo y compras al CD persistidos en SQLite (F-02.2)
+# TP DAO 2026 — catálogo, compras y stock del CD en SQLite (F-02.3)
 
 React + Vite y API Flask Python permiten registrar, consultar, modificar y desactivar lógicamente categorías, productos, proveedores y locales del catálogo POO, y configurar mínimos por producto/local. Las ubicaciones distinguen Locales y Centro de Distribución (CD). El CD se puede registrar, consultar y editar, pero su baja queda bloqueada hasta aprobar una política de reemplazo. `GET /api/health` sigue devolviendo HTTP 200 y `{"status":"ok"}` como comprobación técnica de disponibilidad.
 
-Desde F-02.1 el catálogo, sus estados, los mínimos, las reservas de códigos y la restricción de un único CD se guardan en SQLite mediante `sqlite3` y SQL parametrizado, y se conservan al reiniciar Flask. Desde F-02.2 la API registra compras a proveedores que ingresan su stock como disponible en el CD, con movimientos trazables y costo de referencia por producto (sección F-02.2). Todavía no hay pantallas de compras ni de stock en React (F-02.3). Los mínimos siguen siendo configuración administrativa: no hay alertas, reposición ni stock en los locales. No hay eliminación física, reactivación, relaciones producto–proveedor, logística, ventas, devoluciones, reportes, autenticación ni ORM. Las decisiones DN-03, DN-09 y DN-11 aprobadas para F-02 están en la sección L de `docs/DECISIONES_F00.md`.
+Desde F-02.1 el catálogo, sus estados, los mínimos, las reservas de códigos y la restricción de un único CD se guardan en SQLite mediante `sqlite3` y SQL parametrizado, y se conservan al reiniciar Flask. Desde F-02.2 la API registra compras a proveedores que ingresan su stock como disponible en el CD, con movimientos trazables y costo de referencia por producto (sección F-02.2). Desde F-02.3 la pantalla React permite registrar esas compras y consultar el stock y los movimientos del CD. Los mínimos siguen siendo configuración administrativa: no hay alertas, reposición ni stock en los locales. No hay eliminación física, reactivación, relaciones producto–proveedor, logística, ventas, devoluciones, reportes, autenticación ni ORM. Las decisiones DN-03, DN-09 y DN-11 aprobadas para F-02 están en la sección L de `docs/DECISIONES_F00.md`.
 
 ## Estructura
 
@@ -31,6 +31,8 @@ frontend/
     App.jsx            datos consultados y coordinación de la pantalla
     SeccionCatalogo.jsx filtros, consulta, edición y confirmación de baja
     SeccionMinimos.jsx configuración activa y consulta histórica por producto/local
+    SeccionCompras.jsx borrador de compra con líneas, confirmación y compras registradas
+    SeccionStockCD.jsx existencias, costo de referencia y movimientos del CD
     FormularioCatalogo.jsx formularios y consultas de inactivos sin edición
     EstadoConexion.jsx estado técnico secundario
     api.js             cliente fetch, errores y cancelación
@@ -304,6 +306,10 @@ La pantalla consulta los cuatro maestros con `estado=todos` y presenta un filtro
 
 Conserva los campos ante un error, muestra carga/éxito/error/vacío y bloquea envíos mientras están pendientes. La ayuda del código de los cuatro maestros explica su reserva al reemplazarlo. Los precios permanecen como texto; no se calculan ni redondean en JavaScript. Después de guardar se reconsultan los listados, incluyendo los nombres actuales de categorías referenciadas. Un fallo de esa lectura se informa por separado del guardado ya confirmado.
 
+`SeccionCompras` (F-02.3) arma la compra como borrador del formulario: proveedor activo y una o más líneas con producto activo, cantidad y costo unitario, que se agregan o quitan sin consultar a Python. El destino es el CD registrado y se muestra como texto; sin CD, el formulario queda deshabilitado con aviso. Antes de enviar sólo se comprueba que cada cantidad sea un entero seguro mayor que cero; el costo viaja como texto y Python valida el importe exacto. Los errores de Python identifican la línea («Línea 2: …») y, si son de formato o de referencia, marcan el campo con `aria-invalid`. Ante un error el borrador se conserva; tras confirmar se limpia, se informa número y total devueltos por Python y se agrega la compra al listado, del más reciente al más antiguo. JavaScript no calcula subtotales ni totales. Cada campo de línea tiene un nombre accesible con su número.
+
+`SeccionStockCD` consulta las existencias y los movimientos del CD cuando carga la pantalla, cuando cambia el catálogo, después de cada compra confirmada y con “Actualizar stock”. Muestra disponible y costo de referencia (“Sin costo registrado” si Python devuelve `null`) y los movimientos con su compra y línea de origen. Los instantes se presentan como `dd/mm/aaaa hh:mm:ss` tomando el texto que registró Python, sin conversiones de zona horaria en el navegador.
+
 `SeccionMinimos` permite configurar usando únicamente locales y productos activos (siempre excluye CD). “Consultar mínimos históricos (sólo lectura)” incluye inactivos identificados y bloquea el guardado. La tabla conserva las configuraciones y muestra el estado de cada producto, aun si está inactivo. Una selección que acaba de quedar inactiva se conserva para no perder el borrador, como opción deshabilitada fuera del modo histórico; no habilita escrituras. Distingue ausencia, cero, carga y error; no afirma “Sin configurar” si falló la consulta. Conserva la entrada ante errores, cancela consultas obsoletas y bloquea los controles durante el guardado. Tras confirmar, usa la respuesta de Python para actualizar el par sin duplicarlo. “Actualizar mínimos” vuelve a consultar el local; las actualizaciones de maestros también reconsultan sus configuraciones sin borrar el borrador numérico. Cambiar manualmente de local o producto limpia ese borrador para trabajar sobre la nueva selección.
 
 El cliente `fetch` tiene un límite de 10 segundos, cancela lecturas obsoletas y no reintenta escrituras automáticamente. Si no se pudo confirmar una escritura por un fallo de conexión, consultar el listado antes de reenviar. “Actualizar listados” y “Actualizar mínimos” permiten consultar cambios hechos desde otra pestaña; no hay actualización en tiempo real ni resolución de conflictos entre ediciones. Los `PUT` al mismo mínimo se serializan: queda el último procesado. El estado técnico de `/api/health` está disponible en una sección desplegable secundaria.
@@ -413,6 +419,17 @@ Desde la raíz:
 .\.venv\Scripts\python.exe -m pytest -q
 ```
 
+Verificación de F-02.3 el 21/10/2026: **489 casos aprobados** con la suite completa; antes de editar se hizo commit de F-02.2. En el dominio, los errores de una línea de compra ahora indican su número («Línea 2: La cantidad…»), con una aserción nueva en `tests/test_compras.py`. `npm ci` y `npm run build` terminaron correctamente. Prueba manual en el navegador integrado con el build servido por Flask y `TP_DAO_DB` temporal:
+
+- cantidad 0 bloqueada en el cliente con el borrador conservado;
+- costo con tres decimales y costo no numérico rechazados por Python, con mensaje que identifica la línea y el borrador conservado;
+- compra de dos líneas confirmada con total 11356.50, stock y movimientos del CD actualizados sin recargar;
+- reinicio de Flask sobre la misma base: compra, existencias y costos conservados en la pantalla;
+- segunda compra con total 18803.00, saldo acumulado de 15 unidades y costo de referencia actualizado;
+- a 390 px, sin desbordes horizontales fuera de las tablas desplazables.
+
+La consola sólo registró las dos respuestas 400 provocadas a propósito. No se probó con Vite en modo desarrollo en esta etapa ni se agregó un framework de pruebas frontend.
+
 Verificación de F-02.2 el 21/10/2026: **489 casos aprobados** con la suite completa. Antes de editar se hizo commit de F-02.1 con sus 412 casos aprobados. Se agregaron 35 casos de dominio en `tests/test_compras.py` (detalles y total, ingreso y acumulación de saldo, costo de referencia por instante e identificador, cantidades y costos inválidos, una línea inválida que bloquea toda la compra, producto repetido, destino local, instante sin zona, inactivos, saldo máximo sin cambios parciales, inmutabilidad y restauración histórica) y 42 de API y persistencia en `tests/test_api_compras.py` (contrato completo, acumulación, reinicio con inactivos y continuidad de IDs, formato y contenido inválidos sin efectos, referencias inexistentes, falta de CD, inactivos, 404, fallo de guardado con 500 sin compra ni stock en memoria o base, 16 compras concurrentes y 12 violaciones del esquema). Con un proceso Flask real y `TP_DAO_DB` temporal se registró una compra, se reinició Flask, se comprobó el stock conservado y una segunda compra acumuló 15 unidades con costo de referencia actualizado. La suite tarda unos 45 segundos porque cada escritura confirma sobre un archivo SQLite temporal. No se modificó el frontend.
 
 Verificación de F-02.1 el 21/10/2026: **412 casos aprobados** con la suite completa (`.\.venv\Scripts\python.exe -m pytest -q`). Antes de editar se comprobaron los 396 de F-01.6 en una `.venv` nueva con las dependencias fijadas. Se agregaron 15 casos en `tests/test_persistencia_catalogo.py`: reinicio con maestros, estados, mínimos y referencias; códigos históricos y continuidad de IDs tras reiniciar; único CD y reglas de inactivos después de recargar; fallo de guardado con 500, sin cambios en memoria ni en la base; rollback de una transacción; siete violaciones del esquema; inicialización repetida; ruta predeterminada y aislamiento de la base real. El caso de precio grande de dominio y API pasó a usar el máximo representable, y se agregó el rechazo del primer valor que lo supera. `tests/conftest.py` asigna una base temporal nueva a cada `create_app()` sin ruta, de modo que las pruebas previas conservan su aislamiento. También se comprobó con un proceso Flask real y `TP_DAO_DB` temporal que un CD registrado persiste tras reiniciar y bloquea un segundo CD con 409. No se modificó el frontend.
@@ -487,11 +504,10 @@ Las pruebas de API usan el cliente Flask y archivos temporales; la verificación
 
 ## Alcance actual frente a la planificación
 
-F-01 (catálogo) está completa. F-02 avanza por incrementos: F-02.1 persiste el catálogo en SQLite y F-02.2 agrega compras, ingreso al CD, existencias, movimientos y costo de referencia por API, con las decisiones DN-03, DN-09 y DN-11 aprobadas el 21/10/2026. El detalle de lo aprobado está en la sección L de `docs/DECISIONES_F00.md`; los demás documentos de `docs/` conservan la planificación original.
+F-01 (catálogo) y F-02 están completas. F-02.1 persiste el catálogo en SQLite, F-02.2 agrega compras, ingreso al CD, existencias, movimientos y costo de referencia por API y F-02.3 sus pantallas React, con las decisiones DN-03, DN-09 y DN-11 aprobadas el 21/10/2026. El detalle de lo aprobado está en la sección L de `docs/DECISIONES_F00.md`; los demás documentos de `docs/` conservan la planificación original.
 
-Pendiente para cerrar F-02:
+F-02 queda completa con F-02.3: pantallas React de compras y de stock y movimientos del CD.
 
-- **F-02.3:** pantallas React para registrar compras (borrador en el formulario, confirmación en Python) y consultar existencias y movimientos del CD, con prueba en navegador y build servido por Python.
-- **Aclaraciones docentes abiertas:** G-01 (si el ingreso manual de compras y el margen estimado alcanzan) y DN-08 (si se exige borrado físico además de la baja lógica).
+Siguen abiertas las aclaraciones docentes G-01 (si el ingreso manual de compras y el margen estimado alcanzan) y DN-08 (si se exige borrado físico además de la baja lógica).
 
 Fuera de F-02: reposición, logística y State (F-03), ventas (F-04), devoluciones (F-05) y reportes con Strategy (F-06). No hay pagos a proveedores, recepciones parciales ni costo promedio o FIFO.

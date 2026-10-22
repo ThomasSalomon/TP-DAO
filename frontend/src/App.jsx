@@ -2,14 +2,17 @@ import { useEffect, useState } from 'react';
 import { catalogoAPI } from './api';
 import EstadoConexion from './EstadoConexion';
 import SeccionCatalogo from './SeccionCatalogo';
+import SeccionCompras from './SeccionCompras';
 import SeccionMinimos from './SeccionMinimos';
+import SeccionStockCD from './SeccionStockCD';
 
 export default function App() {
   const [datos, setDatos] = useState({ categorias: [], productos: [], proveedores: [], ubicaciones: [] });
   const [revision, setRevision] = useState(0);
+  const [revisionStock, setRevisionStock] = useState(0);
   const [carga, setCarga] = useState({ estado: 'cargando' });
   const [ocupados, setOcupados] = useState({
-    categorias: false, productos: false, proveedores: false, ubicaciones: false, minimos: false,
+    categorias: false, productos: false, proveedores: false, ubicaciones: false, minimos: false, compras: false,
   });
   const bloqueado = carga.estado === 'cargando' || Object.values(ocupados).some(Boolean);
 
@@ -61,14 +64,14 @@ export default function App() {
   return (
     <main className="app">
       <header className="page-header">
-        <p className="eyebrow">DAO 2026 · F-01.6</p>
-        <h1>Administración del catálogo</h1>
-        <p>Administrá categorías, productos, proveedores, locales y Centro de Distribución.</p>
+        <p className="eyebrow">DAO 2026 · F-02.3</p>
+        <h1>Catálogo, compras y stock del CD</h1>
+        <p>Administrá el catálogo, registrá compras a proveedores y consultá el stock del Centro de Distribución.</p>
       </header>
-      <p className="memory-note">Datos temporales: reiniciar el backend vacía el catálogo.</p>
+      <p className="memory-note">Los datos se guardan en SQLite y se conservan al reiniciar el backend. Los borradores de los formularios no se guardan hasta confirmarlos.</p>
       <div className="catalog-toolbar">
         <p role="status" aria-live="polite">
-          {carga.estado === 'cargando' ? 'Cargando catálogo…' : 'Catálogo en memoria'}
+          {carga.estado === 'cargando' ? 'Cargando catálogo…' : 'Catálogo cargado'}
         </p>
         <button className="secondary" type="button" disabled={bloqueado} onClick={() => setRevision((valor) => valor + 1)}>
           Actualizar listados
@@ -94,6 +97,16 @@ export default function App() {
           productos={datos.productos} ubicaciones={datos.ubicaciones}
           bloqueado={bloqueado} estadoCatalogo={carga.estado}
           onActividad={(valor) => setOcupados((actual) => ({ ...actual, minimos: valor }))}
+        />
+        <SeccionCompras
+          productos={datos.productos} proveedores={datos.proveedores} ubicaciones={datos.ubicaciones}
+          bloqueado={bloqueado} estadoCatalogo={carga.estado}
+          onActividad={(valor) => setOcupados((actual) => ({ ...actual, compras: valor }))}
+          onRegistrada={() => setRevisionStock((valor) => valor + 1)}
+        />
+        <SeccionStockCD
+          ubicaciones={datos.ubicaciones} productos={datos.productos}
+          bloqueado={bloqueado} estadoCatalogo={carga.estado} revisionStock={revisionStock}
         />
       </div>
       <EstadoConexion />

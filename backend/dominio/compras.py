@@ -78,8 +78,12 @@ class Compra:
         detalles = []
         for numero, (producto, cantidad, costo_unitario) in enumerate(lineas, start=1):
             if any(detalle.producto is producto for detalle in detalles):
-                raise ValueError("Un producto no puede repetirse dentro de la misma compra.")
-            detalles.append(DetalleCompra(self, numero, producto, cantidad, costo_unitario))
+                raise ValueError(f"Línea {numero}: un producto no puede repetirse dentro de la misma compra.")
+            try:
+                detalles.append(DetalleCompra(self, numero, producto, cantidad, costo_unitario))
+            except (TypeError, ValueError) as error:
+                # Se conserva el tipo de error y se indica la línea para poder corregirla.
+                raise type(error)(f"Línea {numero}: {error}") from None
         self._detalles = tuple(detalles)
 
     @property

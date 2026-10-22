@@ -123,7 +123,7 @@ def test_costo_unitario_es_importe_positivo_exacto(costo, error):
 def test_una_linea_invalida_impide_registrar_toda_la_compra():
     _, arroz, fideos, proveedor, cd, _, compras, inventario = escenario()
 
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match="^Línea 2: La cantidad"):
         compras.registrar(proveedor, cd, [(arroz, 5, "100"), (fideos, 0, "100")], INSTANTE, inventario)
 
     assert compras.listar() == ()

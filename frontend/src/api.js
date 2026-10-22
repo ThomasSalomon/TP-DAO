@@ -84,6 +84,23 @@ export const minimosAPI = {
   ),
 };
 
+export const comprasAPI = {
+  listar: async (signal) => (await solicitar('/api/compras', { signal })).compras,
+  registrar: (datos) => solicitar('/api/compras', { method: 'POST', body: JSON.stringify(datos) }),
+};
+
+export const stockAPI = {
+  existencias: (ubicacionId, signal) => solicitar(`/api/ubicaciones/${ubicacionId}/existencias`, { signal }),
+  movimientos: (ubicacionId, signal) => solicitar(`/api/ubicaciones/${ubicacionId}/movimientos`, { signal }),
+};
+
+// Presenta el instante tal como lo registró Python, sin convertir zonas en el navegador.
+export function formatearInstante(instante) {
+  const [fecha, hora] = instante.split('T');
+  const [anio, mes, dia] = fecha.split('-');
+  return `${dia}/${mes}/${anio} ${hora.slice(0, 8)}`;
+}
+
 export async function consultarSalud(signal) {
   const datos = await solicitar(HEALTH_PATH, { signal });
   if (datos.status !== 'ok') throw new ErrorAPI('La respuesta de salud no es la esperada.');
