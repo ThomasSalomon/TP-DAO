@@ -152,8 +152,8 @@ def consultar_movimientos(identificador):
                 "condicion_origen": movimiento.condicion_origen,
                 "condicion_destino": movimiento.condicion_destino,
                 "causa": movimiento.causa,
-                "compra_id": movimiento.detalle.compra.identificador,
-                "linea": movimiento.detalle.numero,
+                "compra_id": movimiento.documento.compra.identificador,
+                "linea": movimiento.documento.numero,
             }
             for movimiento in current_app.extensions["inventario"].movimientos(ubicacion)
         ]

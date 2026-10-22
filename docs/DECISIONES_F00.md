@@ -120,6 +120,8 @@ Prioridades: **P0**, impacto inmediato en el inicio autorizado de F-01; **P1**, 
 
 ### DN-01. Verificación del remito y cardinalidad de bultos
 
+- **Estado:** aprobada por el usuario el 21/10/2026 para F-03; política vigente en la sección M.
+
 - **Problema y origen:** cómo verificar documentación cuando hay varios bultos o recepción incompleta/rechazada, sin liberar indebidamente unidades. E2.4/E4.1; P C.3/C.5, F.1, K.1.
 - **Alternativas y balance:** (a) 1 remito–1 bulto: simple y demostrable; más documentos, no representa agrupaciones. (b) 1 remito–varios bultos, verificación global: conserva un criterio uniforme; un pendiente/rechazado bloquea todos y necesita resolución. (c) Multibulto con conformidades parciales documentadas: mayor flexibilidad; obliga a precisar qué significa remito Verificado y su alcance por bulto. Multirremito añade reconciliación de cantidades sin exigencia actual.
 - **Recomendación técnica:** comenzar 1:1 para demostrar ambos controles; para entrega elegir explícitamente entre 1:1 y multibulto. Si se adopta verificación global, aceptar el bloqueo de íntegros o definir su resolución trazable; no reabrir un Rechazado ni editar historia. No implementar liberación parcial bajo un remito pendiente sin aclaración académica.
@@ -129,6 +131,8 @@ Prioridades: **P0**, impacto inmediato en el inicio autorizado de F-01; **P1**, 
 - **Prioridad/límite:** P1, antes de F-03; no bloquea catálogo F-01. Cierre verificable: tabla de casos 1:1, pendiente, rechazo y multibulto si se admite, con disponibilidad esperada y destino de lo bloqueado.
 
 ### DN-02. Identificadores y duplicados
+
+- **Estado:** aprobada por el usuario el 21/10/2026 para F-03 (identificadores logísticos); política vigente en la sección M.
 
 - **Problema y origen:** definir identidad comercial y alcance de unicidad. E4.4; E2.2/E2.4/E2.7; P RF-02/RF-04, F.1, K.1.
 - **Alternativas y balance:** (a) códigos internos ingresados por el equipo: simple y suficiente para catálogo; requiere disciplina de identificación. (b) identificadores externos como código de barras/CUIT: útiles si el dominio elegido los usa; agregan formatos/reglas no exigidos. (c) ID técnico más código comercial: referencias estables y control de duplicados; distingue dos identificadores. El nombre por sí solo no es una clave fiable.
@@ -151,6 +155,8 @@ Prioridades: **P0**, impacto inmediato en el inicio autorizado de F-01; **P1**, 
 - **Prioridad/límite:** P1 antes de F-02; elegir método antes de datos/costos que lo consumen. No bloquea F-01. Cierre: ejemplo de compra→saldo→venta→margen y caso de ingreso repetido o fallido sin duplicación.
 
 ### DN-04. Consolidación, asignación y reserva
+
+- **Estado:** aprobada por el usuario el 21/10/2026 para F-03; política vigente en la sección M.
 
 - **Problema y origen:** distinguir solicitante, flujo físico y agrupación de pedidos, además de impedir asignaciones repetidas. E2.3 a E2.5; P G.3/G.4, RB-09, K.1.
 - **Alternativas y balance:** (a) orden por CD/destino que consolida varias necesidades: preparación simple; quizá no refleje una orden que reúna varios locales. (b) orden global al CD con líneas por destino: expresa consolidación conjunta; exige separar preparación/remitos por destino. Para disponibilidad: reservar al preparar evita doble asignación; descontar inmediatamente simplifica reservas pero debe distinguir mercadería aún físicamente en CD.
@@ -476,3 +482,30 @@ El usuario aprobó las propuestas concretas de DN-03, DN-09 y DN-11. Reemplazan 
 - Ruta de la base configurable con la variable de entorno `TP_DAO_DB`. Por defecto `%LOCALAPPDATA%\TP-DAO\tp_dao.db`, fuera de la carpeta sincronizada; el archivo no se versiona.
 - Las pruebas usan bases temporales y nunca la base real.
 - Entrega: build servido por Flask en `http://127.0.0.1:5000/` con instrucciones verificadas. Fecha, integrantes y formato quedan pendientes.
+
+## M. Decisiones aprobadas para F-03 (21/10/2026)
+
+El usuario aprobó las propuestas concretas de DN-01, DN-02 (identificadores logísticos) y DN-04, incluida la anulación de un bulto Preparado (opción recomendada). Las consultas docentes G-02 (orden multilocal) y G-03 (suficiencia de un remito por bulto) siguen abiertas y pueden ampliar el alcance.
+
+### M.1 DN-01. Remito, bulto y doble verificación
+
+- Un remito por bulto; una orden puede generar varios bultos.
+- Ciclo con State: Preparado → Precintado → En tránsito → Recibido → Verificado o Rechazado, más Anulado sólo desde Preparado. `Bulto` es el contexto, `EstadoBulto` una ABC y cada estado concreto acepta o rechaza `precintar`, `despachar`, `recibir`, `verificar` y `anular`. Verificado, Rechazado y Anulado son finales.
+- Recepción en el local destino: el receptor informa el precinto leído y si está intacto. Precinto roto o número distinto del registrado: Recibido y Rechazado en la misma operación, sin habilitar stock.
+- Doble verificación: «verificar bulto» (Recibido conforme → Verificado) y luego «verificar remito» (Emitido → Verificado, sólo con su bulto Verificado). Recién entonces el stock pasa a disponible en el local. El remito tiene estados simples Emitido, Verificado y Rechazado, sin State.
+- Historial inmutable de eventos (secuencia, estado anterior y nuevo, instante, motivo), protegido también en SQLite.
+- Diferencias de contenido entre remito y recepción quedan fuera de F-03.
+
+### M.2 DN-02. Identificadores logísticos
+
+- Bulto `B-000001` y remito `R-000001`, generados por el sistema, secuenciales y únicos.
+- Precinto: número del sello físico ingresado al precintar; texto único en todo el sistema sin distinguir mayúsculas y nunca reutilizable.
+- Orden de reposición: identificador numérico.
+
+### M.3 DN-04. Necesidades, consolidación y reserva
+
+- Necesidad de un local activo, producto activo y cantidad entera positiva; estados Pendiente y Consolidada. Sin generación automática desde mínimos.
+- Orden por destino: un CD origen y un local destino; consolida necesidades pendientes completas de ese local, suma por producto y conserva qué necesidad aportó cada cantidad.
+- La reserva se hace al preparar el bulto: DISPONIBLE → RESERVADO en el CD, sin superar lo pendiente de la orden ni lo disponible. Una línea puede repartirse en varios bultos; la orden queda Completa cuando no hay pendientes. Anular un bulto Preparado libera su reserva y su cantidad vuelve a quedar pendiente.
+- Recorrido: despacho RESERVADO (CD) → EN_TRANSITO (local destino); recepción EN_TRANSITO → PENDIENTE; verificación del remito PENDIENTE → DISPONIBLE; rechazo EN_TRANSITO → RECHAZADO en custodia, sin merma automática. Cada paso deja movimientos con el bulto como origen.
+- Cada línea del bulto copia el costo de referencia al preparar (DN-09, para R-04); si no hay costo, queda informado como faltante.

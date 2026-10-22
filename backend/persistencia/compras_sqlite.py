@@ -37,16 +37,17 @@ def cargar_compras(conexion, catalogo):
 
     cursor.execute(
         """
-        SELECT id, instante, ubicacion_id, producto_id, cantidad, condicion_destino, causa, compra_id, compra_linea
+        SELECT id, instante, ubicacion_id, producto_id, cantidad, condicion_origen, condicion_destino, causa,
+               compra_id, compra_linea
         FROM movimientos_stock ORDER BY id
         """
     )
     for fila in cursor.fetchall():
-        identificador, instante, ubicacion_id, producto_id, cantidad, destino, causa, compra_id, linea = fila
+        identificador, instante, ubicacion_id, producto_id, cantidad, origen, destino, causa, compra_id, linea = fila
         detalle = compras.obtener(compra_id).detalles[linea - 1]
         inventario.restaurar_movimiento(MovimientoStock(
             identificador, datetime.fromisoformat(instante), catalogo.obtener_ubicacion(ubicacion_id),
-            catalogo.obtener_producto(producto_id), cantidad, destino, causa, detalle,
+            catalogo.obtener_producto(producto_id), cantidad, origen, destino, causa, detalle,
         ))
     return compras, inventario
 
@@ -80,8 +81,8 @@ def guardar_compra(conexion, compra, movimientos):
             (
                 movimiento.identificador, movimiento.instante.isoformat(), movimiento.ubicacion.identificador,
                 movimiento.producto.identificador, movimiento.cantidad, movimiento.condicion_origen,
-                movimiento.condicion_destino, movimiento.causa, movimiento.detalle.compra.identificador,
-                movimiento.detalle.numero,
+                movimiento.condicion_destino, movimiento.causa, movimiento.documento.compra.identificador,
+                movimiento.documento.numero,
             ),
         )
         # El saldo se actualiza en la base a partir del movimiento, no se copia de la memoria.

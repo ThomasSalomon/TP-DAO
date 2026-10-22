@@ -19,6 +19,9 @@ backend/
     compras.py         Compra, DetalleCompra y RegistroCompras con costo de referencia
     inventario.py      Inventario, saldos por condición y MovimientoStock
     fechas.py          zona horaria acordada e instante actual
+    errores.py         ConflictoOperacionError para estados de documentos y stock
+    reposicion.py      necesidades, órdenes de reposición por destino y su registro
+    logistica.py       Bulto con patrón State, estados, eventos, Remito y su registro
   persistencia/
     __init__.py        funciones públicas de acceso a datos
     base_datos.py      conexión, esquema, ruta y transacciones SQLite
@@ -55,6 +58,7 @@ tests/test_api_bajas.py contratos de baja, filtros, aislamiento y concurrencia
 tests/test_persistencia_catalogo.py reinicio, restricciones SQL, rollback y fallos de guardado
 tests/test_compras.py  dominio de compras, inventario y costo de referencia
 tests/test_api_compras.py contratos, reinicio, fallos, concurrencia y esquema de compras
+tests/test_logistica.py consolidación, ciclo del bulto, doble verificación y transiciones
 tests/conftest.py      base temporal por aplicación; los tests nunca usan la base real
 pytest.ini
 docs/                  enunciado y planificación previa, conservados
@@ -280,6 +284,17 @@ La compra responde `{"id","proveedor","centro","instante","lineas":[{"linea","pr
 | 409 | Proveedor o producto inactivo, o ningún CD registrado. |
 | 500 | Fallo al guardar: ni la compra ni el stock quedan en memoria o en la base. |
 
+## F-03.1: dominio de reposición y logística
+
+Aplica DN-01, DN-02 y DN-04 aprobadas (sección M de `docs/DECISIONES_F00.md`). En esta parte sólo existe el dominio con sus pruebas: todavía no hay tablas SQLite, API ni pantallas para reposición y logística (F-03.2 y F-03.3).
+
+- **Reposición.** `RegistroReposicion` registra necesidades de un local activo (producto activo, entero positivo) y las consolida en una `OrdenReposicion` con origen en el CD y un solo local destino. La orden compone un `DetalleReposicion` por producto, que suma las cantidades y conserva qué necesidades lo originaron. Asignado y pendiente se calculan desde los bultos no anulados; la orden pasa de Abierta a Completa sin un atributo que pueda desincronizarse.
+- **State.** `Bulto` es el contexto y `EstadoBulto` una ABC cuyas operaciones (`precintar`, `despachar`, `recibir`, `verificar`, `anular`) se rechazan por defecto. Cada estado concreto (`Preparado`, `Precintado`, `EnTransito`, `Recibido`, `Verificado`, `Rechazado`, `Anulado`) redefine sólo las que admite y decide la transición. El bulto delega el mismo mensaje en su estado actual; no hay condicionales por estado fuera de las clases de estado. Un único método interno cambia el estado y agrega un `EventoEstadoBulto` de sólo lectura.
+- **Doble verificación.** La recepción en el local destino compara el precinto leído con el registrado: roto o distinto deja el bulto Recibido y Rechazado en la misma operación y el remito Rechazado. Conforme, queda Recibido con el stock PENDIENTE. «Verificar» lleva el bulto a Verificado, y sólo después `Remito.verificar` habilita el stock como DISPONIBLE.
+- **Inventario.** `Inventario` aplica cada operación como cambios de condición comprobados antes de modificar ningún saldo; un stock insuficiente produce `ConflictoOperacionError` sin efectos. `MovimientoStock` guarda condición de origen y de destino (una de las dos puede faltar en entradas y salidas), la causa (`COMPRA`, `PREPARACION`, `ANULACION`, `DESPACHO`, `RECEPCION`, `VERIFICACION`, `RECHAZO`) y el documento: la línea de compra o la línea de bulto. El despacho registra la salida de la reserva del CD y la entrada en tránsito al local, así que el total de unidades se conserva.
+- **Identificadores.** `RegistroLogistica` numera bultos `B-000001` y remitos `R-000001`, emitiendo el remito al precintar, y rechaza un precinto ya usado sin distinguir mayúsculas. Cada línea del bulto copia el costo de referencia vigente al prepararlo.
+- **Rechazo.** El rechazo mueve EN_TRANSITO → RECHAZADO directamente, porque ocurre en la misma recepción: el stock nunca pasa por una condición vendible ni intermedia.
+
 ## Memoria, persistencia, pantalla y límites actuales
 
 `create_app` crea un `Catalogo` en `app.extensions["catalogo"]` y un `Lock` propio. La API utiliza esa misma instancia entre solicitudes; el bloqueo abarca las operaciones de dominio y la construcción de las respuestas para evitar carreras sobre códigos, IDs y referencias, incluida la comprobación de activos y su desactivación. No hay Singleton ni catálogo global compartido entre aplicaciones. Los tests crean aplicaciones aisladas. El dominio no añade sincronización para clientes Python externos: el adaptador HTTP es responsable de este bloqueo.
@@ -419,6 +434,8 @@ Desde la raíz:
 .\.venv\Scripts\python.exe -m pytest -q
 ```
 
+Verificación de F-03.1 el 21/10/2026: **517 casos aprobados** con la suite completa; los 489 previos siguen pasando tras generalizar `MovimientoStock` (la propiedad `detalle` pasó a llamarse `documento`). Se agregaron 28 casos en `tests/test_logistica.py`: consolidación por producto con trazabilidad de necesidades, mezcla de locales, repetición y reutilización de necesidades, validaciones de necesidad, circuito completo con saldos por condición en cada paso, stock sin habilitar con el bulto verificado y el remito emitido, rechazo por precinto roto y por número distinto, recepción en otro local, todas las transiciones inválidas de los siete estados sin efectos, orden de las dos verificaciones, entregas parciales, stock insuficiente sin reservas parciales, contenido inválido, anulación con liberación de reserva, precinto único, costo de preparación histórico, conservación de unidades y la ABC no instanciable. Python `-I -S` confirma que el dominio sigue sin cargar Flask ni SQLite.
+
 Verificación de F-02.3 el 21/10/2026: **489 casos aprobados** con la suite completa; antes de editar se hizo commit de F-02.2. En el dominio, los errores de una línea de compra ahora indican su número («Línea 2: La cantidad…»), con una aserción nueva en `tests/test_compras.py`. `npm ci` y `npm run build` terminaron correctamente. Prueba manual en el navegador integrado con el build servido por Flask y `TP_DAO_DB` temporal:
 
 - cantidad 0 bloqueada en el cliente con el borrador conservado;
@@ -510,4 +527,4 @@ F-02 queda completa con F-02.3: pantallas React de compras y de stock y movimien
 
 Siguen abiertas las aclaraciones docentes G-01 (si el ingreso manual de compras y el margen estimado alcanzan) y DN-08 (si se exige borrado físico además de la baja lógica).
 
-Fuera de F-02: reposición, logística y State (F-03), ventas (F-04), devoluciones (F-05) y reportes con Strategy (F-06). No hay pagos a proveedores, recepciones parciales ni costo promedio o FIFO.
+F-03 está en curso: F-03.1 (dominio de reposición, bultos con State y doble verificación) está implementada; faltan F-03.2 (SQLite y API) y F-03.3 (pantallas React). Fuera de F-03: ventas (F-04), devoluciones (F-05) y reportes con Strategy (F-06). No hay pagos a proveedores, recepciones parciales ni costo promedio o FIFO.

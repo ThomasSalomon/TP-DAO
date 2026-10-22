@@ -50,7 +50,7 @@ def test_registrar_compra_crea_detalles_e_ingresa_todo_al_cd():
             for m in movimientos] == [
         (1, arroz, 10, None, "DISPONIBLE", "COMPRA"), (2, fideos, 3, None, "DISPONIBLE", "COMPRA"),
     ]
-    assert movimientos[1].detalle is compra.detalles[1]
+    assert movimientos[1].documento is compra.detalles[1]
     assert movimientos[0].instante == INSTANTE
 
 
