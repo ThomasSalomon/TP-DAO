@@ -1,6 +1,5 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { catalogoAPI } from './api';
-import EstadoConexion from './EstadoConexion';
 import SeccionCatalogo from './SeccionCatalogo';
 import SeccionCompras from './SeccionCompras';
 import SeccionLogistica from './SeccionLogistica';
@@ -8,7 +7,34 @@ import SeccionMinimos from './SeccionMinimos';
 import SeccionStock from './SeccionStock';
 import SeccionVentas from './SeccionVentas';
 
+// Cada vista tiene su ruta en el hash (#/productos) para poder recargarla y usar Atrás del navegador.
+const GRUPOS = [
+  { id: 'catalogo', titulo: 'Catálogo', vistas: [
+    { id: 'categorias', titulo: 'Categorías' },
+    { id: 'productos', titulo: 'Productos' },
+    { id: 'proveedores', titulo: 'Proveedores' },
+    { id: 'ubicaciones', titulo: 'Ubicaciones' },
+    { id: 'minimos', titulo: 'Mínimos por local' },
+  ] },
+  { id: 'operaciones', titulo: 'Operaciones', vistas: [
+    { id: 'compras', titulo: 'Compras al CD' },
+    { id: 'logistica', titulo: 'Reposición y logística' },
+    { id: 'ventas', titulo: 'Ventas y caja' },
+  ] },
+  { id: 'consultas', titulo: 'Consultas', vistas: [
+    { id: 'stock', titulo: 'Stock por ubicación' },
+  ] },
+];
+const VISTAS = GRUPOS.flatMap((grupo) => grupo.vistas);
+
+function vistaDelHash() {
+  const id = window.location.hash.replace(/^#\/?/, '');
+  return VISTAS.some((vista) => vista.id === id) ? id : VISTAS[0].id;
+}
+
 export default function App() {
+  const [activa, setActiva] = useState(vistaDelHash);
+  const navegado = useRef(false);
   const [datos, setDatos] = useState({ categorias: [], productos: [], proveedores: [], ubicaciones: [] });
   const [revision, setRevision] = useState(0);
   const [revisionStock, setRevisionStock] = useState(0);
@@ -39,6 +65,28 @@ export default function App() {
     return () => controller.abort();
   }, [revision]);
 
+  useEffect(() => {
+    function cambiarVista() {
+      navegado.current = true;
+      setActiva(vistaDelHash());
+    }
+    window.addEventListener('hashchange', cambiarVista);
+    return () => window.removeEventListener('hashchange', cambiarVista);
+  }, []);
+
+  // Al cambiar de vista el foco pasa a su contenido; en la carga inicial no se mueve.
+  useEffect(() => {
+    const titulo = VISTAS.find((vista) => vista.id === activa).titulo;
+    document.title = `${titulo} · DAO`;
+    // En la franja horizontal (pantallas angostas) el enlace activo queda a la vista.
+    document.querySelector('.sidebar a[aria-current="page"]')?.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+    if (!navegado.current) return;
+    const contenedor = document.getElementById(`vista-${activa}`);
+    contenedor?.focus({ preventScroll: true });
+    const { top } = contenedor?.getBoundingClientRect() ?? { top: 0 };
+    if (top < 0 || top > window.innerHeight * 0.6) contenedor?.scrollIntoView({ block: 'start' });
+  }, [activa]);
+
   async function guardar(tipo, id, entrada) {
     const api = catalogoAPI[tipo];
     const resultado = id ? await api.modificar(id, entrada) : await api.crear(entrada);
@@ -63,68 +111,110 @@ export default function App() {
     return resultado;
   }
 
+  function seccionCatalogo(tipo) {
+    return (
+      <SeccionCatalogo
+        tipo={tipo} registros={datos[tipo]}
+        categorias={datos.categorias.filter((item) => item.activo)}
+        bloqueado={bloqueado} estadoConsulta={carga.estado} onGuardar={guardar} onDesactivar={desactivar}
+        onActividad={(recurso, valor) => setOcupados((actual) => ({ ...actual, [recurso]: valor }))}
+      />
+    );
+  }
+
+  const contenido = {
+    categorias: seccionCatalogo('categorias'),
+    productos: seccionCatalogo('productos'),
+    proveedores: seccionCatalogo('proveedores'),
+    ubicaciones: seccionCatalogo('ubicaciones'),
+    minimos: (
+      <SeccionMinimos
+        productos={datos.productos} ubicaciones={datos.ubicaciones}
+        bloqueado={bloqueado} estadoCatalogo={carga.estado}
+        onActividad={(valor) => setOcupados((actual) => ({ ...actual, minimos: valor }))}
+      />
+    ),
+    compras: (
+      <SeccionCompras
+        productos={datos.productos} proveedores={datos.proveedores} ubicaciones={datos.ubicaciones}
+        bloqueado={bloqueado} estadoCatalogo={carga.estado}
+        onActividad={(valor) => setOcupados((actual) => ({ ...actual, compras: valor }))}
+        onRegistrada={() => setRevisionStock((valor) => valor + 1)}
+      />
+    ),
+    logistica: (
+      <SeccionLogistica
+        productos={datos.productos} ubicaciones={datos.ubicaciones}
+        bloqueado={bloqueado} estadoCatalogo={carga.estado}
+        onActividad={(valor) => setOcupados((actual) => ({ ...actual, logistica: valor }))}
+        onCambio={() => setRevisionStock((valor) => valor + 1)}
+      />
+    ),
+    ventas: (
+      <SeccionVentas
+        productos={datos.productos} ubicaciones={datos.ubicaciones}
+        bloqueado={bloqueado} estadoCatalogo={carga.estado}
+        onActividad={(valor) => setOcupados((actual) => ({ ...actual, ventas: valor }))}
+        onCambio={() => setRevisionStock((valor) => valor + 1)}
+      />
+    ),
+    stock: (
+      <SeccionStock
+        ubicaciones={datos.ubicaciones} productos={datos.productos}
+        bloqueado={bloqueado} estadoCatalogo={carga.estado} revisionStock={revisionStock}
+      />
+    ),
+  };
+
   return (
-    <main className="app">
+    <div className="app">
       <header className="page-header">
-        <p className="eyebrow">DAO 2026 · F-04.3</p>
         <h1>Catálogo, compras, logística y ventas</h1>
-        <p>Administrá el catálogo, registrá compras al Centro de Distribución y abastecé a los locales con bultos verificados y vendé su stock disponible.</p>
-      </header>
-      <p className="memory-note">Los datos se guardan en SQLite y se conservan al reiniciar el backend. Los borradores de los formularios no se guardan hasta confirmarlos.</p>
-      <div className="catalog-toolbar">
-        <p role="status" aria-live="polite">
-          {carga.estado === 'cargando' ? 'Cargando catálogo…' : 'Catálogo cargado'}
-        </p>
-        <button className="secondary" type="button" disabled={bloqueado} onClick={() => setRevision((valor) => valor + 1)}>
-          Actualizar listados
-        </button>
-      </div>
-      {carga.estado === 'error' && (
-        <div className="notice error" role="alert">
-          <p>La última consulta del catálogo falló.</p>
-          <p>{carga.mensaje}</p>
-          <p>Los borradores se conservan. Actualizá los listados para volver a consultar.</p>
+        <div className="catalog-toolbar">
+          <p role="status" aria-live="polite">
+            {carga.estado === 'cargando' ? 'Cargando catálogo…' : 'Catálogo cargado'}
+          </p>
+          <button className="secondary" type="button" disabled={bloqueado} onClick={() => setRevision((valor) => valor + 1)}>
+            Actualizar listados
+          </button>
         </div>
-      )}
-      <div className="catalog-grid">
-        {['categorias', 'productos', 'proveedores', 'ubicaciones'].map((tipo) => (
-          <SeccionCatalogo
-            key={tipo} tipo={tipo} registros={datos[tipo]}
-            categorias={datos.categorias.filter((item) => item.activo)}
-            bloqueado={bloqueado} estadoConsulta={carga.estado} onGuardar={guardar} onDesactivar={desactivar}
-            onActividad={(recurso, valor) => setOcupados((actual) => ({ ...actual, [recurso]: valor }))}
-          />
-        ))}
-        <SeccionMinimos
-          productos={datos.productos} ubicaciones={datos.ubicaciones}
-          bloqueado={bloqueado} estadoCatalogo={carga.estado}
-          onActividad={(valor) => setOcupados((actual) => ({ ...actual, minimos: valor }))}
-        />
-        <SeccionCompras
-          productos={datos.productos} proveedores={datos.proveedores} ubicaciones={datos.ubicaciones}
-          bloqueado={bloqueado} estadoCatalogo={carga.estado}
-          onActividad={(valor) => setOcupados((actual) => ({ ...actual, compras: valor }))}
-          onRegistrada={() => setRevisionStock((valor) => valor + 1)}
-        />
-        <SeccionLogistica
-          productos={datos.productos} ubicaciones={datos.ubicaciones}
-          bloqueado={bloqueado} estadoCatalogo={carga.estado}
-          onActividad={(valor) => setOcupados((actual) => ({ ...actual, logistica: valor }))}
-          onCambio={() => setRevisionStock((valor) => valor + 1)}
-        />
-        <SeccionVentas
-          productos={datos.productos} ubicaciones={datos.ubicaciones}
-          bloqueado={bloqueado} estadoCatalogo={carga.estado}
-          onActividad={(valor) => setOcupados((actual) => ({ ...actual, ventas: valor }))}
-          onCambio={() => setRevisionStock((valor) => valor + 1)}
-        />
-        <SeccionStock
-          ubicaciones={datos.ubicaciones} productos={datos.productos}
-          bloqueado={bloqueado} estadoCatalogo={carga.estado} revisionStock={revisionStock}
-        />
+      </header>
+      <div className="layout">
+        <nav className="sidebar" aria-label="Secciones">
+          {GRUPOS.map((grupo) => (
+            <div className="nav-group" key={grupo.id}>
+              <p className="nav-title" id={`nav-${grupo.id}`}>{grupo.titulo}</p>
+              <ul aria-labelledby={`nav-${grupo.id}`}>
+                {grupo.vistas.map((vista) => (
+                  <li key={vista.id}>
+                    <a href={`#/${vista.id}`} aria-current={vista.id === activa ? 'page' : undefined}>
+                      {vista.titulo}
+                      {ocupados[vista.id] && <span className="nav-busy"> · guardando…</span>}
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))}
+        </nav>
+        <main className="workspace">
+          {carga.estado === 'error' && (
+            <div className="notice error" role="alert">
+              <p>La última consulta del catálogo falló.</p>
+              <p>{carga.mensaje}</p>
+              <p>Los borradores se conservan. Actualizá los listados para volver a consultar.</p>
+            </div>
+          )}
+          {/* Las vistas ocultas siguen montadas: cambiar de sección no descarta borradores ni operaciones en curso. */}
+          {VISTAS.map((vista) => (
+            <div key={vista.id} id={`vista-${vista.id}`} className="vista" tabIndex="-1" hidden={vista.id !== activa}>
+              {contenido[vista.id]}
+            </div>
+          ))}
+          <p className="memory-note">Los datos se guardan en SQLite y se conservan al reiniciar el backend. Los borradores de los formularios no se guardan hasta confirmarlos y se conservan al cambiar de sección.</p>
+        </main>
       </div>
-      <EstadoConexion />
-    </main>
+    </div>
   );
 }
 

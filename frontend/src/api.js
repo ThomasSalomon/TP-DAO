@@ -1,5 +1,3 @@
-export const HEALTH_PATH = '/api/health';
-
 export class ErrorAPI extends Error {
   constructor(message, estado = null, campos = {}) {
     super(message);
@@ -136,11 +134,5 @@ export function formatearInstante(instante) {
   const [fecha, hora] = instante.split('T');
   const [anio, mes, dia] = fecha.split('-');
   return `${dia}/${mes}/${anio} ${hora.slice(0, 8)}`;
-}
-
-export async function consultarSalud(signal) {
-  const datos = await solicitar(HEALTH_PATH, { signal });
-  if (datos.status !== 'ok') throw new ErrorAPI('La respuesta de salud no es la esperada.');
-  return datos;
 }
 
