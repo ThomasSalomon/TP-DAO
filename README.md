@@ -2,7 +2,14 @@
 
 React + Vite y API Flask Python permiten registrar, consultar, modificar y desactivar lógicamente categorías, productos, proveedores y locales del catálogo POO, y configurar mínimos por producto/local. Las ubicaciones distinguen Locales y Centro de Distribución (CD). El CD se puede registrar, consultar y editar, pero su baja queda bloqueada hasta aprobar una política de reemplazo. `GET /api/health` sigue devolviendo HTTP 200 y `{"status":"ok"}` como comprobación técnica de disponibilidad.
 
-Desde F-02.1 el catálogo, sus estados, los mínimos, las reservas de códigos y la restricción de un único CD se guardan en SQLite mediante `sqlite3` y SQL parametrizado, y se conservan al reiniciar Flask. Desde F-02.2 la API registra compras a proveedores que ingresan su stock como disponible en el CD, con movimientos trazables y costo de referencia por producto (sección F-02.2). Desde F-02.3 la pantalla React permite registrar esas compras y consultar el stock y los movimientos del CD. Los mínimos siguen siendo configuración administrativa: no hay alertas, reposición ni stock en los locales. No hay eliminación física, reactivación, relaciones producto–proveedor, logística, ventas, devoluciones, reportes, autenticación ni ORM. Las decisiones DN-03, DN-09 y DN-11 aprobadas para F-02 están en la sección L de `docs/DECISIONES_F00.md`.
+Todo se guarda en SQLite mediante `sqlite3` y SQL parametrizado y se conserva al reiniciar Flask (F-02.1). Sobre ese catálogo están implementados:
+
+- **Compras (F-02):** compras a proveedores que ingresan su stock como disponible en el CD, con movimientos trazables y costo de referencia por producto.
+- **Reposición y logística (F-03):** necesidades de los locales consolidadas en órdenes por destino, bultos con patrón State, remito, precinto, despacho, recepción y doble verificación antes de habilitar stock en el local, o rechazo por precinto roto.
+- **Ventas (F-04):** ventas multilínea en un local con cobros divididos por medio de pago, caja por local y medio, comprobante interno imprimible y protección contra envíos repetidos.
+- **Stock por ubicación:** saldos por condición y movimientos de cada ubicación, con su documento de origen.
+
+Los mínimos siguen siendo configuración administrativa: no generan alertas ni reposición automática. No hay eliminación física, reactivación, relaciones producto–proveedor, devoluciones, reportes, autenticación ni ORM. El estado frente a la planificación está en «Alcance actual frente a la planificación», al final de este archivo.
 
 ## Estructura
 
@@ -37,8 +44,10 @@ backend/
   requirements.txt     dependencia de ejecución Python
   requirements-dev.txt dependencia de pruebas
 frontend/
+  index.html
   src/
-    App.jsx            datos consultados y coordinación de la pantalla
+    main.jsx           punto de entrada de React
+    App.jsx            navegación por grupos con ruta en el hash, datos consultados y coordinación de las vistas
     SeccionCatalogo.jsx filtros, consulta, edición y confirmación de baja
     SeccionMinimos.jsx configuración activa y consulta histórica por producto/local
     SeccionCompras.jsx borrador de compra con líneas, confirmación y compras registradas
@@ -51,9 +60,9 @@ frontend/
     importes.js        importes ARS en centavos con BigInt para las estimaciones del borrador
     etiquetas.js       textos de estados y condiciones devueltos por Python
     FormularioCatalogo.jsx formularios y consultas de inactivos sin edición
-    EstadoConexion.jsx estado técnico secundario
     api.js             cliente fetch, errores y cancelación
     styles.css         presentación responsive
+    fonts/             IBM Plex Sans local (woff2) y su licencia OFL
   vite.config.js       proxy transparente y configuración de desarrollo
   .env.example         ejemplo público de configuración
   package.json
@@ -81,7 +90,7 @@ pytest.ini
 docs/                  enunciado y planificación previa, conservados
 ```
 
-La presentación HTTP vive en `backend/api.py` y `backend/api_catalogo.py`; la creación/configuración de Flask, en `backend/__init__.py`; el dominio, en `backend/dominio`; el acceso a SQLite, en `backend/persistencia`. El dominio no importa SQLite ni Flask. Los imports HTTP se ejecutan al llamar a `create_app`, por lo que importar y usar el dominio no requiere Flask instalado. React captura datos y presenta respuestas de Python. Node ejecuta herramientas frontend; no hay backend, SSR, BFF, reglas ni persistencia en Node.
+La presentación HTTP vive en `backend/api.py` y los módulos `backend/api_*.py`; la creación/configuración de Flask, en `backend/__init__.py`; el dominio, en `backend/dominio`; el acceso a SQLite, en `backend/persistencia`. El dominio no importa SQLite ni Flask. Los imports HTTP se ejecutan al llamar a `create_app`, por lo que importar y usar el dominio no requiere Flask instalado. React captura datos y presenta respuestas de Python. Node ejecuta herramientas frontend; no hay backend, SSR, BFF, reglas ni persistencia en Node.
 
 ## F-01.1: contrato del catálogo en memoria
 
@@ -444,7 +453,9 @@ Conserva los campos ante un error, muestra carga/éxito/error/vacío y bloquea e
 
 `SeccionMinimos` permite configurar usando únicamente locales y productos activos (siempre excluye CD). “Consultar mínimos históricos (sólo lectura)” incluye inactivos identificados y bloquea el guardado. La tabla conserva las configuraciones y muestra el estado de cada producto, aun si está inactivo. Una selección que acaba de quedar inactiva se conserva para no perder el borrador, como opción deshabilitada fuera del modo histórico; no habilita escrituras. Distingue ausencia, cero, carga y error; no afirma “Sin configurar” si falló la consulta. Conserva la entrada ante errores, cancela consultas obsoletas y bloquea los controles durante el guardado. Tras confirmar, usa la respuesta de Python para actualizar el par sin duplicarlo. “Actualizar mínimos” vuelve a consultar el local; las actualizaciones de maestros también reconsultan sus configuraciones sin borrar el borrador numérico. Cambiar manualmente de local o producto limpia ese borrador para trabajar sobre la nueva selección.
 
-El cliente `fetch` tiene un límite de 10 segundos, cancela lecturas obsoletas y no reintenta escrituras automáticamente. Si no se pudo confirmar una escritura por un fallo de conexión, consultar el listado antes de reenviar. “Actualizar listados” y “Actualizar mínimos” permiten consultar cambios hechos desde otra pestaña; no hay actualización en tiempo real ni resolución de conflictos entre ediciones. Los `PUT` al mismo mínimo se serializan: queda el último procesado. El estado técnico de `/api/health` está disponible en una sección desplegable secundaria.
+El cliente `fetch` tiene un límite de 10 segundos, cancela lecturas obsoletas y no reintenta escrituras automáticamente. Si no se pudo confirmar una escritura por un fallo de conexión, consultar el listado antes de reenviar. “Actualizar listados” y “Actualizar mínimos” permiten consultar cambios hechos desde otra pestaña; no hay actualización en tiempo real ni resolución de conflictos entre ediciones. Los `PUT` al mismo mínimo se serializan: queda el último procesado. La pantalla no consulta `/api/health`: si falla la lectura del catálogo, muestra el error sobre la vista y conserva los borradores.
+
+Cada vista tiene su ruta en el hash (`#/categorias`, `#/compras`, `#/stock`, …), agrupada en Catálogo, Operaciones y Consultas, de modo que recargar o usar Atrás vuelve a la misma sección. Las vistas ocultas siguen montadas, así que cambiar de sección no descarta borradores ni operaciones en curso; el menú marca «guardando…» en la sección que tiene una escritura pendiente. Como el hash no llega al servidor, Flask siempre recibe `/` y no necesita un router SPA. En pantallas angostas las secciones se despliegan con el botón «Secciones».
 
 ## Versiones utilizadas
 
@@ -496,7 +507,7 @@ cd frontend
 npm run dev
 ```
 
-Abrir [frontend de desarrollo](http://127.0.0.1:5173/). La pantalla permite administrar categorías, productos, proveedores, ubicaciones y mínimos por local. El estado de salud permanece accesible en “Estado técnico de conexión”. Los comandos de desarrollo se conservan en F-01.6.
+Abrir [frontend de desarrollo](http://127.0.0.1:5173/). La pantalla abre en Catálogo / Categorías y permite pasar a productos, proveedores, ubicaciones, mínimos, compras, reposición y logística, ventas y caja, y stock por ubicación. El estado de salud se comprueba directamente sobre la API (ver más abajo). Los comandos de desarrollo se conservan en F-01.6.
 
 Camino de la solicitud: navegador → `http://127.0.0.1:5173/api/health` → proxy Vite → `http://127.0.0.1:5000/api/health`. Se conserva `/api`, sin transformación ni lógica de aplicación en el proxy. No es necesario configurar CORS para este camino.
 
@@ -645,7 +656,7 @@ Guion manual reproducible, con una aplicación local de demostración:
 9. Con un borrador sin enviar, pulsar Desactivar en una categoría con producto activo. Cancelar con Enter y comprobar el borrador; volver a abrir y confirmar: debe informar conflicto sin modificar entidades ni borrar campos.
 10. Desactivar primero el producto, luego su categoría; comprobar filtros Inactivos/Todos, consulta sin Guardar y referencia a la categoría conservada. Verificar que los códigos originales y reemplazados siguen rechazándose al crear otros registros. Repetir la baja por API: 200, mismo registro inactivo.
 11. Desactivar un proveedor y un local con mínimo. Comprobar mínimos históricos de local/producto inactivos, incluido cero, con guardado deshabilitado. Los selectores normales deben ofrecer sólo activos y excluir siempre CD. El CD debe mostrar el motivo de bloqueo; un `PATCH` directo debe devolver 409 sin habilitar otro CD.
-12. Generar el build, detener Vite y repetir edición de un maestro activo, confirmación/filtros de baja y consulta histórica en `http://127.0.0.1:5000/`. Recargar y comprobar registros/estados mientras siga el mismo Flask. Abrir la sección técnica y comprobar salud.
+12. Generar el build, detener Vite y repetir edición de un maestro activo, confirmación/filtros de baja y consulta histórica en `http://127.0.0.1:5000/`. Recargar y comprobar registros/estados mientras siga el mismo Flask. Comprobar salud abriendo `http://127.0.0.1:5000/api/health`.
 
 Resultados del incremento técnico inicial, conservados como antecedente:
 
@@ -660,16 +671,25 @@ Resultados del incremento técnico inicial, conservados como antecedente:
 | `npm run build` | Build correcto de Vite 8.3.4. |
 | Build con Vite detenido | HTML, JavaScript y salud HTTP 200 en puerto 5000; React conectado en navegador. `/api/no-existe` conservó 404 JSON. |
 
-Para repetir la prueba de caída: mantener Vite, detener Flask y pulsar “Volver a comprobar”; luego reiniciar Flask y reintentar. El error de red/proxy durante esta prueba negativa es esperado.
+Esa tabla se obtuvo con el panel de estado técnico, retirado después de F-04.3. Para repetir hoy la prueba de caída: mantener Vite, detener Flask y pulsar “Actualizar listados”: debe aparecer “La última consulta del catálogo falló” con los borradores conservados; luego reiniciar Flask y volver a actualizar. El error de red/proxy durante esta prueba negativa es esperado.
 
 Las pruebas de API usan el cliente Flask y archivos temporales; la verificación de UI se hizo en un navegador real de la tarea, sin añadir otro framework de pruebas al proyecto. Las pruebas de dominio usan objetos independientes en memoria. No se afirma cobertura porcentual ni certificación completa de accesibilidad.
 
 ## Alcance actual frente a la planificación
 
-F-01 (catálogo) y F-02 están completas. F-02.1 persiste el catálogo en SQLite, F-02.2 agrega compras, ingreso al CD, existencias, movimientos y costo de referencia por API y F-02.3 sus pantallas React, con las decisiones DN-03, DN-09 y DN-11 aprobadas el 21/10/2026. El detalle de lo aprobado está en la sección L de `docs/DECISIONES_F00.md`; los demás documentos de `docs/` conservan la planificación original.
+Estado al 22/10/2026 respecto de las fases F-00 a F-07 de `docs/PLANIFICACION_TP_POO.md` (sección I). Las decisiones aprobadas por fase están en las secciones L (F-02), M (F-03) y N (F-04) de `docs/DECISIONES_F00.md`; el resto de `docs/` conserva la planificación original.
 
-F-02 queda completa con F-02.3: pantallas React de compras y de stock y movimientos del CD.
+| Fase | Estado | Qué quedó implementado o qué falta |
+| --- | --- | --- |
+| F-00. Alcance y políticas | Parcial | DN-01 a DN-05, DN-09, DN-10 y DN-11 aprobadas y las bases de DN-02, DN-06 y DN-08 aplicadas en F-01. Falta DN-07 (devoluciones) antes de F-05 y cerrar fórmulas, períodos y costos de los reportes antes de F-06. |
+| F-01. Catálogo | Completa | Categorías, productos, proveedores, Locales/CD y mínimos por local, con baja lógica y códigos históricos (RF-01 a RF-04). |
+| F-02. Persistencia, compras e inventario del CD | Completa | SQLite con `sqlite3`, compras con ingreso al CD, existencias, movimientos y costo de referencia; pantallas de compras y stock (RF-05, RF-21). |
+| F-03. Circuito logístico con State | Completa | Necesidades, órdenes por destino, bultos con patrón State, remito, precinto, despacho, recepción, doble verificación y rechazo (RF-06 a RF-13). |
+| F-04. Venta, cobro y comprobante | Completa | Ventas multilínea, cobros divididos, caja por medio, comprobante `CV-…` y clave contra envíos repetidos (RF-14 a RF-16; la parte de ventas de RF-18). |
+| F-05. Devoluciones | Pendiente | Sin implementar (RF-17 y la parte de devoluciones de RF-18). El modelo ya reserva la condición `BLOQUEADO` y los egresos de caja, y cada línea de venta guarda precio y costo históricos. |
+| F-06. Cuatro reportes y Strategy | Pendiente | Sin reportes R-01 a R-04 ni resultado económico (RF-19, RF-20). Hoy sólo hay un patrón implementado (State); el segundo exigido por RT-04 es Strategy en esta fase. |
+| F-07. Integración y entrega | Pendiente | Escenarios integrados, revisión UML y artefactos de entrega. |
 
-Siguen abiertas las aclaraciones docentes G-01 (si el ingreso manual de compras y el margen estimado alcanzan) y DN-08 (si se exige borrado físico además de la baja lógica).
+Después de F-04.3 se reorganizó la pantalla React sin cambiar el alcance: navegación por grupos (Catálogo, Operaciones, Consultas) con una ruta en el hash por vista (`#/productos`) y sin el panel de estado técnico de conexión; `GET /api/health` sigue disponible en la API.
 
-F-03 está completa: F-03.1 (dominio con State y doble verificación), F-03.2 (SQLite y API) y F-03.3 (pantallas React del circuito). F-04 está completa: F-04.1 (dominio de ventas, cobros, caja y comprobante), F-04.2 (SQLite y API) y F-04.3 (pantalla React de venta, comprobante y caja). Siguen abiertas las consultas docentes G-02 (orden multilocal) y G-03 (un remito por bulto). Fuera de F-04: devoluciones (F-05) y reportes con Strategy (F-06). No hay pagos a proveedores, recepciones parciales ni costo promedio o FIFO.
+Siguen abiertas las consultas docentes G-01 (si el ingreso manual de compras y el margen estimado alcanzan), G-02 (orden multilocal), G-03 (un remito por bulto), G-04 / DN-08 (si se exige borrado físico además de la baja lógica), G-06 (rúbrica y formato de entrega) y el formato del comprobante. No se implementan pagos a proveedores, recepciones parciales, costo promedio o FIFO, órdenes de compra sugeridas (OP-01, opcional), alertas por mínimos, autenticación ni ORM.
