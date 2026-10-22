@@ -6,6 +6,25 @@ function borradorVacio(bulto) {
   return { precinto: '', leido: '', intacto: '', localId: String(bulto.destino.id), anulando: false };
 }
 
+const RECORRIDO = ['PREPARADO', 'PRECINTADO', 'EN_TRANSITO', 'RECIBIDO', 'VERIFICADO'];
+
+// Recorrido del bulto según su historial; uno rechazado o anulado termina en ese estado.
+function RecorridoBulto({ bulto }) {
+  const alcanzados = bulto.eventos.map((evento) => evento.estado_nuevo);
+  const cerrado = bulto.estado === 'RECHAZADO' || bulto.estado === 'ANULADO';
+  const pasos = cerrado ? alcanzados : RECORRIDO;
+  return (
+    <ol className={`parcel-track${cerrado ? ' cerrado' : ''}`} aria-label={`Recorrido de ${bulto.codigo}`}>
+      {pasos.map((estado) => (
+        <li key={estado} aria-current={estado === bulto.estado ? 'step' : undefined}
+          className={estado === bulto.estado ? 'actual' : alcanzados.includes(estado) ? 'hecho' : ''}>
+          {ESTADOS_BULTO[estado]}
+        </li>
+      ))}
+    </ol>
+  );
+}
+
 export default function PanelBultos({ datos, ubicaciones, bloqueado, ejecutar }) {
   const abiertas = datos.ordenes.filter((orden) => orden.estado === 'ABIERTA');
   const locales = ubicaciones.filter((item) => item.tipo === 'LOCAL');
@@ -204,6 +223,7 @@ export default function PanelBultos({ datos, ubicaciones, bloqueado, ejecutar })
                 <h5 id={`bulto-${bulto.id}-titulo`}>{bulto.codigo}</h5>
                 <span className="badge">{ESTADOS_BULTO[bulto.estado]}</span>
               </div>
+              <RecorridoBulto bulto={bulto} />
               <p className="detail">
                 Orden {bulto.orden_id} · {bulto.origen.codigo} → {nombreUbicacion(bulto.destino)}
                 {bulto.precinto && ` · Precinto ${bulto.precinto}`}

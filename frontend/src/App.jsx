@@ -34,6 +34,8 @@ function vistaDelHash() {
 
 export default function App() {
   const [activa, setActiva] = useState(vistaDelHash);
+  // En pantallas angostas las secciones se despliegan con un botón de menú.
+  const [menuAbierto, setMenuAbierto] = useState(false);
   const navegado = useRef(false);
   const [datos, setDatos] = useState({ categorias: [], productos: [], proveedores: [], ubicaciones: [] });
   const [revision, setRevision] = useState(0);
@@ -69,6 +71,7 @@ export default function App() {
     function cambiarVista() {
       navegado.current = true;
       setActiva(vistaDelHash());
+      setMenuAbierto(false);
     }
     window.addEventListener('hashchange', cambiarVista);
     return () => window.removeEventListener('hashchange', cambiarVista);
@@ -78,8 +81,6 @@ export default function App() {
   useEffect(() => {
     const titulo = VISTAS.find((vista) => vista.id === activa).titulo;
     document.title = `${titulo} · DAO`;
-    // En la franja horizontal (pantallas angostas) el enlace activo queda a la vista.
-    document.querySelector('.sidebar a[aria-current="page"]')?.scrollIntoView({ block: 'nearest', inline: 'nearest' });
     if (!navegado.current) return;
     const contenedor = document.getElementById(`vista-${activa}`);
     contenedor?.focus({ preventScroll: true });
@@ -166,10 +167,51 @@ export default function App() {
     ),
   };
 
+  const grupoActivo = GRUPOS.find((grupo) => grupo.vistas.some((vista) => vista.id === activa));
+  const vistaActiva = VISTAS.find((vista) => vista.id === activa);
+
   return (
     <div className="app">
-      <header className="page-header">
-        <h1>Catálogo, compras, logística y ventas</h1>
+      <nav className="sidebar" aria-label="Secciones">
+        <div className="brand">
+          <svg className="brand-mark" viewBox="0 0 24 24" width="24" height="24" aria-hidden="true">
+            <path d="M3.5 7.5 12 3l8.5 4.5v9L12 21l-8.5-4.5z" />
+            <path d="M3.5 7.5 12 12l8.5-4.5M12 12v9" />
+          </svg>
+          <div>
+            <p className="brand-name">TP-DAO</p>
+            <p className="brand-scope">Locales y CD</p>
+          </div>
+          <button className="secondary compact menu-toggle" type="button" aria-expanded={menuAbierto}
+            aria-controls="nav-secciones" onClick={() => setMenuAbierto((valor) => !valor)}>
+            {menuAbierto ? 'Cerrar menú' : 'Secciones'}
+          </button>
+        </div>
+        <div className={`nav-groups${menuAbierto ? ' abierto' : ''}`} id="nav-secciones">
+          {GRUPOS.map((grupo) => (
+            <div className="nav-group" key={grupo.id}>
+              <p className="nav-title" id={`nav-${grupo.id}`}>{grupo.titulo}</p>
+              <ul aria-labelledby={`nav-${grupo.id}`}>
+                {grupo.vistas.map((vista) => (
+                  <li key={vista.id}>
+                    <a href={`#/${vista.id}`} aria-current={vista.id === activa ? 'page' : undefined}
+                      onClick={() => setMenuAbierto(false)}>
+                      {vista.titulo}
+                      {ocupados[vista.id] && <span className="nav-busy"> · guardando…</span>}
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))}
+        </div>
+      </nav>
+      <header className="topbar">
+        <div className="breadcrumb">
+          <span>{grupoActivo.titulo}</span>
+          <span aria-hidden="true">/</span>
+          <h1>{vistaActiva.titulo}</h1>
+        </div>
         <div className="catalog-toolbar">
           <p role="status" aria-live="polite">
             {carga.estado === 'cargando' ? 'Cargando catálogo…' : 'Catálogo cargado'}
@@ -179,41 +221,22 @@ export default function App() {
           </button>
         </div>
       </header>
-      <div className="layout">
-        <nav className="sidebar" aria-label="Secciones">
-          {GRUPOS.map((grupo) => (
-            <div className="nav-group" key={grupo.id}>
-              <p className="nav-title" id={`nav-${grupo.id}`}>{grupo.titulo}</p>
-              <ul aria-labelledby={`nav-${grupo.id}`}>
-                {grupo.vistas.map((vista) => (
-                  <li key={vista.id}>
-                    <a href={`#/${vista.id}`} aria-current={vista.id === activa ? 'page' : undefined}>
-                      {vista.titulo}
-                      {ocupados[vista.id] && <span className="nav-busy"> · guardando…</span>}
-                    </a>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          ))}
-        </nav>
-        <main className="workspace">
-          {carga.estado === 'error' && (
-            <div className="notice error" role="alert">
-              <p>La última consulta del catálogo falló.</p>
-              <p>{carga.mensaje}</p>
-              <p>Los borradores se conservan. Actualizá los listados para volver a consultar.</p>
-            </div>
-          )}
-          {/* Las vistas ocultas siguen montadas: cambiar de sección no descarta borradores ni operaciones en curso. */}
-          {VISTAS.map((vista) => (
-            <div key={vista.id} id={`vista-${vista.id}`} className="vista" tabIndex="-1" hidden={vista.id !== activa}>
-              {contenido[vista.id]}
-            </div>
-          ))}
-          <p className="memory-note">Los datos se guardan en SQLite y se conservan al reiniciar el backend. Los borradores de los formularios no se guardan hasta confirmarlos y se conservan al cambiar de sección.</p>
-        </main>
-      </div>
+      <main className="workspace">
+        {carga.estado === 'error' && (
+          <div className="notice error" role="alert">
+            <p>La última consulta del catálogo falló.</p>
+            <p>{carga.mensaje}</p>
+            <p>Los borradores se conservan. Actualizá los listados para volver a consultar.</p>
+          </div>
+        )}
+        {/* Las vistas ocultas siguen montadas: cambiar de sección no descarta borradores ni operaciones en curso. */}
+        {VISTAS.map((vista) => (
+          <div key={vista.id} id={`vista-${vista.id}`} className="vista" tabIndex="-1" hidden={vista.id !== activa}>
+            {contenido[vista.id]}
+          </div>
+        ))}
+        <p className="memory-note">Los datos se guardan en SQLite y se conservan al reiniciar el backend. Los borradores de los formularios no se guardan hasta confirmarlos y se conservan al cambiar de sección.</p>
+      </main>
     </div>
   );
 }

@@ -156,9 +156,9 @@ export default function SeccionMinimos({ productos, ubicaciones, bloqueado, esta
             <div className="table-scroll" role="region" aria-label="Mínimos configurados del local" tabIndex="0">
               <table>
                 <caption className="sr-only">Mínimos configurados del local</caption>
-                <thead><tr><th scope="col">Código de producto</th><th scope="col">Producto</th><th scope="col">Estado del producto</th><th scope="col">Mínimo</th></tr></thead>
+                <thead><tr><th scope="col">Código de producto</th><th scope="col">Producto</th><th scope="col">Estado del producto</th><th scope="col" className="num">Mínimo</th></tr></thead>
                 <tbody>{consulta.minimos.map((item) => (
-                  <tr key={item.producto.id}><td>{item.producto.codigo}</td><td>{item.producto.nombre}</td><td>{item.producto.activo ? 'Activo' : 'Inactivo'}</td><td>{item.minimo} unidades</td></tr>
+                  <tr key={item.producto.id}><td>{item.producto.codigo}</td><td>{item.producto.nombre}</td><td>{item.producto.activo ? 'Activo' : 'Inactivo'}</td><td className="price">{item.minimo} unidades</td></tr>
                 ))}</tbody>
               </table>
             </div>

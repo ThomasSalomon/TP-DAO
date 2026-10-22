@@ -97,8 +97,8 @@ export default function SeccionStock({ ubicaciones, productos, bloqueado, estado
                 <caption className="sr-only">Saldos por producto y condición</caption>
                 <thead><tr>
                   <th scope="col">Código</th><th scope="col">Producto</th>
-                  {columnas.map((condicion) => <th key={condicion} scope="col">{CONDICIONES[condicion]}</th>)}
-                  <th scope="col">Costo de referencia</th>
+                  {columnas.map((condicion) => <th key={condicion} scope="col" className="num">{CONDICIONES[condicion]}</th>)}
+                  <th scope="col" className="num">Costo de referencia</th>
                 </tr></thead>
                 <tbody>{consulta.filas.map((fila) => (
                   <tr key={fila.producto.id}>
@@ -116,7 +116,7 @@ export default function SeccionStock({ ubicaciones, productos, bloqueado, estado
             <div className="table-scroll" role="region" aria-label={`Movimientos de ${ubicacion.codigo}`} tabIndex="0">
               <table>
                 <caption className="sr-only">Movimientos, del más reciente al más antiguo</caption>
-                <thead><tr><th scope="col">N.º</th><th scope="col">Fecha y hora</th><th scope="col">Producto</th><th scope="col">Cantidad</th><th scope="col">Cambio de condición</th><th scope="col">Documento</th></tr></thead>
+                <thead><tr><th scope="col">N.º</th><th scope="col">Fecha y hora</th><th scope="col">Producto</th><th scope="col" className="num">Cantidad</th><th scope="col">Cambio de condición</th><th scope="col">Documento</th></tr></thead>
                 <tbody>{[...consulta.movimientos].reverse().map((item) => (
                   <tr key={item.id}>
                     <td>{item.id}</td>

@@ -79,11 +79,25 @@ export default function SeccionCatalogo({
         <h2 id={`${tipo}-title`}>{titulo}</h2>
         <span className="count">{visibles.length} registros</span>
       </div>
-      <label htmlFor={`${tipo}-estado`}>Estado de {titulo.toLowerCase()}</label>
-      <select id={`${tipo}-estado`} ref={filtro} value={estado} disabled={bloqueado || consultando}
-        onChange={(evento) => setEstado(evento.target.value)}>
-        <option value="activos">Activos</option><option value="inactivos">Inactivos</option><option value="todos">Todos</option>
-      </select>
+      <FormularioCatalogo
+        tipo={tipo} registro={edicion} categorias={categorias}
+        bloqueado={bloqueado || consultando}
+        soloLectura={Boolean(soloLectura)}
+        onGuardar={(id, datos) => onGuardar(tipo, id, datos)}
+        onCancelar={() => setEdicion(null)}
+        onActividad={(valor) => onActividad(tipo, valor)}
+      />
+      {/* El filtro y los avisos de las acciones de fila quedan junto al listado que afectan. */}
+      <div className="list-toolbar">
+        <h3>{listado}</h3>
+        <div className="list-filter">
+          <label htmlFor={`${tipo}-estado`}>Estado de {titulo.toLowerCase()}</label>
+          <select id={`${tipo}-estado`} ref={filtro} value={estado} disabled={bloqueado || consultando}
+            onChange={(evento) => setEstado(evento.target.value)}>
+            <option value="activos">Activos</option><option value="inactivos">Inactivos</option><option value="todos">Todos</option>
+          </select>
+        </div>
+      </div>
       {errorConsulta && <p className="notice error" role="alert">{errorConsulta}</p>}
       {mensajeBaja && <p className="notice success" role="status">{mensajeBaja}</p>}
       {confirmacion && (
@@ -98,15 +112,6 @@ export default function SeccionCatalogo({
         </div>
       )}
       {consultando && <p role="status">Consultando {singular}…</p>}
-      <FormularioCatalogo
-        tipo={tipo} registro={edicion} categorias={categorias}
-        bloqueado={bloqueado || consultando}
-        soloLectura={Boolean(soloLectura)}
-        onGuardar={(id, datos) => onGuardar(tipo, id, datos)}
-        onCancelar={() => setEdicion(null)}
-        onActividad={(valor) => onActividad(tipo, valor)}
-      />
-      <h3>{listado}</h3>
       {!visibles.length ? (
         <p className="empty">
           {estadoConsulta === 'cargando' ? `Cargando ${tipo}…`
@@ -120,7 +125,7 @@ export default function SeccionCatalogo({
             <thead>
               <tr>
                 <th scope="col">ID</th><th scope="col">Código</th><th scope="col">Nombre</th>
-                {esProducto && <><th scope="col">Categoría</th><th scope="col">Precio ARS</th></>}
+                {esProducto && <><th scope="col">Categoría</th><th scope="col" className="num">Precio ARS</th></>}
                 {esUbicacion && <th scope="col">Tipo</th>}
                 <th scope="col">Estado</th>
                 <th scope="col">Acción</th>

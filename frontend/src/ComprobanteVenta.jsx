@@ -10,7 +10,7 @@ function Detalle({ comprobante, nivel, id }) {
       <p className="detail">Documento no fiscal · Local {nombreUbicacion(comprobante.local)} · {formatearInstante(comprobante.instante)}</p>
       <table>
         <caption className="sr-only">Líneas del comprobante {comprobante.numero}</caption>
-        <thead><tr><th scope="col">Producto</th><th scope="col">Cantidad</th><th scope="col">Precio unitario</th><th scope="col">Subtotal</th></tr></thead>
+        <thead><tr><th scope="col">Producto</th><th scope="col" className="num">Cantidad</th><th scope="col" className="num">Precio unitario</th><th scope="col" className="num">Subtotal</th></tr></thead>
         <tbody>{comprobante.lineas.map((linea) => (
           <tr key={linea.linea}>
             <td>{linea.producto.codigo} · {linea.producto.nombre}</td>

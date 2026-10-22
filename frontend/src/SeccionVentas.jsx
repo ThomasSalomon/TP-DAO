@@ -194,6 +194,7 @@ export default function SeccionVentas({ productos, ubicaciones, bloqueado, estad
           ))}
         </select>
       </div>
+      {!localId && locales.length > 0 && <p className="empty">Elegí un local para registrar una venta y consultar sus ventas y su caja.</p>}
       {local && !local.activo && <p className="empty">El local está inactivo: se pueden consultar sus ventas y su caja, pero no registrar ventas nuevas.</p>}
       {consulta.estado === 'cargando' && <p role="status">Cargando ventas y caja…</p>}
       {consulta.estado === 'error' && <p className="notice error" role="alert">{consulta.mensaje} El borrador se conserva.</p>}
@@ -337,7 +338,7 @@ export default function SeccionVentas({ productos, ubicaciones, bloqueado, estad
             <div className="table-scroll" role="region" aria-label={`Ventas de ${local.codigo}`} tabIndex="0">
               <table>
                 <caption className="sr-only">Ventas, de la más reciente a la más antigua</caption>
-                <thead><tr><th scope="col">Comprobante</th><th scope="col">Fecha y hora</th><th scope="col">Líneas</th><th scope="col">Cobros</th><th scope="col">Total</th><th scope="col"><span className="sr-only">Acciones</span></th></tr></thead>
+                <thead><tr><th scope="col">Comprobante</th><th scope="col">Fecha y hora</th><th scope="col">Líneas</th><th scope="col">Cobros</th><th scope="col" className="num">Total</th><th scope="col"><span className="sr-only">Acciones</span></th></tr></thead>
                 <tbody>{[...datos.ventas].reverse().map((venta) => (
                   <tr key={venta.id}>
                     <td>{venta.comprobante}</td>
@@ -366,7 +367,7 @@ export default function SeccionVentas({ productos, ubicaciones, bloqueado, estad
               <div className="table-scroll cash-balances" role="region" aria-label={`Saldos de caja de ${local.codigo}`} tabIndex="0">
                 <table>
                   <caption className="sr-only">Saldo por medio de pago, calculado desde los movimientos</caption>
-                  <thead><tr>{datos.caja.saldos.map((item) => <th key={item.medio.id} scope="col">{item.medio.nombre}</th>)}</tr></thead>
+                  <thead><tr>{datos.caja.saldos.map((item) => <th key={item.medio.id} scope="col" className="num">{item.medio.nombre}</th>)}</tr></thead>
                   <tbody><tr>{datos.caja.saldos.map((item) => <td key={item.medio.id} className="price">$ {item.saldo}</td>)}</tr></tbody>
                 </table>
               </div>
@@ -374,7 +375,7 @@ export default function SeccionVentas({ productos, ubicaciones, bloqueado, estad
                 <div className="table-scroll" role="region" aria-label={`Movimientos de caja de ${local.codigo}`} tabIndex="0">
                   <table>
                     <caption className="sr-only">Movimientos de caja, del más reciente al más antiguo</caption>
-                    <thead><tr><th scope="col">N.º</th><th scope="col">Fecha y hora</th><th scope="col">Medio</th><th scope="col">Tipo</th><th scope="col">Importe</th><th scope="col">Origen</th></tr></thead>
+                    <thead><tr><th scope="col">N.º</th><th scope="col">Fecha y hora</th><th scope="col">Medio</th><th scope="col">Tipo</th><th scope="col" className="num">Importe</th><th scope="col">Origen</th></tr></thead>
                     <tbody>{[...datos.caja.movimientos].reverse().map((item) => (
                       <tr key={item.id}>
                         <td>{item.id}</td>

@@ -201,7 +201,7 @@ export default function SeccionCompras({ productos, proveedores, ubicaciones, bl
         <div className="table-scroll" role="region" aria-label="Compras registradas" tabIndex="0">
           <table>
             <caption className="sr-only">Compras registradas</caption>
-            <thead><tr><th scope="col">N.º</th><th scope="col">Fecha y hora</th><th scope="col">Proveedor</th><th scope="col">Líneas</th><th scope="col">Total</th></tr></thead>
+            <thead><tr><th scope="col">N.º</th><th scope="col">Fecha y hora</th><th scope="col">Proveedor</th><th scope="col">Líneas</th><th scope="col" className="num">Total</th></tr></thead>
             <tbody>{[...consulta.compras].reverse().map((compra) => (
               <tr key={compra.id}>
                 <td>{compra.id}</td>
