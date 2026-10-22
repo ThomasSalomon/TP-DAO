@@ -88,7 +88,7 @@ def recargar_estado():
 
 def asignar_estado(app, estado):
     """Publica en la aplicación los registros devueltos por cargar_estado."""
-    nombres = ("catalogo", "compras", "reposicion", "logistica", "inventario")
+    nombres = ("catalogo", "compras", "reposicion", "logistica", "inventario", "ventas", "caja")
     for nombre, registro in zip(nombres, estado):
         app.extensions[nombre] = registro
 
@@ -119,8 +119,10 @@ def ubicacion_json(ubicacion):
 
 
 def movimiento_json(movimiento):
-    """Movimiento con su documento de origen: línea de compra o bulto."""
+    """Movimiento con su documento de origen: línea de compra, bulto o línea de venta."""
     compra = movimiento.causa == "COMPRA"
+    venta = movimiento.causa == "VENTA"
+    logistico = not compra and not venta
     documento = movimiento.documento
     return {
         "id": movimiento.identificador,
@@ -131,9 +133,12 @@ def movimiento_json(movimiento):
         "condicion_destino": movimiento.condicion_destino,
         "causa": movimiento.causa,
         "compra_id": documento.compra.identificador if compra else None,
-        "linea": documento.numero if compra else None,
-        "bulto_id": None if compra else documento.bulto.identificador,
-        "bulto_codigo": None if compra else documento.bulto.codigo,
+        # Número de línea de la compra o de la venta; los bultos no numeran líneas.
+        "linea": None if logistico else documento.numero,
+        "bulto_id": documento.bulto.identificador if logistico else None,
+        "bulto_codigo": documento.bulto.codigo if logistico else None,
+        "venta_id": documento.venta.identificador if venta else None,
+        "comprobante": documento.venta.comprobante.numero if venta else None,
     }
 
 

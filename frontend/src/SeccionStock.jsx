@@ -10,6 +10,12 @@ function cantidadMovimiento(item) {
   return `${item.cantidad} u.`;
 }
 
+function documentoMovimiento(item) {
+  if (item.compra_id !== null) return `Compra ${item.compra_id}, línea ${item.linea}`;
+  if (item.venta_id !== null) return `Venta ${item.comprobante}, línea ${item.linea}`;
+  return `Bulto ${item.bulto_codigo}`;
+}
+
 // Una fila por producto con la cantidad de cada condición informada por Python.
 function porProducto(saldos, existencias) {
   const costos = new Map(existencias.map((item) => [item.producto.id, item.costo_referencia]));
@@ -118,7 +124,7 @@ export default function SeccionStock({ ubicaciones, productos, bloqueado, estado
                     <td>{item.producto.codigo} · {item.producto.nombre}</td>
                     <td className="price">{cantidadMovimiento(item)}</td>
                     <td>{nombreCondicion(item.condicion_origen)} → {nombreCondicion(item.condicion_destino)}</td>
-                    <td>{item.compra_id !== null ? `Compra ${item.compra_id}, línea ${item.linea}` : `Bulto ${item.bulto_codigo}`}</td>
+                    <td>{documentoMovimiento(item)}</td>
                   </tr>
                 ))}</tbody>
               </table>

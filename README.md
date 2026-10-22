@@ -1,4 +1,4 @@
-# TP DAO 2026 — catálogo, compras y logística CD–locales en SQLite (F-03.3)
+# TP DAO 2026 — catálogo, compras, logística CD–locales y ventas en SQLite (F-04.2)
 
 React + Vite y API Flask Python permiten registrar, consultar, modificar y desactivar lógicamente categorías, productos, proveedores y locales del catálogo POO, y configurar mínimos por producto/local. Las ubicaciones distinguen Locales y Centro de Distribución (CD). El CD se puede registrar, consultar y editar, pero su baja queda bloqueada hasta aprobar una política de reemplazo. `GET /api/health` sigue devolviendo HTTP 200 y `{"status":"ok"}` como comprobación técnica de disponibilidad.
 
@@ -13,6 +13,7 @@ backend/
   api_catalogo.py      HTTP/JSON de maestros y configuración de mínimos
   api_compras.py       HTTP/JSON de compras, existencias, saldos y movimientos
   api_logistica.py     HTTP/JSON de necesidades, órdenes, bultos y remitos
+  api_ventas.py        HTTP/JSON de ventas, comprobante, medios de pago y caja por local
   api_comun.py         errores, validación, JSON comunes, carga y guardado compartidos
   dominio/
     __init__.py        clases del catálogo y excepciones de dominio
@@ -32,6 +33,7 @@ backend/
     compras_sqlite.py  carga y guardado de compras
     inventario_sqlite.py saldos y movimientos de stock
     logistica_sqlite.py necesidades, órdenes, bultos, eventos y remitos
+    ventas_sqlite.py   ventas, líneas, cobros y movimientos de caja
   requirements.txt     dependencia de ejecución Python
   requirements-dev.txt dependencia de pruebas
 frontend/
@@ -70,6 +72,7 @@ tests/test_api_compras.py contratos, reinicio, fallos, concurrencia y esquema de
 tests/test_logistica.py consolidación, ciclo del bulto, doble verificación y transiciones
 tests/test_api_logistica.py contratos, reinicio por etapa, fallos, migración y esquema logístico
 tests/test_ventas.py   ventas, cobros divididos, caja, comprobante y clave de operación
+tests/test_api_ventas.py contratos, reinicio, clave repetida, fallos, concurrencia, esquema y migración de ventas
 tests/conftest.py      base temporal por aplicación; los tests nunca usan la base real
 pytest.ini
 docs/                  enunciado y planificación previa, conservados
@@ -362,13 +365,38 @@ Una base creada con F-02 recibe la columna `bulto_id` por `ALTER TABLE` al inici
 
 ## F-04.1: dominio de ventas, cobros y comprobante
 
-Aplica las decisiones de la sección N de `docs/DECISIONES_F00.md`. En esta parte sólo existe el dominio con sus pruebas: todavía no hay tablas, API ni pantalla de ventas (F-04.2 y F-04.3).
+Aplica las decisiones de la sección N de `docs/DECISIONES_F00.md`. F-04.2 agrega su persistencia y su API; la pantalla de ventas llega con F-04.3.
 
 - **Venta.** `Venta` es un documento confirmado que se construye completo y no se modifica. Compone sus `DetalleVenta`, `Cobro` y `Comprobante`, y valida todo antes de existir: local (nunca el CD), al menos una línea y un cobro, productos sin repetir, cantidades enteras positivas, un medio distinto por cobro e importes ARS exactos. Los cobros deben sumar exactamente el total; si no, el mensaje informa ambos importes. Los errores de una línea o un cobro indican su número.
 - **Registro.** `RegistroVentas.registrar` copia en cada línea el precio vigente del producto y su costo de referencia (última compra, o `None` si nunca se compró), exige local y productos activos, pide al `Inventario` la salida y a la `Caja` los ingresos, y recién entonces guarda la venta. Con una `clave_operacion` ya registrada devuelve la venta existente, sin efectos de stock ni de caja, e indica que no es nueva.
 - **Stock.** `Inventario.vender` descuenta sólo la condición DISPONIBLE del local, con causa `VENTA` y la línea como documento; comprueba todas las líneas antes de modificar ninguna. El stock pendiente, en tránsito, reservado o rechazado nunca es vendible.
 - **Caja.** `Caja` registra un `MovimientoCaja` de ingreso por cobro, con local, medio, importe y cobro de origen; el saldo por local y medio se calcula desde los movimientos. Los egresos por reintegro llegan con F-05.
 - **Medios y comprobante.** `RegistroVentas` trae los cuatro medios fijos (Efectivo, Débito, Crédito, Transferencia). El comprobante se numera `CV-00000001` a partir del identificador de la venta.
+
+## F-04.2: persistencia y API de ventas, cobros y caja
+
+Cada venta se guarda en una sola transacción con sus líneas, cobros, la salida de stock de cada línea y un ingreso de caja por cobro. Al iniciar, `cargar_estado` reconstruye las ventas después de la logística y antes del inventario, porque los movimientos `VENTA` remiten a sus líneas, y por último la caja, cuyos movimientos remiten a sus cobros. Si el guardado falla, la memoria vuelve al último estado confirmado y la API responde 500, como en compras y logística.
+
+| Método y ruta | Cuerpo | Resultado |
+| --- | --- | --- |
+| `GET /api/medios-pago` | — | `{"medios_pago":[{"id","codigo","nombre"}]}`: los cuatro medios fijos. |
+| `POST /api/ventas` | `{"local_id":2,"clave_operacion":"…","lineas":[{"producto_id":1,"cantidad":2}],"cobros":[{"medio_pago_id":1,"importe":"2000"},{"medio_pago_id":2,"importe":"1000"}]}` | 201 con la venta y `Location`. Con una `clave_operacion` ya registrada, 200 con la venta existente y sin nuevos efectos. |
+| `GET /api/ventas`, `GET /api/ventas/<id>` | — | Venta con `comprobante`, local, instante, clave, líneas (precio unitario, costo de referencia o `null`, subtotal), cobros por medio, total y moneda. |
+| `GET /api/ventas/<id>/comprobante` | — | Comprobante interno `CV-00000001`: local, instante, líneas, cobros y total, sin costos ni clave. Reconsultarlo no registra otra venta. |
+| `GET /api/ubicaciones/<id>/caja` | — | Saldo de cada medio calculado desde los movimientos (`"0.00"` si no hubo) y los movimientos con su venta, comprobante y número de cobro. |
+
+El precio no viaja en la solicitud: Python copia el vigente del catálogo. Los importes de cobro son texto ARS, como los costos de compra. Formato inválido es 400 con `fields` por línea o cobro (`lineas.2.cantidad`, `cobros.1.importe`); local, producto o medio inexistentes son 404 con su campo (`local_id`, `lineas.N.producto_id`, `cobros.N.medio_pago_id`); cobros que no suman el total, medio o producto repetido, CD como local o clave vacía o de más de 64 caracteres son 400; stock disponible insuficiente o local/producto inactivo son 409. Ningún error deja venta, stock ni caja. Los movimientos de `/api/ubicaciones/<id>/movimientos` agregan `venta_id` y `comprobante`; `linea` es la línea de la compra o de la venta y queda nula en los bultos.
+
+| Tabla | Contenido y restricciones |
+| --- | --- |
+| `medios_pago` | Los cuatro medios fijos, cargados al iniciar si faltan; código único. |
+| `ventas` | Local, instante y `clave_operacion` única de 1 a 64 caracteres. El comprobante no tiene tabla: su número se deriva del ID, uno por venta. |
+| `detalles_venta` | Clave (venta, línea), producto único por venta, `cantidad > 0`, precio positivo y costo de referencia positivo o nulo. |
+| `cobros` | Clave (venta, número), medio único por venta e `importe_centavos > 0`. |
+| `movimientos_caja` | Local, medio, tipo, importe positivo y el cobro que lo originó, que ingresa una sola vez. Un ingreso exige cobro; `EGRESO` queda admitido para los reintegros de F-05. Dos triggers rechazan `UPDATE` y `DELETE`. |
+| `movimientos_stock` | Columnas `venta_id` y `venta_linea`; un índice único impide descontar dos veces la misma línea y un trigger exige que todo movimiento `VENTA` referencie una línea existente. |
+
+Una base anterior recibe `venta_id` y `venta_linea` por `ALTER TABLE` al iniciar, igual que `bulto_id` en F-03. El trigger de F-03 que exigía bulto a toda causa distinta de `COMPRA` se reemplaza por uno que también exceptúa `VENTA`; los datos previos se conservan. La pantalla de stock ya muestra la venta y la línea como documento de esos movimientos.
 
 ## Memoria, persistencia, pantalla y límites actuales
 
@@ -509,6 +537,8 @@ Desde la raíz:
 .\.venv\Scripts\python.exe -m pytest -q
 ```
 
+Verificación de F-04.2 el 22/10/2026: **641 casos aprobados** con la suite completa; los 583 previos siguen pasando, con dos tests de F-02/F-03 ajustados a las columnas nuevas de `movimientos_stock`. Se agregaron 58 casos en `tests/test_api_ventas.py`, sobre un local con stock habilitado por el circuito logístico completo: venta con cobros divididos, comprobante sin costos, movimientos `VENTA` y caja por medio; medios fijos; reinicio con clave repetida y numeración continua; clave repetida con otro contenido sin efectos; precio y costo históricos; línea sin stock y stock pendiente de verificar no vendibles; formato inválido (400 con campos), referencias inexistentes (404 con campo), reglas del dominio e inactivos; fallo de guardado sin efectos y reintento; ventas concurrentes sin sobreventa ni duplicar claves; 21 restricciones del esquema; migración de una base de F-03 con el trigger anterior. `npm run build` terminó correctamente con el cambio de la tabla de movimientos. En este equipo la suite completa tardó 25 minutos, no los dos que se registraron antes; el mayor costo son las bases SQLite temporales de los tests de API.
+
 Verificación de F-04.1 el 21/10/2026: **583 casos aprobados** con la suite completa; los 555 previos siguen pasando. Se agregaron 28 casos en `tests/test_ventas.py`: venta de varias líneas con cobros divididos (subtotales, total, precios y costos copiados, comprobante, salida de stock y caja por medio), última unidad, una línea sin stock que impide toda la venta, stock pendiente, en tránsito, reservado o rechazado nunca vendible, venta de lo recibido sólo después de verificar bulto y remito, cobros que no cubren o exceden el total, medio repetido, importes y tipos inválidos, líneas inválidas, CD e inactivos, clave de operación repetida sin efectos y su validación, precio y costo históricos, costo faltante, sólo lectura, continuidad de identificadores, restauración y medios fijos. Python `-I -S` confirma que el dominio sigue sin cargar Flask ni SQLite. La suite completa tarda unos dos minutos por las bases SQLite temporales de los tests de API.
 
 Verificación de F-03.3 el 21/10/2026: no hubo cambios de backend, así que la suite sigue con los 555 casos aprobados de F-03.2; `npm run build` terminó correctamente. Prueba manual en el navegador integrado con el build servido por Flask y `TP_DAO_DB` temporal:
@@ -619,4 +649,4 @@ F-02 queda completa con F-02.3: pantallas React de compras y de stock y movimien
 
 Siguen abiertas las aclaraciones docentes G-01 (si el ingreso manual de compras y el margen estimado alcanzan) y DN-08 (si se exige borrado físico además de la baja lógica).
 
-F-03 está completa: F-03.1 (dominio con State y doble verificación), F-03.2 (SQLite y API) y F-03.3 (pantallas React del circuito). F-04 está en curso: F-04.1 (dominio de ventas, cobros, caja y comprobante) está implementada; faltan F-04.2 (SQLite y API) y F-04.3 (pantallas). Siguen abiertas las consultas docentes G-02 (orden multilocal) y G-03 (un remito por bulto). Fuera de F-04: devoluciones (F-05) y reportes con Strategy (F-06). No hay pagos a proveedores, recepciones parciales ni costo promedio o FIFO.
+F-03 está completa: F-03.1 (dominio con State y doble verificación), F-03.2 (SQLite y API) y F-03.3 (pantallas React del circuito). F-04 está en curso: F-04.1 (dominio de ventas, cobros, caja y comprobante) y F-04.2 (SQLite y API) están implementadas; falta F-04.3 (pantallas). Siguen abiertas las consultas docentes G-02 (orden multilocal) y G-03 (un remito por bulto). Fuera de F-04: devoluciones (F-05) y reportes con Strategy (F-06). No hay pagos a proveedores, recepciones parciales ni costo promedio o FIFO.

@@ -376,5 +376,5 @@ def test_base_de_f02_recibe_la_columna_de_bulto_sin_perder_datos(tmp_path):
     conexion = sqlite3.connect(ruta)
     columnas = [fila[1] for fila in conexion.execute("PRAGMA table_info(movimientos_stock)")]
     conexion.close()
-    assert columnas[-1] == "bulto_id"
+    assert columnas[-3:] == ["bulto_id", "venta_id", "venta_linea"]
     assert saldos(create_app(base_datos=ruta).test_client(), CD)[("001", "RESERVADO")] == 5

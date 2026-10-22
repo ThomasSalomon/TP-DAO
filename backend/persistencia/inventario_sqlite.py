@@ -6,7 +6,7 @@ from datetime import datetime
 from ..dominio import Inventario, MovimientoStock
 
 
-def cargar_inventario(conexion, catalogo, compras, logistica):
+def cargar_inventario(conexion, catalogo, compras, logistica, ventas):
     """Saldos y movimientos confirmados; cada movimiento vuelve a vincular su documento."""
     inventario = Inventario()
     cursor = conexion.cursor()
@@ -19,16 +19,18 @@ def cargar_inventario(conexion, catalogo, compras, logistica):
     cursor.execute(
         """
         SELECT id, instante, ubicacion_id, producto_id, cantidad, condicion_origen, condicion_destino, causa,
-               compra_id, compra_linea, bulto_id
+               compra_id, compra_linea, bulto_id, venta_id, venta_linea
         FROM movimientos_stock ORDER BY id
         """
     )
     for fila in cursor.fetchall():
         identificador, instante, ubicacion_id, producto_id, cantidad, origen, destino, causa = fila[:8]
-        compra_id, linea, bulto_id = fila[8:]
+        compra_id, linea, bulto_id, venta_id, venta_linea = fila[8:]
         producto = catalogo.obtener_producto(producto_id)
         if causa == "COMPRA":
             documento = compras.obtener(compra_id).detalles[linea - 1]
+        elif causa == "VENTA":
+            documento = ventas.obtener(venta_id).detalles[venta_linea - 1]
         else:
             documento = next(
                 detalle for detalle in logistica.obtener_bulto(bulto_id).detalles if detalle.producto is producto
@@ -44,22 +46,24 @@ def guardar_movimientos(conexion, movimientos):
     """Inserta los movimientos y actualiza en SQL los saldos que afectan."""
     for movimiento in movimientos:
         documento = movimiento.documento
-        compra_id = linea = bulto_id = None
+        compra_id = linea = bulto_id = venta_id = venta_linea = None
         if movimiento.causa == "COMPRA":
             compra_id, linea = documento.compra.identificador, documento.numero
+        elif movimiento.causa == "VENTA":
+            venta_id, venta_linea = documento.venta.identificador, documento.numero
         else:
             bulto_id = documento.bulto.identificador
         conexion.execute(
             """
             INSERT INTO movimientos_stock (
                 id, instante, ubicacion_id, producto_id, cantidad, condicion_origen, condicion_destino,
-                causa, compra_id, compra_linea, bulto_id
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                causa, compra_id, compra_linea, bulto_id, venta_id, venta_linea
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
             (
                 movimiento.identificador, movimiento.instante.isoformat(), movimiento.ubicacion.identificador,
                 movimiento.producto.identificador, movimiento.cantidad, movimiento.condicion_origen,
-                movimiento.condicion_destino, movimiento.causa, compra_id, linea, bulto_id,
+                movimiento.condicion_destino, movimiento.causa, compra_id, linea, bulto_id, venta_id, venta_linea,
             ),
         )
         clave = (movimiento.ubicacion.identificador, movimiento.producto.identificador)

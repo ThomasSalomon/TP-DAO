@@ -4,6 +4,8 @@ import os
 import sqlite3
 from pathlib import Path
 
+from ..dominio import MEDIOS_PAGO
+
 ESQUEMA = """
 CREATE TABLE IF NOT EXISTS categorias (
     id INTEGER PRIMARY KEY,
@@ -168,18 +170,102 @@ CREATE TABLE IF NOT EXISTS remitos (
     instante_cierre TEXT,
     CHECK ((estado = 'EMITIDO') = (instante_cierre IS NULL))
 );
+
+CREATE TABLE IF NOT EXISTS medios_pago (
+    id INTEGER PRIMARY KEY,
+    codigo TEXT NOT NULL UNIQUE,
+    nombre TEXT NOT NULL
+);
+
+-- El comprobante no tiene tabla: su número se deriva del ID de la venta, uno por venta.
+CREATE TABLE IF NOT EXISTS ventas (
+    id INTEGER PRIMARY KEY,
+    local_id INTEGER NOT NULL REFERENCES ubicaciones (id),
+    instante TEXT NOT NULL,
+    -- Un envío repetido del mismo borrador no registra otra venta (RB-10).
+    clave_operacion TEXT NOT NULL UNIQUE CHECK (length(clave_operacion) BETWEEN 1 AND 64)
+);
+
+CREATE TABLE IF NOT EXISTS detalles_venta (
+    venta_id INTEGER NOT NULL REFERENCES ventas (id),
+    linea INTEGER NOT NULL CHECK (linea > 0),
+    producto_id INTEGER NOT NULL REFERENCES productos (id),
+    cantidad INTEGER NOT NULL CHECK (cantidad > 0),
+    precio_unitario_centavos INTEGER NOT NULL CHECK (precio_unitario_centavos > 0),
+    -- NULL si el producto no tenía compras: el costo falta, no es cero.
+    costo_referencia_centavos INTEGER CHECK (costo_referencia_centavos > 0),
+    PRIMARY KEY (venta_id, linea),
+    UNIQUE (venta_id, producto_id)
+);
+
+CREATE TABLE IF NOT EXISTS cobros (
+    venta_id INTEGER NOT NULL REFERENCES ventas (id),
+    numero INTEGER NOT NULL CHECK (numero > 0),
+    medio_pago_id INTEGER NOT NULL REFERENCES medios_pago (id),
+    importe_centavos INTEGER NOT NULL CHECK (importe_centavos > 0),
+    PRIMARY KEY (venta_id, numero),
+    UNIQUE (venta_id, medio_pago_id)
+);
+
+CREATE TABLE IF NOT EXISTS movimientos_caja (
+    id INTEGER PRIMARY KEY,
+    instante TEXT NOT NULL,
+    local_id INTEGER NOT NULL REFERENCES ubicaciones (id),
+    medio_pago_id INTEGER NOT NULL REFERENCES medios_pago (id),
+    -- EGRESO queda admitido para los reintegros de F-05, que agregarán su referencia a la devolución.
+    tipo TEXT NOT NULL CHECK (tipo IN ('INGRESO', 'EGRESO')),
+    importe_centavos INTEGER NOT NULL CHECK (importe_centavos > 0),
+    cobro_venta_id INTEGER,
+    cobro_numero INTEGER,
+    FOREIGN KEY (cobro_venta_id, cobro_numero) REFERENCES cobros (venta_id, numero),
+    -- Cada cobro ingresa a caja una sola vez.
+    UNIQUE (cobro_venta_id, cobro_numero),
+    CHECK ((tipo = 'INGRESO') = (cobro_venta_id IS NOT NULL AND cobro_numero IS NOT NULL))
+);
+
+CREATE TRIGGER IF NOT EXISTS movimientos_caja_sin_modificacion BEFORE UPDATE ON movimientos_caja
+BEGIN
+    SELECT RAISE(ABORT, 'Los movimientos de caja no se modifican.');
+END;
+
+CREATE TRIGGER IF NOT EXISTS movimientos_caja_sin_borrado BEFORE DELETE ON movimientos_caja
+BEGIN
+    SELECT RAISE(ABORT, 'Los movimientos de caja no se borran.');
+END;
 """
 
-# Requieren la columna bulto_id, que una base de F-02 recibe por ALTER TABLE.
-ESQUEMA_MOVIMIENTOS_BULTO = """
+# Columnas que una base anterior recibe por ALTER TABLE, porque CREATE TABLE IF NOT EXISTS
+# no modifica tablas existentes: bulto_id desde F-03 y la línea de venta desde F-04.
+COLUMNAS_MOVIMIENTOS = (
+    ("bulto_id", "INTEGER REFERENCES bultos (id)"),
+    ("venta_id", "INTEGER REFERENCES ventas (id)"),
+    ("venta_linea", "INTEGER"),
+)
+
+# Requieren las columnas anteriores.
+ESQUEMA_MOVIMIENTOS_DOCUMENTO = """
 -- Cada causa logística se aplica una sola vez por bulto, producto y ubicación.
 CREATE UNIQUE INDEX IF NOT EXISTS movimientos_bulto_unico
     ON movimientos_stock (bulto_id, producto_id, causa, ubicacion_id) WHERE bulto_id IS NOT NULL;
 
-CREATE TRIGGER IF NOT EXISTS movimientos_logisticos_con_bulto BEFORE INSERT ON movimientos_stock
-WHEN NEW.causa <> 'COMPRA' AND NEW.bulto_id IS NULL
+-- F-03 creó este trigger sin la causa VENTA: se reemplaza para que las ventas no exijan bulto.
+DROP TRIGGER IF EXISTS movimientos_logisticos_con_bulto;
+CREATE TRIGGER movimientos_logisticos_con_bulto BEFORE INSERT ON movimientos_stock
+WHEN NEW.causa NOT IN ('COMPRA', 'VENTA') AND NEW.bulto_id IS NULL
 BEGIN
     SELECT RAISE(ABORT, 'Un movimiento logístico debe referenciar su bulto.');
+END;
+
+-- Cada línea de venta descuenta stock una sola vez.
+CREATE UNIQUE INDEX IF NOT EXISTS movimientos_venta_unico
+    ON movimientos_stock (venta_id, venta_linea) WHERE venta_id IS NOT NULL;
+
+CREATE TRIGGER IF NOT EXISTS movimientos_venta_con_linea BEFORE INSERT ON movimientos_stock
+WHEN NEW.causa = 'VENTA' AND NOT EXISTS (
+    SELECT 1 FROM detalles_venta WHERE venta_id = NEW.venta_id AND linea = NEW.venta_linea
+)
+BEGIN
+    SELECT RAISE(ABORT, 'Un movimiento de venta debe referenciar su línea.');
 END;
 """
 
@@ -218,10 +304,13 @@ class BaseDatos:
         try:
             conexion.executescript(ESQUEMA)
             columnas = [fila[1] for fila in conexion.execute("PRAGMA table_info(movimientos_stock)")]
-            if "bulto_id" not in columnas:
-                # CREATE TABLE IF NOT EXISTS no modifica tablas existentes: se agrega la columna de F-03.
-                conexion.execute("ALTER TABLE movimientos_stock ADD COLUMN bulto_id INTEGER REFERENCES bultos (id)")
-            conexion.executescript(ESQUEMA_MOVIMIENTOS_BULTO)
+            for nombre, definicion in COLUMNAS_MOVIMIENTOS:
+                if nombre not in columnas:
+                    conexion.execute(f"ALTER TABLE movimientos_stock ADD COLUMN {nombre} {definicion}")
+            conexion.executescript(ESQUEMA_MOVIMIENTOS_DOCUMENTO)
+            # Medios fijos de DN-05: se agregan si faltan, sin modificar los existentes.
+            conexion.executemany("INSERT OR IGNORE INTO medios_pago (id, codigo, nombre) VALUES (?, ?, ?)", MEDIOS_PAGO)
+            conexion.commit()
         finally:
             conexion.close()
 
