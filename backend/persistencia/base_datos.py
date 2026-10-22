@@ -52,6 +52,55 @@ CREATE TABLE IF NOT EXISTS codigos_reservados (
     entidad_id INTEGER NOT NULL,
     PRIMARY KEY (entidad, clave)
 );
+
+CREATE TABLE IF NOT EXISTS compras (
+    id INTEGER PRIMARY KEY,
+    proveedor_id INTEGER NOT NULL REFERENCES proveedores (id),
+    centro_id INTEGER NOT NULL REFERENCES ubicaciones (id),
+    instante TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS detalles_compra (
+    compra_id INTEGER NOT NULL REFERENCES compras (id),
+    linea INTEGER NOT NULL CHECK (linea > 0),
+    producto_id INTEGER NOT NULL REFERENCES productos (id),
+    cantidad INTEGER NOT NULL CHECK (cantidad > 0),
+    costo_unitario_centavos INTEGER NOT NULL CHECK (costo_unitario_centavos > 0),
+    PRIMARY KEY (compra_id, linea),
+    UNIQUE (compra_id, producto_id)
+);
+
+CREATE TABLE IF NOT EXISTS existencias (
+    ubicacion_id INTEGER NOT NULL REFERENCES ubicaciones (id),
+    producto_id INTEGER NOT NULL REFERENCES productos (id),
+    condicion TEXT NOT NULL CHECK (
+        condicion IN ('DISPONIBLE', 'RESERVADO', 'EN_TRANSITO', 'PENDIENTE', 'RECHAZADO', 'BLOQUEADO')
+    ),
+    cantidad INTEGER NOT NULL CHECK (cantidad >= 0),
+    PRIMARY KEY (ubicacion_id, producto_id, condicion)
+);
+
+CREATE TABLE IF NOT EXISTS movimientos_stock (
+    id INTEGER PRIMARY KEY,
+    instante TEXT NOT NULL,
+    ubicacion_id INTEGER NOT NULL REFERENCES ubicaciones (id),
+    producto_id INTEGER NOT NULL REFERENCES productos (id),
+    cantidad INTEGER NOT NULL CHECK (cantidad > 0),
+    condicion_origen TEXT CHECK (
+        condicion_origen IN ('DISPONIBLE', 'RESERVADO', 'EN_TRANSITO', 'PENDIENTE', 'RECHAZADO', 'BLOQUEADO')
+    ),
+    condicion_destino TEXT CHECK (
+        condicion_destino IN ('DISPONIBLE', 'RESERVADO', 'EN_TRANSITO', 'PENDIENTE', 'RECHAZADO', 'BLOQUEADO')
+    ),
+    causa TEXT NOT NULL,
+    compra_id INTEGER,
+    compra_linea INTEGER,
+    FOREIGN KEY (compra_id, compra_linea) REFERENCES detalles_compra (compra_id, linea),
+    -- Cada línea de compra ingresa una sola vez.
+    UNIQUE (compra_id, compra_linea),
+    CHECK (condicion_origen IS NOT NULL OR condicion_destino IS NOT NULL),
+    CHECK (causa <> 'COMPRA' OR (compra_id IS NOT NULL AND compra_linea IS NOT NULL))
+);
 """
 
 

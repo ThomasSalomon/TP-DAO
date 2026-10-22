@@ -50,25 +50,34 @@ def _validar_identificador(identificador):
         raise ValueError("El identificador debe ser positivo.")
 
 
-def _precio_a_centavos(precio):
+def importe_a_centavos(importe, campo):
     """Recibe pesos como texto decimal con punto, sin float ni redondeos."""
-    texto = _texto_no_vacio(precio, "precio")
+    texto = _texto_no_vacio(importe, campo)
     partes = texto.split(".")
     if len(partes) > 2 or any(
         not parte.isascii() or not parte.isdigit() for parte in partes
     ):
-        raise ValueError("El precio debe usar dígitos y un punto decimal opcional.")
+        raise ValueError(f"El {campo} debe usar dígitos y un punto decimal opcional.")
     if len(partes) == 2 and len(partes[1]) > 2:
-        raise ValueError("El precio no puede tener más de dos decimales.")
+        raise ValueError(f"El {campo} no puede tener más de dos decimales.")
 
     centavos = int(partes[0]) * 100
     if len(partes) == 2:
         centavos += int(partes[1].ljust(2, "0"))
     if centavos <= 0:
-        raise ValueError("El precio debe ser estrictamente positivo.")
+        raise ValueError(f"El {campo} debe ser estrictamente positivo.")
     if centavos > PRECIO_MAXIMO_CENTAVOS:
-        raise ValueError("El precio supera el máximo admitido de 92233720368547758.07.")
+        raise ValueError(f"El {campo} supera el máximo admitido de 92233720368547758.07.")
     return centavos
+
+
+def importe_a_texto(centavos):
+    """Representación textual en pesos ARS, siempre con dos decimales."""
+    return f"{centavos // 100}.{centavos % 100:02d}"
+
+
+def _precio_a_centavos(precio):
+    return importe_a_centavos(precio, "precio")
 
 
 class Categoria:
@@ -158,7 +167,7 @@ class Producto:
     @property
     def precio(self):
         """Representación textual en pesos ARS, siempre con dos decimales."""
-        return f"{self._precio_centavos // 100}.{self._precio_centavos % 100:02d}"
+        return importe_a_texto(self._precio_centavos)
 
     def modificar(self, codigo, nombre, categoria, precio):
         """Actualiza datos juntos, conservando identidad y referencias válidas."""
@@ -379,6 +388,13 @@ class Catalogo:
     def obtener_ubicacion(self, identificador):
         _validar_identificador(identificador)
         return self._ubicaciones[identificador]
+
+    def centro_distribucion(self):
+        """El único CD registrado, o None si todavía no se dio de alta."""
+        for ubicacion in self._ubicaciones.values():
+            if ubicacion.tipo == "CD":
+                return ubicacion
+        return None
 
     def buscar_ubicacion_por_codigo(self, codigo):
         clave = _texto_no_vacio(codigo, "código").casefold()

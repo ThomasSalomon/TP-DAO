@@ -101,16 +101,15 @@ erDiagram
     COMPRA {
         int id PK
         int proveedor_id FK
-        int cd_id FK
-        datetime fecha
-        bool confirmada
+        int centro_id FK "el CD"
+        datetime instante "al confirmar"
     }
     DETALLE_COMPRA {
-        int id PK
-        int compra_id FK
-        int producto_id FK
+        int compra_id PK, FK
+        int linea PK
+        int producto_id FK "unico por compra"
         int cantidad "mayor que 0"
-        int costo_unitario_centavos
+        int costo_unitario_centavos "mayor que 0"
     }
     NECESIDAD_REPOSICION {
         int id PK
@@ -178,8 +177,9 @@ erDiagram
         string condicion_destino
         int cantidad "mayor que 0"
         string causa
-        datetime fecha_hora
-        int detalle_compra_id FK
+        datetime instante
+        int compra_id FK "con compra_linea"
+        int compra_linea FK
         int bulto_id FK
         int detalle_venta_id FK
         int detalle_devolucion_id FK

@@ -1,101 +1,23 @@
 """Adaptador HTTP del catálogo. Las reglas pertenecen al dominio."""
 
-import sqlite3
-
 from flask import Blueprint, current_app, jsonify, request, url_for
-from werkzeug.exceptions import BadRequest
 
-from .dominio import CentroDistribucionDuplicadoError, CodigoDuplicadoError, ConflictoCatalogoError
-from .persistencia import (
-    cargar_catalogo, guardar_categoria, guardar_minimo, guardar_producto, guardar_proveedor, guardar_ubicacion,
+from .api_comun import (
+    MAXIMO_ENTERO_JSON, ErrorCatalogoAPI, datos_json, error_catalogo, guardar_cambio, operacion_dominio,
 )
+from .persistencia import guardar_categoria, guardar_minimo, guardar_producto, guardar_proveedor, guardar_ubicacion
 
 api_catalogo = Blueprint("catalogo", __name__, url_prefix="/api")
-# El cliente JSON usa Number: no aceptar cantidades que perderían precisión.
-MAXIMO_ENTERO_JSON = 2**53 - 1
-
-
-class ErrorCatalogoAPI(Exception):
-    def __init__(self, estado, mensaje, campos=None):
-        super().__init__(mensaje)
-        self.estado = estado
-        self.campos = campos or {}
-
-
-@api_catalogo.errorhandler(ErrorCatalogoAPI)
-def error_catalogo(error):
-    cuerpo = {"code": error.estado, "message": str(error)}
-    if error.campos:
-        cuerpo["fields"] = error.campos
-    return jsonify(error=cuerpo), error.estado
-
-
-def _datos_json(campos):
-    if not request.is_json:
-        raise ErrorCatalogoAPI(415, "Enviá el cuerpo como application/json.")
-    try:
-        datos = request.get_json()
-    except BadRequest:
-        raise ErrorCatalogoAPI(400, "El cuerpo no contiene JSON válido.") from None
-    if not isinstance(datos, dict):
-        raise ErrorCatalogoAPI(400, "El cuerpo JSON debe ser un objeto.")
-
-    errores = {}
-    for campo, tipo in campos.items():
-        if campo not in datos:
-            errores[campo] = "Este campo es obligatorio."
-        elif type(datos[campo]) is not tipo:
-            if tipo is str:
-                errores[campo] = "Debe ser texto."
-            elif tipo is bool:
-                errores[campo] = "Debe ser booleano."
-            else:
-                errores[campo] = "Debe ser un entero." if campo == "minimo" else "Debe ser un identificador entero."
-    for campo in datos.keys() - campos.keys():
-        errores[campo] = "Este campo no está permitido."
-    if errores:
-        raise ErrorCatalogoAPI(400, "Revisá los campos indicados.", errores)
-    return datos
-
-
-def _dominio(operacion, *argumentos):
-    try:
-        return operacion(*argumentos)
-    except CodigoDuplicadoError as error:
-        raise ErrorCatalogoAPI(409, str(error), {"codigo": str(error)}) from None
-    except CentroDistribucionDuplicadoError as error:
-        raise ErrorCatalogoAPI(409, str(error), {"tipo": str(error)}) from None
-    except ConflictoCatalogoError as error:
-        raise ErrorCatalogoAPI(409, str(error)) from None
-    except (TypeError, ValueError) as error:
-        raise ErrorCatalogoAPI(400, str(error)) from None
+api_catalogo.register_error_handler(ErrorCatalogoAPI, error_catalogo)
 
 
 def _catalogo():
     return current_app.extensions["catalogo"]
 
 
-def _guardar(operacion, *argumentos):
-    """Confirma en SQLite el cambio ya validado por el dominio.
-
-    Si la transacción falla, la memoria se reemplaza por el último estado confirmado;
-    sólo los errores de SQLite se informan como fallo de guardado.
-    """
-    base_datos = current_app.extensions["base_datos"]
-    try:
-        base_datos.ejecutar_transaccion(operacion, *argumentos)
-    except Exception as error:
-        current_app.extensions["catalogo"] = base_datos.consultar(cargar_catalogo)
-        if isinstance(error, sqlite3.Error):
-            raise ErrorCatalogoAPI(
-                500, "No se pudo guardar el cambio y no se aplicó. Consultá los datos antes de reintentar."
-            ) from None
-        raise
-
-
 def _categoria(identificador):
     try:
-        return _dominio(_catalogo().obtener_categoria, identificador)
+        return operacion_dominio(_catalogo().obtener_categoria, identificador)
     except KeyError:
         raise ErrorCatalogoAPI(
             404, "No existe la categoría solicitada.",
@@ -105,7 +27,7 @@ def _categoria(identificador):
 
 def _producto(identificador):
     try:
-        return _dominio(_catalogo().obtener_producto, identificador)
+        return operacion_dominio(_catalogo().obtener_producto, identificador)
     except KeyError:
         raise ErrorCatalogoAPI(404, "No existe el producto solicitado.") from None
 
@@ -121,7 +43,7 @@ def _categoria_json(categoria):
 
 def _proveedor(identificador):
     try:
-        return _dominio(_catalogo().obtener_proveedor, identificador)
+        return operacion_dominio(_catalogo().obtener_proveedor, identificador)
     except KeyError:
         raise ErrorCatalogoAPI(404, "No existe el proveedor solicitado.") from None
 
@@ -157,17 +79,17 @@ def _respuesta_alta(datos, endpoint):
 @api_catalogo.get("/categorias")
 def listar_categorias():
     with current_app.extensions["catalogo_lock"]:
-        registros = _dominio(_catalogo().listar_categorias, _estado_listado())
+        registros = operacion_dominio(_catalogo().listar_categorias, _estado_listado())
         datos = [_categoria_json(item) for item in registros]
     return jsonify(categorias=datos)
 
 
 @api_catalogo.post("/categorias")
 def crear_categoria():
-    datos = _datos_json({"codigo": str, "nombre": str})
+    datos = datos_json({"codigo": str, "nombre": str})
     with current_app.extensions["catalogo_lock"]:
-        categoria = _dominio(_catalogo().crear_categoria, datos["codigo"], datos["nombre"])
-        _guardar(guardar_categoria, categoria)
+        categoria = operacion_dominio(_catalogo().crear_categoria, datos["codigo"], datos["nombre"])
+        guardar_cambio(guardar_categoria, categoria)
         resultado = _categoria_json(categoria)
     return _respuesta_alta(resultado, "catalogo.consultar_categoria")
 
@@ -181,13 +103,13 @@ def consultar_categoria(identificador):
 
 @api_catalogo.put("/categorias/<int:identificador>")
 def modificar_categoria(identificador):
-    datos = _datos_json({"codigo": str, "nombre": str})
+    datos = datos_json({"codigo": str, "nombre": str})
     with current_app.extensions["catalogo_lock"]:
         _categoria(identificador)
-        categoria = _dominio(
+        categoria = operacion_dominio(
             _catalogo().modificar_categoria, identificador, datos["codigo"], datos["nombre"]
         )
-        _guardar(guardar_categoria, categoria)
+        guardar_cambio(guardar_categoria, categoria)
         resultado = _categoria_json(categoria)
     return jsonify(resultado)
 
@@ -195,21 +117,21 @@ def modificar_categoria(identificador):
 @api_catalogo.get("/productos")
 def listar_productos():
     with current_app.extensions["catalogo_lock"]:
-        registros = _dominio(_catalogo().listar_productos, _estado_listado())
+        registros = operacion_dominio(_catalogo().listar_productos, _estado_listado())
         datos = [_producto_json(item) for item in registros]
     return jsonify(productos=datos)
 
 
 @api_catalogo.post("/productos")
 def crear_producto():
-    datos = _datos_json({"codigo": str, "nombre": str, "categoria_id": int, "precio": str})
+    datos = datos_json({"codigo": str, "nombre": str, "categoria_id": int, "precio": str})
     with current_app.extensions["catalogo_lock"]:
         categoria = _categoria(datos["categoria_id"])
-        producto = _dominio(
+        producto = operacion_dominio(
             _catalogo().crear_producto,
             datos["codigo"], datos["nombre"], categoria, datos["precio"],
         )
-        _guardar(guardar_producto, producto)
+        guardar_cambio(guardar_producto, producto)
         resultado = _producto_json(producto)
     return _respuesta_alta(resultado, "catalogo.consultar_producto")
 
@@ -223,15 +145,15 @@ def consultar_producto(identificador):
 
 @api_catalogo.put("/productos/<int:identificador>")
 def modificar_producto(identificador):
-    datos = _datos_json({"codigo": str, "nombre": str, "categoria_id": int, "precio": str})
+    datos = datos_json({"codigo": str, "nombre": str, "categoria_id": int, "precio": str})
     with current_app.extensions["catalogo_lock"]:
         _producto(identificador)
         categoria = _categoria(datos["categoria_id"])
-        producto = _dominio(
+        producto = operacion_dominio(
             _catalogo().modificar_producto,
             identificador, datos["codigo"], datos["nombre"], categoria, datos["precio"],
         )
-        _guardar(guardar_producto, producto)
+        guardar_cambio(guardar_producto, producto)
         resultado = _producto_json(producto)
     return jsonify(resultado)
 
@@ -239,17 +161,17 @@ def modificar_producto(identificador):
 @api_catalogo.get("/proveedores")
 def listar_proveedores():
     with current_app.extensions["catalogo_lock"]:
-        registros = _dominio(_catalogo().listar_proveedores, _estado_listado())
+        registros = operacion_dominio(_catalogo().listar_proveedores, _estado_listado())
         datos = [_proveedor_json(item) for item in registros]
     return jsonify(proveedores=datos)
 
 
 @api_catalogo.post("/proveedores")
 def crear_proveedor():
-    datos = _datos_json({"codigo": str, "nombre": str})
+    datos = datos_json({"codigo": str, "nombre": str})
     with current_app.extensions["catalogo_lock"]:
-        proveedor = _dominio(_catalogo().crear_proveedor, datos["codigo"], datos["nombre"])
-        _guardar(guardar_proveedor, proveedor)
+        proveedor = operacion_dominio(_catalogo().crear_proveedor, datos["codigo"], datos["nombre"])
+        guardar_cambio(guardar_proveedor, proveedor)
         resultado = _proveedor_json(proveedor)
     return _respuesta_alta(resultado, "catalogo.consultar_proveedor")
 
@@ -263,20 +185,20 @@ def consultar_proveedor(identificador):
 
 @api_catalogo.put("/proveedores/<int:identificador>")
 def modificar_proveedor(identificador):
-    datos = _datos_json({"codigo": str, "nombre": str})
+    datos = datos_json({"codigo": str, "nombre": str})
     with current_app.extensions["catalogo_lock"]:
         _proveedor(identificador)
-        proveedor = _dominio(
+        proveedor = operacion_dominio(
             _catalogo().modificar_proveedor, identificador, datos["codigo"], datos["nombre"]
         )
-        _guardar(guardar_proveedor, proveedor)
+        guardar_cambio(guardar_proveedor, proveedor)
         resultado = _proveedor_json(proveedor)
     return jsonify(resultado)
 
 
 def _ubicacion(identificador):
     try:
-        return _dominio(_catalogo().obtener_ubicacion, identificador)
+        return operacion_dominio(_catalogo().obtener_ubicacion, identificador)
     except KeyError:
         raise ErrorCatalogoAPI(404, "No existe la ubicación solicitada.") from None
 
@@ -294,19 +216,19 @@ def _ubicacion_json(ubicacion):
 @api_catalogo.get("/ubicaciones")
 def listar_ubicaciones():
     with current_app.extensions["catalogo_lock"]:
-        registros = _dominio(_catalogo().listar_ubicaciones, _estado_listado())
+        registros = operacion_dominio(_catalogo().listar_ubicaciones, _estado_listado())
         datos = [_ubicacion_json(item) for item in registros]
     return jsonify(ubicaciones=datos)
 
 
 @api_catalogo.post("/ubicaciones")
 def crear_ubicacion():
-    datos = _datos_json({"codigo": str, "nombre": str, "tipo": str})
+    datos = datos_json({"codigo": str, "nombre": str, "tipo": str})
     with current_app.extensions["catalogo_lock"]:
-        ubicacion = _dominio(
+        ubicacion = operacion_dominio(
             _catalogo().crear_ubicacion, datos["codigo"], datos["nombre"], datos["tipo"]
         )
-        _guardar(guardar_ubicacion, ubicacion)
+        guardar_cambio(guardar_ubicacion, ubicacion)
         resultado = _ubicacion_json(ubicacion)
     return _respuesta_alta(resultado, "catalogo.consultar_ubicacion")
 
@@ -320,13 +242,13 @@ def consultar_ubicacion(identificador):
 
 @api_catalogo.put("/ubicaciones/<int:identificador>")
 def modificar_ubicacion(identificador):
-    datos = _datos_json({"codigo": str, "nombre": str})
+    datos = datos_json({"codigo": str, "nombre": str})
     with current_app.extensions["catalogo_lock"]:
         _ubicacion(identificador)
-        ubicacion = _dominio(
+        ubicacion = operacion_dominio(
             _catalogo().modificar_ubicacion, identificador, datos["codigo"], datos["nombre"]
         )
-        _guardar(guardar_ubicacion, ubicacion)
+        guardar_cambio(guardar_ubicacion, ubicacion)
         resultado = _ubicacion_json(ubicacion)
     return jsonify(resultado)
 
@@ -356,7 +278,7 @@ def _minimo_json(producto, minimo):
 def consultar_minimos(identificador):
     with current_app.extensions["catalogo_lock"]:
         local = _ubicacion(identificador)
-        configuraciones = _dominio(_catalogo().listar_minimos, identificador)
+        configuraciones = operacion_dominio(_catalogo().listar_minimos, identificador)
         datos = [_minimo_json(producto, minimo) for producto, minimo in configuraciones]
         resultado = {"ubicacion": _ubicacion_json(local), "minimos": datos}
     return jsonify(resultado)
@@ -364,15 +286,15 @@ def consultar_minimos(identificador):
 
 @api_catalogo.put("/ubicaciones/<int:identificador>/minimos/<int:producto_id>")
 def establecer_minimo(identificador, producto_id):
-    datos = _datos_json({"minimo": int})
+    datos = datos_json({"minimo": int})
     _validar_minimo_json(datos["minimo"])
     with current_app.extensions["catalogo_lock"]:
         local = _ubicacion(identificador)
         producto = _producto(producto_id)
-        minimo = _dominio(
+        minimo = operacion_dominio(
             _catalogo().establecer_minimo, identificador, producto_id, datos["minimo"]
         )
-        _guardar(guardar_minimo, identificador, producto_id, minimo)
+        guardar_cambio(guardar_minimo, identificador, producto_id, minimo)
         resultado = {"ubicacion": _ubicacion_json(local), **_minimo_json(producto, minimo)}
     return jsonify(resultado)
 
@@ -384,7 +306,7 @@ def _estado_listado():
 
 
 def _solicitud_baja():
-    datos = _datos_json({"activo": bool})
+    datos = datos_json({"activo": bool})
     if datos["activo"] is not False:
         raise ErrorCatalogoAPI(400, "Sólo se permite desactivar mediante activo: false; no hay reactivación.")
 
@@ -394,8 +316,8 @@ def desactivar_categoria(identificador):
     _solicitud_baja()
     with current_app.extensions["catalogo_lock"]:
         _categoria(identificador)
-        categoria = _dominio(_catalogo().desactivar_categoria, identificador)
-        _guardar(guardar_categoria, categoria)
+        categoria = operacion_dominio(_catalogo().desactivar_categoria, identificador)
+        guardar_cambio(guardar_categoria, categoria)
         resultado = _categoria_json(categoria)
     return jsonify(resultado)
 
@@ -405,8 +327,8 @@ def desactivar_producto(identificador):
     _solicitud_baja()
     with current_app.extensions["catalogo_lock"]:
         _producto(identificador)
-        producto = _dominio(_catalogo().desactivar_producto, identificador)
-        _guardar(guardar_producto, producto)
+        producto = operacion_dominio(_catalogo().desactivar_producto, identificador)
+        guardar_cambio(guardar_producto, producto)
         resultado = _producto_json(producto)
     return jsonify(resultado)
 
@@ -416,8 +338,8 @@ def desactivar_proveedor(identificador):
     _solicitud_baja()
     with current_app.extensions["catalogo_lock"]:
         _proveedor(identificador)
-        proveedor = _dominio(_catalogo().desactivar_proveedor, identificador)
-        _guardar(guardar_proveedor, proveedor)
+        proveedor = operacion_dominio(_catalogo().desactivar_proveedor, identificador)
+        guardar_cambio(guardar_proveedor, proveedor)
         resultado = _proveedor_json(proveedor)
     return jsonify(resultado)
 
@@ -427,7 +349,7 @@ def desactivar_ubicacion(identificador):
     _solicitud_baja()
     with current_app.extensions["catalogo_lock"]:
         _ubicacion(identificador)
-        ubicacion = _dominio(_catalogo().desactivar_ubicacion, identificador)
-        _guardar(guardar_ubicacion, ubicacion)
+        ubicacion = operacion_dominio(_catalogo().desactivar_ubicacion, identificador)
+        guardar_cambio(guardar_ubicacion, ubicacion)
         resultado = _ubicacion_json(ubicacion)
     return jsonify(resultado)

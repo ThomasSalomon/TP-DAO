@@ -1,8 +1,8 @@
-# TP DAO 2026 — catálogo React/API persistido en SQLite (F-02.1)
+# TP DAO 2026 — catálogo y compras al CD persistidos en SQLite (F-02.2)
 
 React + Vite y API Flask Python permiten registrar, consultar, modificar y desactivar lógicamente categorías, productos, proveedores y locales del catálogo POO, y configurar mínimos por producto/local. Las ubicaciones distinguen Locales y Centro de Distribución (CD). El CD se puede registrar, consultar y editar, pero su baja queda bloqueada hasta aprobar una política de reemplazo. `GET /api/health` sigue devolviendo HTTP 200 y `{"status":"ok"}` como comprobación técnica de disponibilidad.
 
-Desde F-02.1 el catálogo, sus estados, los mínimos, las reservas de códigos y la restricción de un único CD se guardan en SQLite mediante `sqlite3` y SQL parametrizado, y se conservan al reiniciar Flask. Los mínimos son configuración administrativa; todavía no hay compras, existencias reales, movimientos, alertas ni reposición (F-02.2 y siguientes). No hay eliminación física, reactivación, relaciones producto–proveedor, logística, ventas, devoluciones, reportes, autenticación ni ORM. Las decisiones DN-03, DN-09 y DN-11 aprobadas para F-02 están en la sección L de `docs/DECISIONES_F00.md`.
+Desde F-02.1 el catálogo, sus estados, los mínimos, las reservas de códigos y la restricción de un único CD se guardan en SQLite mediante `sqlite3` y SQL parametrizado, y se conservan al reiniciar Flask. Desde F-02.2 la API registra compras a proveedores que ingresan su stock como disponible en el CD, con movimientos trazables y costo de referencia por producto (sección F-02.2). Todavía no hay pantallas de compras ni de stock en React (F-02.3). Los mínimos siguen siendo configuración administrativa: no hay alertas, reposición ni stock en los locales. No hay eliminación física, reactivación, relaciones producto–proveedor, logística, ventas, devoluciones, reportes, autenticación ni ORM. Las decisiones DN-03, DN-09 y DN-11 aprobadas para F-02 están en la sección L de `docs/DECISIONES_F00.md`.
 
 ## Estructura
 
@@ -11,13 +11,19 @@ backend/
   __init__.py          fábrica Flask y servido del frontend compilado
   api.py               Blueprint /api y endpoint técnico de salud
   api_catalogo.py      HTTP/JSON de maestros y configuración de mínimos
+  api_compras.py       HTTP/JSON de compras, existencias y movimientos
+  api_comun.py         errores, validación de transporte y guardado compartidos
   dominio/
     __init__.py        clases del catálogo y excepciones de dominio
     catalogo.py        objetos, registro en memoria y validaciones
+    compras.py         Compra, DetalleCompra y RegistroCompras con costo de referencia
+    inventario.py      Inventario, saldos por condición y MovimientoStock
+    fechas.py          zona horaria acordada e instante actual
   persistencia/
     __init__.py        funciones públicas de acceso a datos
     base_datos.py      conexión, esquema, ruta y transacciones SQLite
     catalogo_sqlite.py carga del catálogo y guardado de cada maestro
+    compras_sqlite.py  carga y guardado de compras, saldos y movimientos
   requirements.txt     dependencia de ejecución Python
   requirements-dev.txt dependencia de pruebas
 frontend/
@@ -45,6 +51,8 @@ tests/test_api_minimos.py contratos, precisión JSON, aislamiento y concurrencia
 tests/test_bajas.py    estados, referencias, mínimos e historial de códigos
 tests/test_api_bajas.py contratos de baja, filtros, aislamiento y concurrencia
 tests/test_persistencia_catalogo.py reinicio, restricciones SQL, rollback y fallos de guardado
+tests/test_compras.py  dominio de compras, inventario y costo de referencia
+tests/test_api_compras.py contratos, reinicio, fallos, concurrencia y esquema de compras
 tests/conftest.py      base temporal por aplicación; los tests nunca usan la base real
 pytest.ini
 docs/                  enunciado y planificación previa, conservados
@@ -241,11 +249,40 @@ Los errores usan `{"error":{"code":400,"message":"..."}}`, con `fields` opcional
 
 Los IDs de ruta enteros pero inválidos, como `0`, producen 400 por validación de dominio. Un entero positivo inexistente produce 404; rutas con segmentos que no coinciden con el conversor entero de Flask también producen 404 JSON.
 
+## F-02.2: compras e ingreso al CD
+
+Aplica DN-03, DN-09 y DN-11 aprobadas (sección L de `docs/DECISIONES_F00.md`).
+
+`Compra` es un documento confirmado: se construye completo con proveedor, CD, instante y líneas, y no tiene operaciones de modificación. Crea sus `DetalleCompra` (composición) y valida todas las líneas antes de existir: al menos una, producto sin repetir, cantidad entera positiva y costo unitario en texto ARS con la misma regla que el precio (positivo, hasta dos decimales, sin `float`, máximo 2⁶³−1 centavos). El destino debe ser una ubicación de tipo CD.
+
+`RegistroCompras.registrar` exige además proveedor y productos activos, pide al `Inventario` el ingreso y recién entonces guarda la compra; ante cualquier error no cambia nada. `costo_referencia(producto)` devuelve el costo unitario en centavos de la última compra del producto, ordenando por instante y luego por identificador, o `None` si nunca se compró. Se calcula al consultar; los documentos históricos conservan su costo aunque después cambien precios o estados.
+
+`Inventario` es el único que modifica saldos, por (ubicación, producto, condición). Cada ingreso deja un `MovimientoStock` inmutable con instante, cantidad, condición de origen (ninguna) y destino (`DISPONIBLE`), causa `COMPRA` y la línea de compra que lo originó. Comprueba todos los saldos resultantes antes de aplicar alguno. Las seis condiciones del modelo ya están definidas; F-02 sólo usa `DISPONIBLE`.
+
+El instante lo asigna el backend al confirmar, con precisión de segundos y desplazamiento fijo `-03:00` (America/Buenos_Aires). Argentina no aplica horario de verano desde 2009; el desplazamiento fijo evita agregar la dependencia `tzdata`, que `zoneinfo` necesita en Windows.
+
+| Método y ruta | Cuerpo / resultado |
+| --- | --- |
+| `POST /api/compras` | `{"proveedor_id":1,"lineas":[{"producto_id":1,"cantidad":10,"costo_unitario":"1000"}]}`. 201 con la compra y `Location`. |
+| `GET /api/compras` | `{"compras":[...]}` en orden de registro. |
+| `GET /api/compras/<id>` | 200 con la compra; 404 si no existe. |
+| `GET /api/ubicaciones/<id>/existencias` | `{"ubicacion":{...},"existencias":[{"producto":{...},"disponible":10,"costo_referencia":"1000.00"}]}`; `costo_referencia` es `null` si no hay compras, nunca cero. |
+| `GET /api/ubicaciones/<id>/movimientos` | `{"ubicacion":{...},"movimientos":[{"id":1,"instante":"...","producto":{...},"cantidad":10,"condicion_origen":null,"condicion_destino":"DISPONIBLE","causa":"COMPRA","compra_id":1,"linea":1}]}`. |
+
+La compra responde `{"id","proveedor","centro","instante","lineas":[{"linea","producto","cantidad","costo_unitario","subtotal"}],"total","moneda":"ARS"}`, con importes como texto de dos decimales. El CD no se envía: es el único registrado.
+
+| Código | Compras |
+| --- | --- |
+| 400 | Formato inválido, con `fields` por línea (`lineas.2.cantidad`), cantidad mayor que 2⁵³−1 o contenido inválido según el dominio. |
+| 404 | Proveedor o producto inexistente, con `fields` (`proveedor_id`, `lineas.N.producto_id`); compra o ubicación consultada inexistente. |
+| 409 | Proveedor o producto inactivo, o ningún CD registrado. |
+| 500 | Fallo al guardar: ni la compra ni el stock quedan en memoria o en la base. |
+
 ## Memoria, persistencia, pantalla y límites actuales
 
 `create_app` crea un `Catalogo` en `app.extensions["catalogo"]` y un `Lock` propio. La API utiliza esa misma instancia entre solicitudes; el bloqueo abarca las operaciones de dominio y la construcción de las respuestas para evitar carreras sobre códigos, IDs y referencias, incluida la comprobación de activos y su desactivación. No hay Singleton ni catálogo global compartido entre aplicaciones. Los tests crean aplicaciones aisladas. El dominio no añade sincronización para clientes Python externos: el adaptador HTTP es responsable de este bloqueo.
 
-**Persistencia (F-02.1).** `create_app(frontend_dist=None, base_datos=None)` abre la base indicada o la ruta predeterminada, crea las tablas faltantes (`CREATE TABLE IF NOT EXISTS`, sin borrar datos) y reconstruye el `Catalogo` con la API del dominio, que vuelve a validar cada fila. Las bajas se aplican al final de la carga para restablecer antes referencias y mínimos. En cada escritura, el dominio valida y modifica la memoria y luego `_guardar` confirma la fila completa de esa entidad y su código en una transacción: abre la conexión, ejecuta, hace `commit()` o `rollback()` y la cierra. Si el guardado falla, la memoria se reemplaza por el último estado confirmado y la API responde 500 JSON sin informar éxito; consultar antes de reintentar.
+**Persistencia (F-02.1).** `create_app(frontend_dist=None, base_datos=None)` abre la base indicada o la ruta predeterminada, crea las tablas faltantes (`CREATE TABLE IF NOT EXISTS`, sin borrar datos) y reconstruye el `Catalogo`, el `RegistroCompras` y el `Inventario` con la API del dominio, que vuelve a validar cada fila. Las compras y los movimientos se restauran sin repetir su efecto: los saldos se leen de `existencias`. Las bajas se aplican al final de la carga para restablecer antes referencias y mínimos. En cada escritura, el dominio valida y modifica la memoria y luego `guardar_cambio` (`api_comun.py`) confirma la fila completa de esa entidad y su código, o la compra con sus detalles, movimientos y saldos, en una sola transacción: abre la conexión, ejecuta, hace `commit()` o `rollback()` y la cierra. Si el guardado falla, la memoria se reemplaza por el último estado confirmado y la API responde 500 JSON sin informar éxito; consultar antes de reintentar.
 
 | Tabla | Contenido y restricciones |
 | --- | --- |
@@ -254,6 +291,10 @@ Los IDs de ruta enteros pero inválidos, como `0`, producen 400 por validación 
 | `ubicaciones` | Además, `tipo` LOCAL/CD; un índice único parcial impide un segundo CD. |
 | `minimos` | Clave (local, producto) con claves foráneas y `minimo >= 0`. |
 | `codigos_reservados` | Códigos vigentes e históricos por tipo, con clave `casefold()`; nunca se liberan. |
+| `compras` | ID, proveedor, CD e instante ISO 8601 con desplazamiento. Sin actualizaciones ni bajas. |
+| `detalles_compra` | Clave (compra, línea); producto único por compra, `cantidad > 0` y `costo_unitario_centavos > 0`. |
+| `existencias` | Clave (ubicación, producto, condición) con las seis condiciones del modelo y `cantidad >= 0`. El saldo se incrementa en SQL desde el movimiento. |
+| `movimientos_stock` | Cantidad positiva, condiciones válidas y causa; un ingreso `COMPRA` referencia su línea, y cada línea genera un único movimiento (`UNIQUE`). |
 
 Las claves foráneas se activan en cada conexión (`PRAGMA foreign_keys = ON`). La base es la fuente entre ejecuciones; el dominio sigue siendo la autoridad de las reglas y las restricciones SQL son una segunda barrera. Un solo proceso Flask escribe la base (DN-11); el `Lock` serializa las solicitudes de ese proceso. No se usa la base como almacenamiento compartido entre instalaciones. Recargar React conserva los registros del backend, pero descarta los borradores locales.
 
@@ -372,6 +413,8 @@ Desde la raíz:
 .\.venv\Scripts\python.exe -m pytest -q
 ```
 
+Verificación de F-02.2 el 21/10/2026: **489 casos aprobados** con la suite completa. Antes de editar se hizo commit de F-02.1 con sus 412 casos aprobados. Se agregaron 35 casos de dominio en `tests/test_compras.py` (detalles y total, ingreso y acumulación de saldo, costo de referencia por instante e identificador, cantidades y costos inválidos, una línea inválida que bloquea toda la compra, producto repetido, destino local, instante sin zona, inactivos, saldo máximo sin cambios parciales, inmutabilidad y restauración histórica) y 42 de API y persistencia en `tests/test_api_compras.py` (contrato completo, acumulación, reinicio con inactivos y continuidad de IDs, formato y contenido inválidos sin efectos, referencias inexistentes, falta de CD, inactivos, 404, fallo de guardado con 500 sin compra ni stock en memoria o base, 16 compras concurrentes y 12 violaciones del esquema). Con un proceso Flask real y `TP_DAO_DB` temporal se registró una compra, se reinició Flask, se comprobó el stock conservado y una segunda compra acumuló 15 unidades con costo de referencia actualizado. La suite tarda unos 45 segundos porque cada escritura confirma sobre un archivo SQLite temporal. No se modificó el frontend.
+
 Verificación de F-02.1 el 21/10/2026: **412 casos aprobados** con la suite completa (`.\.venv\Scripts\python.exe -m pytest -q`). Antes de editar se comprobaron los 396 de F-01.6 en una `.venv` nueva con las dependencias fijadas. Se agregaron 15 casos en `tests/test_persistencia_catalogo.py`: reinicio con maestros, estados, mínimos y referencias; códigos históricos y continuidad de IDs tras reiniciar; único CD y reglas de inactivos después de recargar; fallo de guardado con 500, sin cambios en memoria ni en la base; rollback de una transacción; siete violaciones del esquema; inicialización repetida; ruta predeterminada y aislamiento de la base real. El caso de precio grande de dominio y API pasó a usar el máximo representable, y se agregó el rechazo del primer valor que lo supera. `tests/conftest.py` asigna una base temporal nueva a cada `create_app()` sin ruta, de modo que las pruebas previas conservan su aislamiento. También se comprobó con un proceso Flask real y `TP_DAO_DB` temporal que un CD registrado persiste tras reiniciar y bloquea un segundo CD con 409. No se modificó el frontend.
 
 Verificación de F-01.6 el 19/10/2026: **396 casos aprobados** con la suite completa. Antes de editar se comprobaron los 335 de F-01.5. Se agregaron 25 casos de dominio y 36 de API: bajas repetidas, consultas/filtros, identidad y referencias conservadas, códigos históricos de los cuatro tipos, modificaciones/asociaciones bloqueadas, categoría con productos activos, mínimos históricos, excepción del CD, entradas inválidas, ausencia de cambios parciales, aislamiento y concurrencia. Las carreras cubren baja repetida, alta de producto frente a baja de categoría y escritura de mínimo frente a baja de producto. Se actualizaron las expectativas exactas de DTOs anteriores para incorporar `activo`, conservando sus comprobaciones. La prueba con Python `-I -S` también desactiva entidades y consulta mínimos conservados sin paquetes externos ni carga de Flask/SQLite. No se instalaron dependencias nuevas.
@@ -444,18 +487,11 @@ Las pruebas de API usan el cliente Flask y archivos temporales; la verificación
 
 ## Alcance actual frente a la planificación
 
-Los tres Markdown de `docs/` y los originales académicos se conservaron sin cambios. Sus frases “sin implementación” describen la planificación anterior; las instrucciones posteriores del usuario autorizaron la base técnica y F-01.1 a F-01.6. JavaScript fue elegido para el frontend. Este README registra el estado actual y las políticas posteriormente aprobadas, sin presentar las fases restantes como implementadas.
+F-01 (catálogo) está completa. F-02 avanza por incrementos: F-02.1 persiste el catálogo en SQLite y F-02.2 agrega compras, ingreso al CD, existencias, movimientos y costo de referencia por API, con las decisiones DN-03, DN-09 y DN-11 aprobadas el 21/10/2026. El detalle de lo aprobado está en la sección L de `docs/DECISIONES_F00.md`; los demás documentos de `docs/` conservan la planificación original.
 
-Para F-01.1 quedaron aprobados identificadores y normalización de categorías/productos, categoría registrada obligatoria, precio positivo exacto en ARS, alta/consulta/modificación y almacenamiento temporal. El pedido de F-01.3 confirmó identidad y datos de proveedores. F-01.4 autorizó `Ubicacion`, Local/CD, códigos con reservas, ID/tipo inmutables y máximo de un CD. F-01.5 confirmó DN-06 para mínimos: enteros no negativos, ausencia distinta de cero, ámbito producto/local sin CD y convenciones futuras de umbral/déficit. La representación HTTP usa el rango entero exacto documentado; es una decisión técnica de interoperabilidad. No se extrapoló la unidad a movimientos aún no definidos. F-01.6 aprobó DN-08 para este catálogo: baja lógica, referencias/mínimos conservados, códigos históricos reservados en los cuatro maestros, inactivos consultables sin modificación ni nuevas asociaciones, sin reactivación y con baja del CD bloqueada hasta aprobar reemplazo. No se detectó una contradicción con el enunciado o las reglas académicas leídas.
+Pendiente para cerrar F-02:
 
-**F-01.1 a F-01.6 completas: F-01 queda cerrada en memoria**, incluida la excepción explícita del CD. Esto no completa el TP integrador: compras, inventario, logística, ventas/devoluciones, reportes y los patrones requeridos pertenecen a fases posteriores. No se inició F-02 ni se incorporó SQLite.
+- **F-02.3:** pantallas React para registrar compras (borrador en el formulario, confirmación en Python) y consultar existencias y movimientos del CD, con prueba en navegador y build servido por Python.
+- **Aclaraciones docentes abiertas:** G-01 (si el ingreso manual de compras y el margen estimado alcanzan) y DN-08 (si se exige borrado físico además de la baja lógica).
 
-Para preparar F-02 se recomienda primero acordar su alcance y luego incorporar persistencia conservando el dominio. Estas recomendaciones todavía necesitan aprobación cuando corresponda; no son decisiones funcionales adoptadas:
-
-- **DN-03, bloquea el flujo de compras:** definir compra manual e ingreso total o parcial al CD, controles de recepción, diferencias y confirmación de efecto único. La propuesta previa de ingreso total controlado y último costo confirmado sigue siendo una recomendación, no una política aprobada.
-- **DN-06 y DN-09, bloquean sus reglas de cantidades/importes/fechas:** acordar unidades de movimientos, escala y validación de costos de compra, fechas y datos históricos requeridos. El precio de venta ARS y los mínimos ya confirmados no resuelven automáticamente estas políticas ni el resultado económico.
-- **DN-11, antes del diseño persistente/operativo:** confirmar modalidad local y concurrencia esperada; definir ubicación del archivo SQLite fuera del directorio público y su uso por la instalación. No agregar cuentas o exposición por red por defecto.
-- **Diseño técnico de F-02:** SQLite mediante `sqlite3`, SQL parametrizado y transacciones que conserven IDs, estados, referencias, reservas históricas de códigos, mínimos y máximo de un CD registrado. Prever pruebas con bases aisladas, recarga tras reinicio y rollback sin cambios parciales. Acordar el tratamiento de los datos temporales de demostración; hoy no existe un mecanismo de migración/exportación.
-- **CD:** cualquier futuro reemplazo/reactivación exige una política nueva; mientras tanto su baja sigue prohibida y no bloquea el cierre de F-01.
-
-El siguiente paso recomendado es preparar exclusivamente F-02 y resolver esas decisiones antes de autorizar su implementación. No se hicieron commits, push ni despliegues en F-01.6; no se modificaron dependencias ni documentos académicos.
+Fuera de F-02: reposición, logística y State (F-03), ventas (F-04), devoluciones (F-05) y reportes con Strategy (F-06). No hay pagos a proveedores, recepciones parciales ni costo promedio o FIFO.
