@@ -8,7 +8,8 @@ export class ErrorAPI extends Error {
   }
 }
 
-async function solicitar(ruta, { signal, ...opciones } = {}) {
+// conEstado devuelve { estado, datos } para distinguir, por ejemplo, 201 de 200.
+async function solicitar(ruta, { signal, conEstado = false, ...opciones } = {}) {
   const controller = new AbortController();
   const cancelar = () => controller.abort();
   let agotado = false;
@@ -35,7 +36,7 @@ async function solicitar(ruta, { signal, ...opciones } = {}) {
       throw new ErrorAPI(mensaje, respuesta.status, datos?.error?.fields || {});
     }
     if (datos === null) throw new ErrorAPI('La API devolvió una respuesta JSON inesperada.');
-    return datos;
+    return conEstado ? { estado: respuesta.status, datos } : datos;
   } catch (error) {
     if (signal?.aborted || error instanceof ErrorAPI) throw error;
     const mensaje = agotado
@@ -114,6 +115,20 @@ export const logisticaAPI = {
   // accion: precintar, despachar, recibir, verificar o anular.
   operarBulto: (bultoId, accion, datos) => enviar(`/api/bultos/${bultoId}/${accion}`, datos),
   verificarRemito: (remitoId) => enviar(`/api/remitos/${remitoId}/verificar`),
+};
+
+export const ventasAPI = {
+  medios: async (signal) => (await solicitar('/api/medios-pago', { signal })).medios_pago,
+  listar: async (signal) => (await solicitar('/api/ventas', { signal })).ventas,
+  // 201: venta nueva; 200: la clave ya estaba registrada y Python devuelve esa venta sin repetir efectos.
+  registrar: async (datos) => {
+    const { estado, datos: venta } = await solicitar('/api/ventas', {
+      method: 'POST', body: JSON.stringify(datos), conEstado: true,
+    });
+    return { venta, nueva: estado === 201 };
+  },
+  comprobante: (ventaId, signal) => solicitar(`/api/ventas/${ventaId}/comprobante`, { signal }),
+  caja: (localId, signal) => solicitar(`/api/ubicaciones/${localId}/caja`, { signal }),
 };
 
 // Presenta el instante tal como lo registró Python, sin convertir zonas en el navegador.

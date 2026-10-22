@@ -13,7 +13,7 @@ body { margin: 0; padding: 32px 24px; }
 .catalog-grid { display: grid; grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.35fr); gap: 24px; align-items: start; }
 .catalog-section { min-width: 0; padding: 24px; border: 1px solid #d6dce5; border-radius: 10px; background: white; }
 .catalog-section.proveedores, .catalog-section.ubicaciones, .catalog-section.minimos,
-.catalog-section.compras, .catalog-section.stock, .catalog-section.logistica { grid-column: 1 / -1; }
+.catalog-section.compras, .catalog-section.stock, .catalog-section.logistica, .catalog-section.ventas { grid-column: 1 / -1; }
 .subsection { padding-top: 8px; margin-top: 16px; border-top: 1px solid #e2e8f0; }
 .subsection > h3 { margin-top: 12px; }
 h4 { font-size: 0.95rem; margin: 0 0 12px; }
@@ -47,6 +47,15 @@ h5 { font-size: 1rem; margin: 0; }
 .purchase-line legend { font-weight: 600; font-size: 0.9rem; }
 .line-fields { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 1fr) minmax(0, 1fr) auto; gap: 12px; align-items: end; }
 .plain-list { margin: 0; padding-left: 18px; }
+.sale-fields { grid-template-columns: minmax(0, 2fr) minmax(0, 1fr) minmax(0, 1fr) auto; }
+.line-price { margin: 0 0 10px; }
+.sale-total { margin: 16px 0 4px; font-size: 1.05rem; }
+.receipt { padding: 20px; margin: 16px 0 24px; border: 1px solid #d6dce5; border-left: 4px solid #14633d; background: #fbfcfd; }
+.receipt tfoot th { color: inherit; font-size: 0.9rem; text-align: right; }
+.receipt .total, .receipt-print .total { font-weight: 700; }
+.receipt-payments { margin-bottom: 0; }
+.cash-balances { max-width: 640px; margin-bottom: 16px; }
+.receipt-print { display: none; }
 .catalog-toolbar, .section-heading, .actions { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
 .catalog-toolbar { margin: 20px 0; }
 .section-heading { padding-bottom: 16px; border-bottom: 1px solid #e2e8f0; margin-bottom: 20px; }
@@ -115,6 +124,14 @@ button.compact { font-size: 0.8rem; padding: 6px 10px; }
 button:focus-visible, input:focus-visible, select:focus-visible, summary:focus-visible, .table-scroll:focus-visible { outline: 3px solid #244e80; outline-offset: 3px; }
 button:disabled { cursor: default; opacity: 0.6; }
 .footnote { margin-bottom: 0; margin-top: 28px; }
+
+/* Al imprimir con un comprobante abierto, sólo se imprime su copia. */
+@media print {
+  body { padding: 0; background: white; }
+  body:has(> .receipt-print) #root { display: none; }
+  .receipt-print { display: block; color: black; }
+  .receipt-print .detail, .receipt-print th { color: #333; }
+}
 
 @media (max-width: 1050px) {
   .catalog-grid { grid-template-columns: minmax(0, 1fr); }

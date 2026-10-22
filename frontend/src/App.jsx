@@ -6,6 +6,7 @@ import SeccionCompras from './SeccionCompras';
 import SeccionLogistica from './SeccionLogistica';
 import SeccionMinimos from './SeccionMinimos';
 import SeccionStock from './SeccionStock';
+import SeccionVentas from './SeccionVentas';
 
 export default function App() {
   const [datos, setDatos] = useState({ categorias: [], productos: [], proveedores: [], ubicaciones: [] });
@@ -13,7 +14,7 @@ export default function App() {
   const [revisionStock, setRevisionStock] = useState(0);
   const [carga, setCarga] = useState({ estado: 'cargando' });
   const [ocupados, setOcupados] = useState({
-    categorias: false, productos: false, proveedores: false, ubicaciones: false, minimos: false, compras: false, logistica: false,
+    categorias: false, productos: false, proveedores: false, ubicaciones: false, minimos: false, compras: false, logistica: false, ventas: false,
   });
   const bloqueado = carga.estado === 'cargando' || Object.values(ocupados).some(Boolean);
 
@@ -65,9 +66,9 @@ export default function App() {
   return (
     <main className="app">
       <header className="page-header">
-        <p className="eyebrow">DAO 2026 · F-03.3</p>
-        <h1>Catálogo, compras y logística</h1>
-        <p>Administrá el catálogo, registrá compras al Centro de Distribución y abastecé a los locales con bultos verificados.</p>
+        <p className="eyebrow">DAO 2026 · F-04.3</p>
+        <h1>Catálogo, compras, logística y ventas</h1>
+        <p>Administrá el catálogo, registrá compras al Centro de Distribución y abastecé a los locales con bultos verificados y vendé su stock disponible.</p>
       </header>
       <p className="memory-note">Los datos se guardan en SQLite y se conservan al reiniciar el backend. Los borradores de los formularios no se guardan hasta confirmarlos.</p>
       <div className="catalog-toolbar">
@@ -109,6 +110,12 @@ export default function App() {
           productos={datos.productos} ubicaciones={datos.ubicaciones}
           bloqueado={bloqueado} estadoCatalogo={carga.estado}
           onActividad={(valor) => setOcupados((actual) => ({ ...actual, logistica: valor }))}
+          onCambio={() => setRevisionStock((valor) => valor + 1)}
+        />
+        <SeccionVentas
+          productos={datos.productos} ubicaciones={datos.ubicaciones}
+          bloqueado={bloqueado} estadoCatalogo={carga.estado}
+          onActividad={(valor) => setOcupados((actual) => ({ ...actual, ventas: valor }))}
           onCambio={() => setRevisionStock((valor) => valor + 1)}
         />
         <SeccionStock

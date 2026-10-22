@@ -12,6 +12,8 @@ export const ESTADOS_BULTO = {
 
 export const ESTADOS_REMITO = { EMITIDO: 'Emitido', VERIFICADO: 'Verificado', RECHAZADO: 'Rechazado' };
 
+export const TIPOS_CAJA = { INGRESO: 'Ingreso', EGRESO: 'Egreso' };
+
 export function nombreCondicion(condicion) {
   return condicion === null ? 'Fuera de la ubicación' : CONDICIONES[condicion] ?? condicion;
 }
