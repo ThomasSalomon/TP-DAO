@@ -11,7 +11,9 @@ def create_app(frontend_dist=None, base_datos=None):
 
     from .api import api
     from .api_catalogo import api_catalogo
+    from .api_comun import asignar_estado
     from .api_compras import api_compras
+    from .api_logistica import api_logistica
     from .persistencia import BaseDatos, cargar_estado, ruta_base_datos_predeterminada
 
     if base_datos is None:
@@ -30,14 +32,12 @@ def create_app(frontend_dist=None, base_datos=None):
     )
     app.register_blueprint(api)
     app.extensions["base_datos"] = base_datos
-    catalogo, compras, inventario = base_datos.consultar(cargar_estado)
-    app.extensions["catalogo"] = catalogo
-    app.extensions["compras"] = compras
-    app.extensions["inventario"] = inventario
-    # Un único bloqueo serializa catálogo, compras e inventario, que se leen entre sí.
+    asignar_estado(app, base_datos.consultar(cargar_estado))
+    # Un único bloqueo serializa catálogo, compras, logística e inventario, que se leen entre sí.
     app.extensions["catalogo_lock"] = Lock()
     app.register_blueprint(api_catalogo)
     app.register_blueprint(api_compras)
+    app.register_blueprint(api_logistica)
 
     @app.get("/")
     def frontend():

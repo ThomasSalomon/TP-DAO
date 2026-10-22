@@ -218,6 +218,27 @@ class RegistroReposicion:
         self._ordenes[orden.identificador] = orden
         return orden
 
+    def restaurar_necesidad(self, necesidad):
+        """Incorpora una necesidad ya confirmada, en orden de identificador y sin controlar activos."""
+        if not isinstance(necesidad, NecesidadReposicion):
+            raise TypeError("La necesidad debe ser una NecesidadReposicion.")
+        if necesidad.identificador != len(self._necesidades) + 1:
+            raise ValueError("Las necesidades se restauran en orden de identificador.")
+        self._necesidades[necesidad.identificador] = necesidad
+
+    def restaurar_orden(self, orden):
+        """Incorpora una orden ya confirmada y vuelve a vincular sus necesidades restauradas."""
+        if not isinstance(orden, OrdenReposicion):
+            raise TypeError("La orden debe ser una OrdenReposicion.")
+        if orden.identificador != len(self._ordenes) + 1:
+            raise ValueError("Las órdenes se restauran en orden de identificador.")
+        for necesidad in orden.necesidades:
+            if self._necesidades.get(necesidad.identificador) is not necesidad or necesidad.estado != "PENDIENTE":
+                raise ValueError("La orden restaurada referencia necesidades inválidas.")
+        for necesidad in orden.necesidades:
+            necesidad._consolidar(orden)
+        self._ordenes[orden.identificador] = orden
+
     def obtener_necesidad(self, identificador):
         _validar_identificador(identificador)
         return self._necesidades[identificador]

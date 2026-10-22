@@ -83,7 +83,7 @@ def test_registrar_compra_ingresa_stock_al_cd_y_queda_consultable(reloj):
     assert movimientos[1] == {
         "id": 2, "instante": "2026-10-21T10:00:00-03:00", "producto": producto(2, "002", "Fideos"),
         "cantidad": 3, "condicion_origen": None, "condicion_destino": "DISPONIBLE", "causa": "COMPRA",
-        "compra_id": 1, "linea": 2,
+        "compra_id": 1, "linea": 2, "bulto_id": None, "bulto_codigo": None,
     }
     assert cliente.get("/api/ubicaciones/1/existencias").get_json()["existencias"] == []
     assert cliente.get("/api/ubicaciones/1/movimientos").get_json()["movimientos"] == []
@@ -277,11 +277,13 @@ def _base_con_compra(tmp_path):
 
 @pytest.mark.parametrize("sentencia", [
     # Una línea de compra ya ingresada no puede generar otro movimiento.
-    "INSERT INTO movimientos_stock VALUES (2, 'x', 2, 1, 1, NULL, 'DISPONIBLE', 'COMPRA', 1, 1)",
-    "INSERT INTO movimientos_stock VALUES (2, 'x', 2, 1, 1, NULL, 'DISPONIBLE', 'COMPRA', NULL, NULL)",
-    "INSERT INTO movimientos_stock VALUES (2, 'x', 2, 1, 1, NULL, NULL, 'AJUSTE', NULL, NULL)",
-    "INSERT INTO movimientos_stock VALUES (2, 'x', 2, 1, 0, NULL, 'DISPONIBLE', 'AJUSTE', NULL, NULL)",
-    "INSERT INTO movimientos_stock VALUES (2, 'x', 2, 1, 1, NULL, 'VENDIBLE', 'AJUSTE', NULL, NULL)",
+    "INSERT INTO movimientos_stock VALUES (2, 'x', 2, 1, 1, NULL, 'DISPONIBLE', 'COMPRA', 1, 1, NULL)",
+    "INSERT INTO movimientos_stock VALUES (2, 'x', 2, 1, 1, NULL, 'DISPONIBLE', 'COMPRA', NULL, NULL, NULL)",
+    # Un movimiento logístico sin bulto lo rechaza el trigger.
+    "INSERT INTO movimientos_stock VALUES (2, 'x', 2, 1, 1, NULL, 'DISPONIBLE', 'AJUSTE', NULL, NULL, NULL)",
+    "UPDATE movimientos_stock SET condicion_destino = NULL",
+    "UPDATE movimientos_stock SET cantidad = 0",
+    "UPDATE movimientos_stock SET condicion_destino = 'VENDIBLE'",
     "UPDATE existencias SET cantidad = -1",
     "INSERT INTO existencias VALUES (2, 1, 'OTRA', 1)",
     "INSERT INTO detalles_compra VALUES (1, 2, 1, 1, 100)",

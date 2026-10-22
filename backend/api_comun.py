@@ -5,7 +5,9 @@ import sqlite3
 from flask import current_app, jsonify, request
 from werkzeug.exceptions import BadRequest
 
-from .dominio import CentroDistribucionDuplicadoError, CodigoDuplicadoError, ConflictoCatalogoError
+from .dominio import (
+    CentroDistribucionDuplicadoError, CodigoDuplicadoError, ConflictoCatalogoError, ConflictoOperacionError,
+)
 from .persistencia import cargar_estado
 
 # El cliente JSON usa Number: no aceptar cantidades que perderían precisión.
@@ -72,7 +74,7 @@ def operacion_dominio(operacion, *argumentos):
         raise ErrorCatalogoAPI(409, str(error), {"codigo": str(error)}) from None
     except CentroDistribucionDuplicadoError as error:
         raise ErrorCatalogoAPI(409, str(error), {"tipo": str(error)}) from None
-    except ConflictoCatalogoError as error:
+    except (ConflictoCatalogoError, ConflictoOperacionError) as error:
         raise ErrorCatalogoAPI(409, str(error)) from None
     except (TypeError, ValueError) as error:
         raise ErrorCatalogoAPI(400, str(error)) from None
@@ -81,10 +83,14 @@ def operacion_dominio(operacion, *argumentos):
 def recargar_estado():
     """Reemplaza la memoria por el último estado confirmado en la base."""
     base_datos = current_app.extensions["base_datos"]
-    catalogo, compras, inventario = base_datos.consultar(cargar_estado)
-    current_app.extensions["catalogo"] = catalogo
-    current_app.extensions["compras"] = compras
-    current_app.extensions["inventario"] = inventario
+    asignar_estado(current_app, base_datos.consultar(cargar_estado))
+
+
+def asignar_estado(app, estado):
+    """Publica en la aplicación los registros devueltos por cargar_estado."""
+    nombres = ("catalogo", "compras", "reposicion", "logistica", "inventario")
+    for nombre, registro in zip(nombres, estado):
+        app.extensions[nombre] = registro
 
 
 def guardar_cambio(operacion, *argumentos):
@@ -102,3 +108,54 @@ def guardar_cambio(operacion, *argumentos):
                 500, "No se pudo guardar el cambio y no se aplicó. Consultá los datos antes de reintentar."
             ) from None
         raise
+
+
+def referencia_json(entidad):
+    return {"id": entidad.identificador, "codigo": entidad.codigo, "nombre": entidad.nombre, "activo": entidad.activo}
+
+
+def ubicacion_json(ubicacion):
+    return {**referencia_json(ubicacion), "tipo": ubicacion.tipo}
+
+
+def movimiento_json(movimiento):
+    """Movimiento con su documento de origen: línea de compra o bulto."""
+    compra = movimiento.causa == "COMPRA"
+    documento = movimiento.documento
+    return {
+        "id": movimiento.identificador,
+        "instante": movimiento.instante.isoformat(),
+        "producto": referencia_json(movimiento.producto),
+        "cantidad": movimiento.cantidad,
+        "condicion_origen": movimiento.condicion_origen,
+        "condicion_destino": movimiento.condicion_destino,
+        "causa": movimiento.causa,
+        "compra_id": documento.compra.identificador if compra else None,
+        "linea": documento.numero if compra else None,
+        "bulto_id": None if compra else documento.bulto.identificador,
+        "bulto_codigo": None if compra else documento.bulto.codigo,
+    }
+
+
+def lineas_validadas(lineas, campos):
+    """Valida el formato de cada línea; el contenido lo valida el dominio."""
+    errores = {}
+    for numero, linea in enumerate(lineas, start=1):
+        if not isinstance(linea, dict):
+            errores[f"lineas.{numero}"] = "Cada línea debe ser un objeto."
+            continue
+        encontrados = validar_campos(linea, campos)
+        if not encontrados and linea["cantidad"] > MAXIMO_ENTERO_JSON:
+            encontrados["cantidad"] = f"El máximo admitido por HTTP es {MAXIMO_ENTERO_JSON}."
+        errores.update({f"lineas.{numero}.{campo}": mensaje for campo, mensaje in encontrados.items()})
+    if errores:
+        raise ErrorCatalogoAPI(400, "Revisá los campos indicados.", errores)
+    return lineas
+
+
+def obtener(operacion, identificador, mensaje, campo=None):
+    """Busca un registro por identificador; inexistente es 404, con el campo si vino en el cuerpo."""
+    try:
+        return operacion_dominio(operacion, identificador)
+    except KeyError:
+        raise ErrorCatalogoAPI(404, mensaje, {campo: mensaje} if campo else None) from None

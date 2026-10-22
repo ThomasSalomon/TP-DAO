@@ -1,4 +1,4 @@
-# TP DAO 2026 — catálogo, compras y stock del CD en SQLite (F-02.3)
+# TP DAO 2026 — catálogo, compras y logística CD–locales en SQLite (F-03.2)
 
 React + Vite y API Flask Python permiten registrar, consultar, modificar y desactivar lógicamente categorías, productos, proveedores y locales del catálogo POO, y configurar mínimos por producto/local. Las ubicaciones distinguen Locales y Centro de Distribución (CD). El CD se puede registrar, consultar y editar, pero su baja queda bloqueada hasta aprobar una política de reemplazo. `GET /api/health` sigue devolviendo HTTP 200 y `{"status":"ok"}` como comprobación técnica de disponibilidad.
 
@@ -11,8 +11,9 @@ backend/
   __init__.py          fábrica Flask y servido del frontend compilado
   api.py               Blueprint /api y endpoint técnico de salud
   api_catalogo.py      HTTP/JSON de maestros y configuración de mínimos
-  api_compras.py       HTTP/JSON de compras, existencias y movimientos
-  api_comun.py         errores, validación de transporte y guardado compartidos
+  api_compras.py       HTTP/JSON de compras, existencias, saldos y movimientos
+  api_logistica.py     HTTP/JSON de necesidades, órdenes, bultos y remitos
+  api_comun.py         errores, validación, JSON comunes, carga y guardado compartidos
   dominio/
     __init__.py        clases del catálogo y excepciones de dominio
     catalogo.py        objetos, registro en memoria y validaciones
@@ -26,7 +27,9 @@ backend/
     __init__.py        funciones públicas de acceso a datos
     base_datos.py      conexión, esquema, ruta y transacciones SQLite
     catalogo_sqlite.py carga del catálogo y guardado de cada maestro
-    compras_sqlite.py  carga y guardado de compras, saldos y movimientos
+    compras_sqlite.py  carga y guardado de compras
+    inventario_sqlite.py saldos y movimientos de stock
+    logistica_sqlite.py necesidades, órdenes, bultos, eventos y remitos
   requirements.txt     dependencia de ejecución Python
   requirements-dev.txt dependencia de pruebas
 frontend/
@@ -59,6 +62,7 @@ tests/test_persistencia_catalogo.py reinicio, restricciones SQL, rollback y fall
 tests/test_compras.py  dominio de compras, inventario y costo de referencia
 tests/test_api_compras.py contratos, reinicio, fallos, concurrencia y esquema de compras
 tests/test_logistica.py consolidación, ciclo del bulto, doble verificación y transiciones
+tests/test_api_logistica.py contratos, reinicio por etapa, fallos, migración y esquema logístico
 tests/conftest.py      base temporal por aplicación; los tests nunca usan la base real
 pytest.ini
 docs/                  enunciado y planificación previa, conservados
@@ -286,7 +290,7 @@ La compra responde `{"id","proveedor","centro","instante","lineas":[{"linea","pr
 
 ## F-03.1: dominio de reposición y logística
 
-Aplica DN-01, DN-02 y DN-04 aprobadas (sección M de `docs/DECISIONES_F00.md`). En esta parte sólo existe el dominio con sus pruebas: todavía no hay tablas SQLite, API ni pantallas para reposición y logística (F-03.2 y F-03.3).
+Aplica DN-01, DN-02 y DN-04 aprobadas (sección M de `docs/DECISIONES_F00.md`). F-03.2 agrega su persistencia y su API; las pantallas React llegan en F-03.3.
 
 - **Reposición.** `RegistroReposicion` registra necesidades de un local activo (producto activo, entero positivo) y las consolida en una `OrdenReposicion` con origen en el CD y un solo local destino. La orden compone un `DetalleReposicion` por producto, que suma las cantidades y conserva qué necesidades lo originaron. Asignado y pendiente se calculan desde los bultos no anulados; la orden pasa de Abierta a Completa sin un atributo que pueda desincronizarse.
 - **State.** `Bulto` es el contexto y `EstadoBulto` una ABC cuyas operaciones (`precintar`, `despachar`, `recibir`, `verificar`, `anular`) se rechazan por defecto. Cada estado concreto (`Preparado`, `Precintado`, `EnTransito`, `Recibido`, `Verificado`, `Rechazado`, `Anulado`) redefine sólo las que admite y decide la transición. El bulto delega el mismo mensaje en su estado actual; no hay condicionales por estado fuera de las clases de estado. Un único método interno cambia el estado y agrega un `EventoEstadoBulto` de sólo lectura.
@@ -294,6 +298,41 @@ Aplica DN-01, DN-02 y DN-04 aprobadas (sección M de `docs/DECISIONES_F00.md`). 
 - **Inventario.** `Inventario` aplica cada operación como cambios de condición comprobados antes de modificar ningún saldo; un stock insuficiente produce `ConflictoOperacionError` sin efectos. `MovimientoStock` guarda condición de origen y de destino (una de las dos puede faltar en entradas y salidas), la causa (`COMPRA`, `PREPARACION`, `ANULACION`, `DESPACHO`, `RECEPCION`, `VERIFICACION`, `RECHAZO`) y el documento: la línea de compra o la línea de bulto. El despacho registra la salida de la reserva del CD y la entrada en tránsito al local, así que el total de unidades se conserva.
 - **Identificadores.** `RegistroLogistica` numera bultos `B-000001` y remitos `R-000001`, emitiendo el remito al precintar, y rechaza un precinto ya usado sin distinguir mayúsculas. Cada línea del bulto copia el costo de referencia vigente al prepararlo.
 - **Rechazo.** El rechazo mueve EN_TRANSITO → RECHAZADO directamente, porque ocurre en la misma recepción: el stock nunca pasa por una condición vendible ni intermedia.
+
+## F-03.2: persistencia y API de reposición y logística
+
+Cada operación guarda en una sola transacción todo lo que cambió: la necesidad, la orden con la consolidación de sus necesidades, o el bulto con su estado actual, eventos nuevos, remito y movimientos. Al iniciar, `cargar_estado` reconstruye catálogo, compras, reposición, logística e inventario en ese orden; los bultos se restauran desde su historial, que debe ser una cadena continua desde PREPARADO, sin repetir reservas ni traslados. Los mismos registros usan el bloqueo único de la aplicación.
+
+| Método y ruta | Cuerpo | Resultado |
+| --- | --- | --- |
+| `POST /api/necesidades` | `{"local_id":2,"producto_id":1,"cantidad":6}` | 201 con la necesidad pendiente. |
+| `GET /api/necesidades`, `GET /api/necesidades/<id>` | — | Necesidades con local, producto, estado y `orden_id`. |
+| `POST /api/ordenes` | `{"local_id":2,"necesidad_ids":[1,2]}` | 201 con la orden: CD de origen, local destino, líneas por producto (solicitada, asignada, pendiente, necesidades) y bultos. |
+| `GET /api/ordenes`, `GET /api/ordenes/<id>` | — | Órdenes con estado ABIERTA o COMPLETA. |
+| `POST /api/ordenes/<id>/bultos` | `{"lineas":[{"producto_id":1,"cantidad":6}]}` | 201 con el bulto PREPARADO y su costo de referencia por línea; reserva en el CD. |
+| `GET /api/bultos`, `GET /api/bultos/<id>` | — | Bulto con estado, precinto, remito resumido, líneas y eventos. |
+| `POST /api/bultos/<id>/precintar` | `{"precinto":"SELLO-77"}` | 200; emite el remito. |
+| `POST /api/bultos/<id>/despachar` | `{}` | 200; reserva del CD a tránsito del local. |
+| `POST /api/bultos/<id>/recibir` | `{"local_id":2,"precinto_leido":"SELLO-77","precinto_intacto":true}` | 200: RECIBIDO, o RECHAZADO si el precinto está roto o no coincide. |
+| `POST /api/bultos/<id>/verificar` | `{}` | 200; bulto VERIFICADO, stock todavía pendiente. |
+| `POST /api/bultos/<id>/anular` | `{}` | 200; sólo desde PREPARADO, libera la reserva. |
+| `GET /api/remitos`, `GET /api/remitos/<id>` | — | Remito con número, bulto, origen, destino, estado e instantes. |
+| `POST /api/remitos/<id>/verificar` | `{}` | 200; con el bulto verificado, habilita el stock del local. |
+| `GET /api/ubicaciones/<id>/saldos` | — | Saldos no nulos por producto y condición (disponible, reservado, en tránsito, pendiente, rechazado). |
+
+Las acciones sin datos reciben `{}`; un campo de más es 400. Una transición que el estado no admite, stock o pendiente insuficiente, precinto repetido, necesidad ya consolidada o recepción en otro local devuelven 409 sin cambios. Formato inválido o contenido rechazado por el dominio es 400; referencias inexistentes, 404 con el campo (`local_id`, `producto_id`, `necesidad_ids.N`, `lineas.N.producto_id`). Los movimientos de `/api/ubicaciones/<id>/movimientos` agregan `bulto_id` y `bulto_codigo` (nulos en compras); `compra_id` y `linea` quedan nulos en movimientos de bultos.
+
+| Tabla | Contenido y restricciones |
+| --- | --- |
+| `necesidades` | Local, producto, `cantidad > 0`, instante y `orden_id` nulo mientras está pendiente; sólo se consolida una vez. Las líneas de la orden se derivan de ellas. |
+| `ordenes_reposicion` | CD de origen, local destino e instante. |
+| `bultos` | Orden, estado actual (siete valores) y precinto con `precinto_clave` única en `casefold()`. |
+| `detalles_bulto` | Clave (bulto, producto), `cantidad > 0` y costo de referencia positivo o nulo. |
+| `eventos_bulto` | Clave (bulto, secuencia); dos triggers rechazan `UPDATE` y `DELETE`. |
+| `remitos` | Un remito por bulto (`UNIQUE`), estado y cierre coherentes. |
+| `movimientos_stock` | Columna `bulto_id`; un índice único impide repetir una causa logística por bulto, producto y ubicación, y un trigger exige el bulto en todo movimiento que no sea de compra. |
+
+Una base creada con F-02 recibe la columna `bulto_id` por `ALTER TABLE` al iniciar, porque `CREATE TABLE IF NOT EXISTS` no modifica tablas existentes; los datos previos se conservan. El índice y el trigger se crean después. La pantalla de stock del CD ya distingue el documento de cada movimiento (compra o bulto) y su cambio de condición.
 
 ## Memoria, persistencia, pantalla y límites actuales
 
@@ -434,6 +473,8 @@ Desde la raíz:
 .\.venv\Scripts\python.exe -m pytest -q
 ```
 
+Verificación de F-03.2 el 21/10/2026: **555 casos aprobados** con la suite completa. Antes de editar se hizo commit de F-03.1. Se agregaron 37 casos en `tests/test_api_logistica.py`: circuito completo por API con doble verificación, reinicio después de cada etapa con comparación de todas las consultas y continuidad de IDs, rechazo persistido, transiciones inválidas con 409 sin efectos, recepción en otro local o inexistente, anulación, nueve formatos inválidos, 404, reglas del dominio como 400 o 409 sin efectos, falta de CD, precinto repetido, fallo de guardado de una transición con 500 sin cambios en memoria ni en la base, ocho preparaciones concurrentes sobre una orden de 10 (tres aceptadas), once violaciones del esquema y migración de una base de F-02. En `tests/test_api_compras.py` se actualizaron la forma del movimiento y los casos de esquema por la nueva columna; los que probaban `CHECK` pasaron a ser `UPDATE` para aislar cada restricción. Con procesos Flask reales y `TP_DAO_DB` temporal se recorrió el circuito reiniciando Flask después de cada paso logístico: el local terminó con 6 unidades disponibles, el CD con 4 y el historial con sus cinco estados. `npm run build` terminó correctamente.
+
 Verificación de F-03.1 el 21/10/2026: **517 casos aprobados** con la suite completa; los 489 previos siguen pasando tras generalizar `MovimientoStock` (la propiedad `detalle` pasó a llamarse `documento`). Se agregaron 28 casos en `tests/test_logistica.py`: consolidación por producto con trazabilidad de necesidades, mezcla de locales, repetición y reutilización de necesidades, validaciones de necesidad, circuito completo con saldos por condición en cada paso, stock sin habilitar con el bulto verificado y el remito emitido, rechazo por precinto roto y por número distinto, recepción en otro local, todas las transiciones inválidas de los siete estados sin efectos, orden de las dos verificaciones, entregas parciales, stock insuficiente sin reservas parciales, contenido inválido, anulación con liberación de reserva, precinto único, costo de preparación histórico, conservación de unidades y la ABC no instanciable. Python `-I -S` confirma que el dominio sigue sin cargar Flask ni SQLite.
 
 Verificación de F-02.3 el 21/10/2026: **489 casos aprobados** con la suite completa; antes de editar se hizo commit de F-02.2. En el dominio, los errores de una línea de compra ahora indican su número («Línea 2: La cantidad…»), con una aserción nueva en `tests/test_compras.py`. `npm ci` y `npm run build` terminaron correctamente. Prueba manual en el navegador integrado con el build servido por Flask y `TP_DAO_DB` temporal:
@@ -527,4 +568,4 @@ F-02 queda completa con F-02.3: pantallas React de compras y de stock y movimien
 
 Siguen abiertas las aclaraciones docentes G-01 (si el ingreso manual de compras y el margen estimado alcanzan) y DN-08 (si se exige borrado físico además de la baja lógica).
 
-F-03 está en curso: F-03.1 (dominio de reposición, bultos con State y doble verificación) está implementada; faltan F-03.2 (SQLite y API) y F-03.3 (pantallas React). Fuera de F-03: ventas (F-04), devoluciones (F-05) y reportes con Strategy (F-06). No hay pagos a proveedores, recepciones parciales ni costo promedio o FIFO.
+F-03 está en curso: F-03.1 (dominio con State y doble verificación) y F-03.2 (SQLite y API) están implementadas; falta F-03.3 (pantallas React del circuito). Fuera de F-03: ventas (F-04), devoluciones (F-05) y reportes con Strategy (F-06). No hay pagos a proveedores, recepciones parciales ni costo promedio o FIFO.

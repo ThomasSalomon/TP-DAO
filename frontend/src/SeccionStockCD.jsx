@@ -1,7 +1,20 @@
 import { useEffect, useState } from 'react';
 import { formatearInstante, stockAPI } from './api';
 
-const CONDICIONES = { DISPONIBLE: 'Disponible' };
+const CONDICIONES = {
+  DISPONIBLE: 'Disponible', RESERVADO: 'Reservado', EN_TRANSITO: 'En tránsito',
+  PENDIENTE: 'Pendiente de verificación', RECHAZADO: 'Rechazado', BLOQUEADO: 'Bloqueado',
+};
+
+function nombreCondicion(condicion) {
+  return condicion === null ? 'Fuera de la ubicación' : CONDICIONES[condicion] ?? condicion;
+}
+
+function cantidadMovimiento(item) {
+  if (item.condicion_origen === null) return `+${item.cantidad} u.`;
+  if (item.condicion_destino === null) return `−${item.cantidad} u.`;
+  return `${item.cantidad} u.`;
+}
 
 export default function SeccionStockCD({ ubicaciones, productos, bloqueado, estadoCatalogo, revisionStock }) {
   const centro = ubicaciones.find((item) => item.tipo === 'CD');
@@ -70,15 +83,15 @@ export default function SeccionStockCD({ ubicaciones, productos, bloqueado, esta
             <div className="table-scroll" role="region" aria-label="Movimientos del CD" tabIndex="0">
               <table>
                 <caption className="sr-only">Movimientos del CD, del más reciente al más antiguo</caption>
-                <thead><tr><th scope="col">N.º</th><th scope="col">Fecha y hora</th><th scope="col">Producto</th><th scope="col">Cantidad</th><th scope="col">Ingresa a</th><th scope="col">Origen</th></tr></thead>
+                <thead><tr><th scope="col">N.º</th><th scope="col">Fecha y hora</th><th scope="col">Producto</th><th scope="col">Cantidad</th><th scope="col">Cambio de condición</th><th scope="col">Documento</th></tr></thead>
                 <tbody>{[...consulta.movimientos].reverse().map((item) => (
                   <tr key={item.id}>
                     <td>{item.id}</td>
                     <td>{formatearInstante(item.instante)}</td>
                     <td>{item.producto.codigo} · {item.producto.nombre}</td>
-                    <td className="price">+{item.cantidad} u.</td>
-                    <td>{CONDICIONES[item.condicion_destino] ?? item.condicion_destino}</td>
-                    <td>Compra {item.compra_id}, línea {item.linea}</td>
+                    <td className="price">{cantidadMovimiento(item)}</td>
+                    <td>{nombreCondicion(item.condicion_origen)} → {nombreCondicion(item.condicion_destino)}</td>
+                    <td>{item.compra_id !== null ? `Compra ${item.compra_id}, línea ${item.linea}` : `Bulto ${item.bulto_codigo}`}</td>
                   </tr>
                 ))}</tbody>
               </table>

@@ -23,15 +23,10 @@ erDiagram
     PRODUCTO ||--o{ NECESIDAD_REPOSICION : pide
     UBICACION ||--o{ ORDEN_REPOSICION : "origen (CD)"
     UBICACION ||--o{ ORDEN_REPOSICION : "destino (local)"
-    ORDEN_REPOSICION ||--|{ DETALLE_REPOSICION : consolida
-    PRODUCTO ||--o{ DETALLE_REPOSICION : identifica
-    NECESIDAD_REPOSICION ||--o{ ORIGEN_CONSOLIDACION : aporta
-    DETALLE_REPOSICION ||--|{ ORIGEN_CONSOLIDACION : agrupa
+    ORDEN_REPOSICION |o--|{ NECESIDAD_REPOSICION : consolida
 
     ORDEN_REPOSICION ||--o{ BULTO : atiende
-    UBICACION ||--o{ REMITO : "origen (CD)"
-    UBICACION ||--o{ REMITO : "destino (local)"
-    REMITO |o--|{ BULTO : documenta
+    BULTO ||--o| REMITO : "documenta (al precintar)"
     BULTO ||--|{ DETALLE_BULTO : contiene
     PRODUCTO ||--o{ DETALLE_BULTO : identifica
     BULTO ||--|{ EVENTO_ESTADO_BULTO : conserva
@@ -116,48 +111,32 @@ erDiagram
         int local_id FK
         int producto_id FK
         int cantidad "mayor que 0"
-        int cantidad_pendiente
-        datetime fecha
+        datetime instante
+        int orden_id FK "nulo mientras esta pendiente"
     }
     ORDEN_REPOSICION {
         int id PK
-        int cd_origen_id FK
-        int local_destino_id FK
-        datetime fecha
-        string estado
-    }
-    DETALLE_REPOSICION {
-        int id PK
-        int orden_id FK
-        int producto_id FK
-        int cantidad_solicitada
-        int cantidad_asignada
-    }
-    ORIGEN_CONSOLIDACION {
-        int necesidad_id PK, FK
-        int detalle_reposicion_id PK, FK
-        int cantidad
+        int centro_id FK "el CD"
+        int destino_id FK "un local"
+        datetime instante
     }
     REMITO {
-        int id PK
-        string numero UK
-        int origen_id FK
-        int destino_id FK
-        datetime fecha_emision
-        string estado_verificacion "PENDIENTE | VERIFICADO | RECHAZADO"
+        int id PK "numero R-000001"
+        int bulto_id FK, UK "un remito por bulto"
+        datetime instante
+        string estado "EMITIDO | VERIFICADO | RECHAZADO"
+        datetime instante_cierre "nulo si esta emitido"
     }
     BULTO {
-        int id PK
-        string codigo UK
+        int id PK "codigo B-000001"
         int orden_id FK
-        int remito_id FK "nulo mientras esta Preparado"
-        string precinto UK
-        string estado_actual "PREPARADO a VERIFICADO o RECHAZADO"
+        string estado "estado actual del patron State"
+        string precinto "nulo hasta precintar"
+        string precinto_clave UK "casefold, nunca se reutiliza"
     }
     DETALLE_BULTO {
-        int id PK
-        int bulto_id FK
-        int producto_id FK
+        int bulto_id PK, FK
+        int producto_id PK, FK
         int cantidad "mayor que 0"
         int costo_referencia_centavos "nulo si falta"
     }
@@ -166,8 +145,8 @@ erDiagram
         int secuencia PK
         string estado_anterior
         string estado_nuevo
-        datetime fecha_hora
-        string motivo
+        datetime instante
+        string motivo "solo insercion (triggers)"
     }
     MOVIMIENTO_STOCK {
         int id PK
@@ -180,7 +159,7 @@ erDiagram
         datetime instante
         int compra_id FK "con compra_linea"
         int compra_linea FK
-        int bulto_id FK
+        int bulto_id FK "con producto_id identifica la linea del bulto"
         int detalle_venta_id FK
         int detalle_devolucion_id FK
     }
@@ -252,8 +231,8 @@ erDiagram
 | Catálogo y ubicaciones | `UBICACION`, `CATEGORIA`, `PRODUCTO`, `PROVEEDOR`, `MINIMO_EXISTENCIA` | Implementado en memoria (F-01); persistencia en F-02. |
 | Inventario | `EXISTENCIA`, `MOVIMIENTO_STOCK` | Previsto (F-02 a F-05). |
 | Compras | `COMPRA`, `DETALLE_COMPRA` | Previsto (F-02). |
-| Reposición | `NECESIDAD_REPOSICION`, `ORDEN_REPOSICION`, `DETALLE_REPOSICION`, `ORIGEN_CONSOLIDACION` | Previsto (F-03). |
-| Logística | `REMITO`, `BULTO`, `DETALLE_BULTO`, `EVENTO_ESTADO_BULTO` | Previsto (F-03). |
+| Reposición | `NECESIDAD_REPOSICION`, `ORDEN_REPOSICION` | Implementado en F-03.1 y F-03.2. Los detalles por producto se calculan desde las necesidades consolidadas; no se guardan. |
+| Logística | `REMITO`, `BULTO`, `DETALLE_BULTO`, `EVENTO_ESTADO_BULTO` | Implementado en F-03.1 y F-03.2. |
 | Ventas y caja | `VENTA`, `DETALLE_VENTA`, `MEDIO_PAGO`, `COBRO`, `COMPROBANTE`, `MOVIMIENTO_CAJA` | Previsto (F-04). |
 | Devoluciones | `DEVOLUCION`, `DETALLE_DEVOLUCION` | Previsto (F-05). |
 
@@ -264,8 +243,8 @@ erDiagram
 - **Composición:** compra, orden, bulto, venta y devolución crean y contienen sus detalles; no hay borrado en cascada de documentos confirmados.
 - **Historial inmutable:** `EVENTO_ESTADO_BULTO` solo admite inserciones; `(bulto_id, secuencia)` es única y las transiciones válidas las controla el patrón State en Python.
 - **Doble verificación:** el stock pasa de `PENDIENTE` a `DISPONIBLE` en el local solo cuando el bulto y su remito están en `VERIFICADO`. Con precinto roto, el bulto pasa a `RECHAZADO` y su contenido a la condición `RECHAZADO`.
-- **Remito:** se propone un remito por bulto para empezar (la relación admite varios bultos por remito, según DN-01).
-- **Reserva:** al preparar un bulto, las unidades pasan de `DISPONIBLE` a `RESERVADO` en el CD; al despachar, pasan a `EN_TRANSITO`.
+- **Remito:** uno por bulto (DN-01 aprobada), emitido al precintar.
+- **Reserva y recorrido:** al preparar un bulto, las unidades pasan de `DISPONIBLE` a `RESERVADO` en el CD; al despachar salen del CD y entran `EN_TRANSITO` al local; al recibir pasan a `PENDIENTE`, y con el remito verificado a `DISPONIBLE`. Un precinto roto o distinto las deja `RECHAZADO` en el local.
 - **No sobreventa:** una venta solo descuenta stock `DISPONIBLE` del local, y toda la venta se confirma en una sola transacción.
 - **Datos históricos:** `DETALLE_VENTA` copia precio y costo; `DETALLE_BULTO` copia el costo de referencia al preparar. Cambios posteriores del catálogo o de compras no los alteran.
 - **Comprobante:** uno por venta (`venta_id` único).

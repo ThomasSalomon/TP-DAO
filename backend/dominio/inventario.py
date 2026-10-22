@@ -120,6 +120,15 @@ class Inventario:
         ]
         return tuple(sorted(pares, key=lambda par: par[0].identificador))
 
+    def saldos(self, ubicacion):
+        """Ternas (producto, condición, cantidad) no nulas de la ubicación, por producto y condición."""
+        ternas = [
+            (producto, condicion, cantidad)
+            for (lugar, producto, condicion), cantidad in self._saldos.items()
+            if lugar is ubicacion and cantidad
+        ]
+        return tuple(sorted(ternas, key=lambda terna: (terna[0].identificador, CONDICIONES.index(terna[1]))))
+
     def movimientos(self, ubicacion):
         return tuple(movimiento for movimiento in self._movimientos if movimiento.ubicacion is ubicacion)
 

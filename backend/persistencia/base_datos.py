@@ -101,6 +101,86 @@ CREATE TABLE IF NOT EXISTS movimientos_stock (
     CHECK (condicion_origen IS NOT NULL OR condicion_destino IS NOT NULL),
     CHECK (causa <> 'COMPRA' OR (compra_id IS NOT NULL AND compra_linea IS NOT NULL))
 );
+
+CREATE TABLE IF NOT EXISTS necesidades (
+    id INTEGER PRIMARY KEY,
+    local_id INTEGER NOT NULL REFERENCES ubicaciones (id),
+    producto_id INTEGER NOT NULL REFERENCES productos (id),
+    cantidad INTEGER NOT NULL CHECK (cantidad > 0),
+    instante TEXT NOT NULL,
+    -- NULL mientras está pendiente; los detalles de la orden se derivan de sus necesidades.
+    orden_id INTEGER REFERENCES ordenes_reposicion (id)
+);
+
+CREATE TABLE IF NOT EXISTS ordenes_reposicion (
+    id INTEGER PRIMARY KEY,
+    centro_id INTEGER NOT NULL REFERENCES ubicaciones (id),
+    destino_id INTEGER NOT NULL REFERENCES ubicaciones (id),
+    instante TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS bultos (
+    id INTEGER PRIMARY KEY,
+    orden_id INTEGER NOT NULL REFERENCES ordenes_reposicion (id),
+    estado TEXT NOT NULL CHECK (
+        estado IN ('PREPARADO', 'PRECINTADO', 'EN_TRANSITO', 'RECIBIDO', 'VERIFICADO', 'RECHAZADO', 'ANULADO')
+    ),
+    precinto TEXT,
+    -- Clave casefold() del precinto: un sello físico nunca se reutiliza.
+    precinto_clave TEXT UNIQUE,
+    CHECK ((precinto IS NULL) = (precinto_clave IS NULL))
+);
+
+CREATE TABLE IF NOT EXISTS detalles_bulto (
+    bulto_id INTEGER NOT NULL REFERENCES bultos (id),
+    producto_id INTEGER NOT NULL REFERENCES productos (id),
+    cantidad INTEGER NOT NULL CHECK (cantidad > 0),
+    costo_referencia_centavos INTEGER CHECK (costo_referencia_centavos > 0),
+    PRIMARY KEY (bulto_id, producto_id)
+);
+
+CREATE TABLE IF NOT EXISTS eventos_bulto (
+    bulto_id INTEGER NOT NULL REFERENCES bultos (id),
+    secuencia INTEGER NOT NULL CHECK (secuencia > 0),
+    estado_anterior TEXT,
+    estado_nuevo TEXT NOT NULL,
+    instante TEXT NOT NULL,
+    motivo TEXT NOT NULL,
+    PRIMARY KEY (bulto_id, secuencia)
+);
+
+-- Trazabilidad inmutable (E4): los eventos sólo se insertan.
+CREATE TRIGGER IF NOT EXISTS eventos_bulto_sin_modificacion BEFORE UPDATE ON eventos_bulto
+BEGIN
+    SELECT RAISE(ABORT, 'El historial de estados del bulto no se modifica.');
+END;
+
+CREATE TRIGGER IF NOT EXISTS eventos_bulto_sin_borrado BEFORE DELETE ON eventos_bulto
+BEGIN
+    SELECT RAISE(ABORT, 'El historial de estados del bulto no se borra.');
+END;
+
+CREATE TABLE IF NOT EXISTS remitos (
+    id INTEGER PRIMARY KEY,
+    bulto_id INTEGER NOT NULL UNIQUE REFERENCES bultos (id),
+    instante TEXT NOT NULL,
+    estado TEXT NOT NULL CHECK (estado IN ('EMITIDO', 'VERIFICADO', 'RECHAZADO')),
+    instante_cierre TEXT,
+    CHECK ((estado = 'EMITIDO') = (instante_cierre IS NULL))
+);
+"""
+
+# Requieren la columna bulto_id, que una base de F-02 recibe por ALTER TABLE.
+ESQUEMA_MOVIMIENTOS_BULTO = """
+-- Cada causa logística se aplica una sola vez por bulto, producto y ubicación.
+CREATE UNIQUE INDEX IF NOT EXISTS movimientos_bulto_unico
+    ON movimientos_stock (bulto_id, producto_id, causa, ubicacion_id) WHERE bulto_id IS NOT NULL;
+
+CREATE TRIGGER IF NOT EXISTS movimientos_logisticos_con_bulto BEFORE INSERT ON movimientos_stock
+WHEN NEW.causa <> 'COMPRA' AND NEW.bulto_id IS NULL
+BEGIN
+    SELECT RAISE(ABORT, 'Un movimiento logístico debe referenciar su bulto.');
+END;
 """
 
 
@@ -137,6 +217,11 @@ class BaseDatos:
         conexion = self.conectar()
         try:
             conexion.executescript(ESQUEMA)
+            columnas = [fila[1] for fila in conexion.execute("PRAGMA table_info(movimientos_stock)")]
+            if "bulto_id" not in columnas:
+                # CREATE TABLE IF NOT EXISTS no modifica tablas existentes: se agrega la columna de F-03.
+                conexion.execute("ALTER TABLE movimientos_stock ADD COLUMN bulto_id INTEGER REFERENCES bultos (id)")
+            conexion.executescript(ESQUEMA_MOVIMIENTOS_BULTO)
         finally:
             conexion.close()
 

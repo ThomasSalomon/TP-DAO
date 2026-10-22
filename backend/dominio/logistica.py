@@ -319,6 +319,23 @@ class Bulto:
     def anular(self, instante, inventario):
         return self._estado.anular(self, instante, inventario)
 
+    def _restaurar_historia(self, eventos, precinto):
+        """eventos: (estado anterior, estado nuevo, instante, motivo) ya confirmados, en orden.
+
+        Exige una cadena continua desde PREPARADO; no repite efectos de inventario.
+        """
+        if not eventos or eventos[0][0] is not None or eventos[0][1] != "PREPARADO":
+            raise ValueError("El historial debe comenzar en PREPARADO.")
+        historial = []
+        for secuencia, (anterior, nuevo, instante, motivo) in enumerate(eventos, start=1):
+            if nuevo not in ESTADOS_BULTO or (historial and anterior != historial[-1].estado_nuevo):
+                raise ValueError(f"El historial del bulto {self.codigo} no es una secuencia de estados válida.")
+            validar_instante(instante)
+            historial.append(EventoEstadoBulto(secuencia, anterior, nuevo, instante, motivo))
+        self._eventos = historial
+        self._estado = ESTADOS_BULTO[historial[-1].estado_nuevo]()
+        self._precinto = precinto
+
     def _fijar_precinto(self, precinto, remito):
         self._precinto = precinto
         self._remito = remito
@@ -393,6 +410,14 @@ class Remito:
         self._instante_cierre = instante
         return movimientos
 
+    def _restaurar(self, estado, instante_cierre):
+        if estado not in ("EMITIDO", "VERIFICADO", "RECHAZADO"):
+            raise ValueError("El estado del remito no es válido.")
+        if (estado == "EMITIDO") != (instante_cierre is None):
+            raise ValueError("Sólo un remito cerrado tiene instante de cierre.")
+        self._estado = estado
+        self._instante_cierre = instante_cierre
+
     def _rechazar(self, instante):
         # Sólo lo llama el rechazo logístico de su bulto.
         self._estado = "RECHAZADO"
@@ -438,6 +463,27 @@ class RegistroLogistica:
         remito = Remito(len(self._remitos) + 1, bulto, instante)
         bulto.precintar(precinto, remito, instante)
         self._remitos[remito.identificador] = remito
+        return remito
+
+    def restaurar_bulto(self, identificador, orden, lineas, eventos, precinto):
+        """Reconstruye un bulto confirmado con su historial; no controla activos ni reserva stock."""
+        if identificador != len(self._bultos) + 1:
+            raise ValueError("Los bultos se restauran en orden de identificador.")
+        if not eventos:
+            raise ValueError("El historial debe comenzar en PREPARADO.")
+        bulto = Bulto(identificador, orden, eventos[0][2], lineas)
+        bulto._restaurar_historia(eventos, precinto)
+        orden._agregar_bulto(bulto)
+        self._bultos[identificador] = bulto
+        return bulto
+
+    def restaurar_remito(self, identificador, bulto, instante, estado, instante_cierre):
+        if identificador != len(self._remitos) + 1:
+            raise ValueError("Los remitos se restauran en orden de identificador.")
+        remito = Remito(identificador, bulto, instante)
+        remito._restaurar(estado, instante_cierre)
+        bulto._fijar_precinto(bulto.precinto, remito)
+        self._remitos[identificador] = remito
         return remito
 
     def obtener_bulto(self, identificador):
