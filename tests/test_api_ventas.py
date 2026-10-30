@@ -133,6 +133,7 @@ def test_venta_con_cobros_divididos_descuenta_stock_y_registra_caja(cliente):
         "id": movimiento["id"], "instante": "2026-10-23T18:00:00-03:00", "producto": FIDEOS, "cantidad": 1,
         "condicion_origen": "DISPONIBLE", "condicion_destino": None, "causa": "VENTA", "compra_id": None,
         "linea": 2, "bulto_id": None, "bulto_codigo": None, "venta_id": 1, "comprobante": "CV-00000001",
+        "devolucion_id": None, "devolucion": None,
     }
 
     caja = cliente.get(f"/api/ubicaciones/{L1}/caja").get_json()
@@ -142,9 +143,11 @@ def test_venta_con_cobros_divididos_descuenta_stock_y_registra_caja(cliente):
     ]
     assert caja["movimientos"] == [
         {"id": 1, "instante": "2026-10-23T18:00:00-03:00", "medio": efectivo, "tipo": "INGRESO",
-         "importe": "2000.00", "venta_id": 1, "comprobante": "CV-00000001", "cobro": 1},
+         "importe": "2000.00", "venta_id": 1, "comprobante": "CV-00000001", "cobro": 1,
+         "devolucion_id": None, "devolucion": None, "reintegro": None},
         {"id": 2, "instante": "2026-10-23T18:00:00-03:00", "medio": debito, "tipo": "INGRESO",
-         "importe": "1900.50", "venta_id": 1, "comprobante": "CV-00000001", "cobro": 2},
+         "importe": "1900.50", "venta_id": 1, "comprobante": "CV-00000001", "cobro": 2,
+         "devolucion_id": None, "devolucion": None, "reintegro": None},
     ]
     assert cliente.get(f"/api/ubicaciones/{L2}/caja").get_json()["movimientos"] == []
 
@@ -365,11 +368,16 @@ def _base_con_venta(tmp_path):
     # Los movimientos de caja son evidencia: no se editan ni se borran.
     "UPDATE movimientos_caja SET importe_centavos = 1",
     "DELETE FROM movimientos_caja",
-    "INSERT INTO movimientos_caja VALUES (2, 'x', 2, 1, 'INGRESO', 100, NULL, NULL)",
-    "INSERT INTO movimientos_caja VALUES (2, 'x', 2, 1, 'INGRESO', 100, 1, 1)",
-    "INSERT INTO movimientos_caja VALUES (2, 'x', 2, 1, 'EGRESO', 100, 1, 1)",
-    "INSERT INTO movimientos_caja VALUES (2, 'x', 2, 1, 'AJUSTE', 100, NULL, NULL)",
-    "INSERT INTO movimientos_caja VALUES (2, 'x', 2, 1, 'INGRESO', 0, 1, 2)",
+    "INSERT INTO movimientos_caja (id, instante, local_id, medio_pago_id, tipo, importe_centavos,"
+    " cobro_venta_id, cobro_numero) VALUES (2, 'x', 2, 1, 'INGRESO', 100, NULL, NULL)",
+    "INSERT INTO movimientos_caja (id, instante, local_id, medio_pago_id, tipo, importe_centavos,"
+    " cobro_venta_id, cobro_numero) VALUES (2, 'x', 2, 1, 'INGRESO', 100, 1, 1)",
+    "INSERT INTO movimientos_caja (id, instante, local_id, medio_pago_id, tipo, importe_centavos,"
+    " cobro_venta_id, cobro_numero) VALUES (2, 'x', 2, 1, 'EGRESO', 100, 1, 1)",
+    "INSERT INTO movimientos_caja (id, instante, local_id, medio_pago_id, tipo, importe_centavos,"
+    " cobro_venta_id, cobro_numero) VALUES (2, 'x', 2, 1, 'AJUSTE', 100, NULL, NULL)",
+    "INSERT INTO movimientos_caja (id, instante, local_id, medio_pago_id, tipo, importe_centavos,"
+    " cobro_venta_id, cobro_numero) VALUES (2, 'x', 2, 1, 'INGRESO', 0, 1, 2)",
     # Una venta sin línea o una línea ya descontada no pueden generar otro movimiento.
     "INSERT INTO movimientos_stock (instante, ubicacion_id, producto_id, cantidad, condicion_origen, causa)"
     " VALUES ('x', 2, 1, 1, 'DISPONIBLE', 'VENTA')",

@@ -3,8 +3,8 @@
 from flask import Blueprint, current_app, jsonify, url_for
 
 from .api_comun import (
-    ErrorCatalogoAPI, datos_json, error_catalogo, guardar_cambio, lineas_validadas, obtener, operacion_dominio,
-    referencia_json, ubicacion_json, validar_campos,
+    ErrorCatalogoAPI, datos_json, error_catalogo, guardar_cambio, lineas_validadas, medio_json, obtener,
+    operacion_dominio, referencia_json, ubicacion_json, validar_campos,
 )
 from .dominio import ahora, importe_a_texto
 from .persistencia import guardar_venta
@@ -17,13 +17,9 @@ def _registro(nombre):
     return current_app.extensions[nombre]
 
 
-def _medio_json(medio):
-    return {"id": medio.identificador, "codigo": medio.codigo, "nombre": medio.nombre}
-
-
 def _cobros_json(venta):
     return [
-        {"numero": cobro.numero, "medio": _medio_json(cobro.medio), "importe": importe_a_texto(cobro.importe_centavos)}
+        {"numero": cobro.numero, "medio": medio_json(cobro.medio), "importe": importe_a_texto(cobro.importe_centavos)}
         for cobro in venta.cobros
     ]
 
@@ -100,7 +96,7 @@ def _venta(identificador):
 
 @api_ventas.get("/medios-pago")
 def listar_medios_pago():
-    datos = [_medio_json(medio) for medio in _registro("ventas").listar_medios()]
+    datos = [medio_json(medio) for medio in _registro("ventas").listar_medios()]
     return jsonify(medios_pago=datos)
 
 
@@ -165,6 +161,26 @@ def consultar_comprobante(identificador):
     return jsonify(datos)
 
 
+def _movimiento_caja_json(movimiento):
+    """Ingreso con su venta y cobro, o egreso con su devolución, la venta original y el reintegro."""
+    cobro, reintegro = movimiento.cobro, movimiento.reintegro
+    devolucion = reintegro.devolucion if reintegro else None
+    venta = cobro.venta if cobro else devolucion.venta
+    return {
+        "id": movimiento.identificador,
+        "instante": movimiento.instante.isoformat(),
+        "medio": medio_json(movimiento.medio),
+        "tipo": movimiento.tipo,
+        "importe": movimiento.importe,
+        "venta_id": venta.identificador,
+        "comprobante": venta.comprobante.numero,
+        "cobro": cobro.numero if cobro else None,
+        "devolucion_id": devolucion.identificador if devolucion else None,
+        "devolucion": devolucion.numero if devolucion else None,
+        "reintegro": reintegro.numero if reintegro else None,
+    }
+
+
 @api_ventas.get("/ubicaciones/<int:identificador>/caja")
 def consultar_caja(identificador):
     """Saldo por medio, calculado desde los movimientos, y los movimientos del local."""
@@ -174,21 +190,9 @@ def consultar_caja(identificador):
         )
         caja = _registro("caja")
         saldos = [
-            {"medio": _medio_json(medio), "saldo": importe_a_texto(caja.saldo_centavos(local, medio))}
+            {"medio": medio_json(medio), "saldo": importe_a_texto(caja.saldo_centavos(local, medio))}
             for medio in _registro("ventas").listar_medios()
         ]
-        movimientos = [
-            {
-                "id": movimiento.identificador,
-                "instante": movimiento.instante.isoformat(),
-                "medio": _medio_json(movimiento.medio),
-                "tipo": movimiento.tipo,
-                "importe": movimiento.importe,
-                "venta_id": movimiento.cobro.venta.identificador,
-                "comprobante": movimiento.cobro.venta.comprobante.numero,
-                "cobro": movimiento.cobro.numero,
-            }
-            for movimiento in caja.movimientos(local)
-        ]
+        movimientos = [_movimiento_caja_json(movimiento) for movimiento in caja.movimientos(local)]
         resultado = {"ubicacion": ubicacion_json(local), "saldos": saldos, "movimientos": movimientos}
     return jsonify(resultado)

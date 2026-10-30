@@ -21,6 +21,7 @@ backend/
   api_compras.py       HTTP/JSON de compras, existencias, saldos y movimientos
   api_logistica.py     HTTP/JSON de necesidades, órdenes, bultos y remitos
   api_ventas.py        HTTP/JSON de ventas, comprobante, medios de pago y caja por local
+  api_devoluciones.py  HTTP/JSON de devoluciones, reintegros y lo devolvible de una venta
   api_comun.py         errores, validación, JSON comunes, carga y guardado compartidos
   dominio/
     __init__.py        clases del catálogo y excepciones de dominio
@@ -42,6 +43,7 @@ backend/
     inventario_sqlite.py saldos y movimientos de stock
     logistica_sqlite.py necesidades, órdenes, bultos, eventos y remitos
     ventas_sqlite.py   ventas, líneas, cobros y movimientos de caja
+    devoluciones_sqlite.py devoluciones, sus líneas y reintegros
   requirements.txt     dependencia de ejecución Python
   requirements-dev.txt dependencia de pruebas
 frontend/
@@ -86,6 +88,7 @@ tests/test_logistica.py consolidación, ciclo del bulto, doble verificación y t
 tests/test_api_logistica.py contratos, reinicio por etapa, fallos, migración y esquema logístico
 tests/test_ventas.py   ventas, cobros divididos, caja, comprobante y clave de operación
 tests/test_api_ventas.py contratos, reinicio, clave repetida, fallos, concurrencia, esquema y migración de ventas
+tests/test_api_devoluciones.py contratos, reinicio, clave repetida, fallos, concurrencia, esquema y migración de devoluciones
 tests/test_devoluciones.py devoluciones parciales, aptitud, reintegros por medio y clave de operación
 tests/conftest.py      base temporal por aplicación; los tests nunca usan la base real
 pytest.ini
@@ -434,6 +437,30 @@ Aplica las decisiones de la sección O de `docs/DECISIONES_F00.md`. En esta part
 - **Caja.** `Caja.egresar_devolucion` registra un `MovimientoCaja` de egreso por reintegro, en el local de la venta y el medio del reintegro. `MovimientoCaja` recibe ahora su `documento` (un `Cobro` para el ingreso, un `Reintegro` para el egreso) y expone `cobro` y `reintegro`, que valen `None` cuando no corresponden.
 - **Venta intacta.** La devolución no modifica la venta ni su comprobante: queda como otro documento en su propio instante (DN-09).
 
+## F-05.2: persistencia y API de devoluciones
+
+Cada devolución se guarda en una sola transacción con sus líneas, reintegros, el ingreso de stock de cada línea y un egreso de caja por reintegro. Al iniciar, `cargar_estado` reconstruye las devoluciones después de las ventas y antes del inventario y la caja, cuyos movimientos remiten a sus líneas y reintegros; ahora devuelve también el registro de devoluciones. Si el guardado falla, la memoria vuelve al último estado confirmado y la API responde 500.
+
+| Método y ruta | Cuerpo | Resultado |
+| --- | --- | --- |
+| `POST /api/devoluciones` | `{"venta_id":1,"clave_operacion":"…","motivo":"…","lineas":[{"linea":1,"cantidad":1,"apto":true}],"reintegros":[{"medio_pago_id":1,"importe":"1500"}]}` | 201 con la devolución y `Location`. Con una `clave_operacion` ya registrada, 200 con la devolución existente y sin nuevos efectos. |
+| `GET /api/devoluciones`, `GET /api/devoluciones/<id>` | — | Devolución `DV-00000001` con venta y comprobante de origen, local, instante, motivo, clave, líneas (línea vendida, cantidad, aptitud, condición de destino, precio unitario histórico e importe), reintegros por medio, total y moneda. |
+| `GET /api/ventas/<id>/devoluciones` | — | Lo que queda por devolver: por línea vendida, cantidad vendida, devuelta y remanente; por medio cobrado, el importe que todavía se puede reintegrar; y las devoluciones de la venta. |
+
+`linea` es el número de línea de la venta, no el producto. Formato inválido es 400 con `fields` (`lineas.1.apto`, `reintegros.2.importe`); venta, línea de esa venta o medio inexistentes son 404 con su campo (`venta_id`, `lineas.N.linea`, `reintegros.N.medio_pago_id`); reintegros que no suman el total, medio no cobrado o repetido, línea repetida, cantidad mayor a la vendida y motivo o clave inválidos son 400; lo ya devuelto o reintegrado que deja sin remanente, y el local inactivo, son 409. Ningún error deja devolución, stock ni caja.
+
+Los movimientos de `/api/ubicaciones/<id>/movimientos` agregan `devolucion_id` y `devolucion` (`DV-…`); en un movimiento `DEVOLUCION`, `linea` es la línea de la devolución. Los movimientos de `/api/ubicaciones/<id>/caja` agregan `devolucion_id`, `devolucion` y `reintegro`: un egreso informa la venta original, `cobro` nulo y su devolución y número de reintegro; un ingreso deja nulos los tres campos nuevos.
+
+| Tabla | Contenido y restricciones |
+| --- | --- |
+| `devoluciones` | Venta, instante, motivo de 1 a 200 caracteres y `clave_operacion` única de 1 a 64. El local es el de la venta y no se repite. |
+| `detalles_devolucion` | Clave (devolución, línea), referencia a la línea vendida, única por devolución, `cantidad > 0` y `apto` 0 o 1. Un trigger exige que la línea sea de la venta de la devolución y otro que lo devuelto acumulado no supere lo vendido (RB-11). El importe no se guarda: se deriva del precio histórico de la línea vendida. |
+| `reintegros` | Clave (devolución, número), medio único por devolución e `importe_centavos > 0`. |
+| `movimientos_stock` | Columnas `devolucion_id` y `devolucion_linea`; un índice único impide ingresar dos veces la misma línea y un trigger exige que todo movimiento `DEVOLUCION` sea una entrada a DISPONIBLE si la línea es apta o a BLOQUEADO si no lo es. |
+| `movimientos_caja` | Columnas `reintegro_devolucion_id` y `reintegro_numero`; un índice único impide egresar dos veces el mismo reintegro y un trigger exige que todo egreso referencie un reintegro existente y que un ingreso no lo haga. |
+
+Una base anterior recibe las columnas nuevas por `ALTER TABLE` al iniciar, igual que en F-03 y F-04. El trigger que exige bulto a los movimientos logísticos se reemplaza por uno que también exceptúa `DEVOLUCION`; los datos previos se conservan. `medio_json` pasó de `api_ventas.py` a `api_comun.py` porque ahora lo usan ventas y devoluciones.
+
 ## Memoria, persistencia, pantalla y límites actuales
 
 `create_app` crea un `Catalogo` en `app.extensions["catalogo"]` y un `Lock` propio. La API utiliza esa misma instancia entre solicitudes; el bloqueo abarca las operaciones de dominio y la construcción de las respuestas para evitar carreras sobre códigos, IDs y referencias, incluida la comprobación de activos y su desactivación. No hay Singleton ni catálogo global compartido entre aplicaciones. Los tests crean aplicaciones aisladas. El dominio no añade sincronización para clientes Python externos: el adaptador HTTP es responsable de este bloqueo.
@@ -575,6 +602,8 @@ Desde la raíz:
 .\.venv\Scripts\python.exe -m pytest -q
 ```
 
+Verificación de F-05.2 el 29/10/2026: **733 casos aprobados** con la suite completa, en 2 minutos 53 segundos; los 675 previos siguen pasando, con cuatro tests de F-02 a F-04 ajustados a las columnas nuevas (claves `devolucion_id`, `devolucion` y `reintegro` en el JSON de movimientos y caja, inserciones con columnas nombradas o `NULL` adicionales y la migración de `movimientos_stock`). Se agregaron 58 casos en `tests/test_api_devoluciones.py`, sobre una venta de L1 cobrada en efectivo y débito: devolución parcial con línea apta y no apta (JSON completo, saldos DISPONIBLE y BLOQUEADO, movimiento `DEVOLUCION`, egresos de caja y venta intacta), lo que queda por devolver y reintegrar de una venta, reinicio con clave repetida, numeración continua y exceso acumulado rechazado, clave repetida con otro contenido sin efectos, lo no apto no vendible y lo apto vendible otra vez, formato inválido (400 con campos), referencias inexistentes (404 con campo), reglas del dominio (400 o 409), local inactivo frente a producto inactivo, consultas inexistentes, fallo de guardado sin efectos y reintento, devoluciones concurrentes limitadas por lo cobrado sin duplicar claves, 22 restricciones del esquema (se comprobó que cada una falla por la restricción buscada) y migración de una base de F-04. No se modificó el frontend ni se ejecutó `npm run build`.
+
 Verificación de F-05.1 el 29/10/2026: **675 casos aprobados** con la suite completa, en 89 segundos; los 641 previos siguen pasando. Se agregaron 34 casos en `tests/test_devoluciones.py`: devolución parcial con una línea apta y otra no apta (importes, condición de destino, movimientos `DEVOLUCION`, egresos de caja y saldos por medio), venta y comprobante intactos, lo no apto bloqueado y no vendible, lo apto vendible otra vez, devoluciones parciales sucesivas hasta el límite, un exceso acumulado en una línea que impide toda la devolución, líneas inválidas o de otra venta, reintegros que no cubren o exceden el total, medio repetido o no cobrado, límite de reintegro por medio, motivo y clave obligatorios, clave repetida sin efectos, instante anterior a la venta, ausencia de plazo, local inactivo frente a producto inactivo, precio histórico, conservación de unidades del local, sólo lectura, continuidad de identificadores y restauración. Python `-I -S` confirma que el dominio sigue sin cargar Flask ni SQLite.
 
 Verificación de F-04.3 el 22/10/2026: no hubo cambios de backend, así que la suite sigue con los 641 casos aprobados de F-04.2 y no se volvió a ejecutar; `npm run build` terminó correctamente. Prueba manual en el navegador integrado con el build servido por Flask en el puerto 5050 y `TP_DAO_DB` temporal, con L1 abastecido por un bulto verificado (5 arroces y 3 fideos):
@@ -701,7 +730,7 @@ Estado al 29/10/2026 respecto de las fases F-00 a F-07 de `docs/PLANIFICACION_TP
 | F-02. Persistencia, compras e inventario del CD | Completa | SQLite con `sqlite3`, compras con ingreso al CD, existencias, movimientos y costo de referencia; pantallas de compras y stock (RF-05, RF-21). |
 | F-03. Circuito logístico con State | Completa | Necesidades, órdenes por destino, bultos con patrón State, remito, precinto, despacho, recepción, doble verificación y rechazo (RF-06 a RF-13). |
 | F-04. Venta, cobro y comprobante | Completa | Ventas multilínea, cobros divididos, caja por medio, comprobante `CV-…` y clave contra envíos repetidos (RF-14 a RF-16; la parte de ventas de RF-18). |
-| F-05. Devoluciones | En curso | F-05.1: dominio de devoluciones parciales con aptitud por línea (apto a DISPONIBLE, no apto a `BLOQUEADO`), reintegro por medio cobrado y egresos de caja (RF-17 y la parte de devoluciones de RF-18). Faltan persistencia y API (F-05.2) y pantalla (F-05.3). |
+| F-05. Devoluciones | En curso | Dominio (F-05.1), persistencia y API (F-05.2) de devoluciones parciales con aptitud por línea (apto a DISPONIBLE, no apto a `BLOQUEADO`), reintegro por medio cobrado y egresos de caja (RF-17 y la parte de devoluciones de RF-18). Falta la pantalla (F-05.3). |
 | F-06. Cuatro reportes y Strategy | Pendiente | Sin reportes R-01 a R-04 ni resultado económico (RF-19, RF-20). Hoy sólo hay un patrón implementado (State); el segundo exigido por RT-04 es Strategy en esta fase. |
 | F-07. Integración y entrega | Pendiente | Escenarios integrados, revisión UML y artefactos de entrega. |
 

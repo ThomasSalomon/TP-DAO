@@ -33,20 +33,27 @@ def cargar_ventas(conexion, catalogo):
     return ventas
 
 
-def cargar_caja(conexion, catalogo, ventas):
-    """Movimientos de caja confirmados, vinculados otra vez con su cobro."""
+def cargar_caja(conexion, catalogo, ventas, devoluciones):
+    """Movimientos de caja confirmados, vinculados otra vez con su cobro o su reintegro."""
     caja = Caja()
     cursor = conexion.cursor()
     cursor.execute(
         """
-        SELECT id, instante, local_id, medio_pago_id, tipo, importe_centavos, cobro_venta_id, cobro_numero
+        SELECT id, instante, local_id, medio_pago_id, tipo, importe_centavos, cobro_venta_id, cobro_numero,
+               reintegro_devolucion_id, reintegro_numero
         FROM movimientos_caja ORDER BY id
         """
     )
-    for identificador, instante, local_id, medio_id, tipo, importe, venta_id, numero in cursor.fetchall():
+    for fila in cursor.fetchall():
+        identificador, instante, local_id, medio_id, tipo, importe, venta_id, numero = fila[:8]
+        devolucion_id, reintegro_numero = fila[8:]
+        if tipo == "INGRESO":
+            documento = ventas.obtener(venta_id).cobros[numero - 1]
+        else:
+            documento = devoluciones.obtener(devolucion_id).reintegros[reintegro_numero - 1]
         caja.restaurar_movimiento(MovimientoCaja(
             identificador, datetime.fromisoformat(instante), catalogo.obtener_ubicacion(local_id),
-            ventas.obtener_medio(medio_id), tipo, importe, ventas.obtener(venta_id).cobros[numero - 1],
+            ventas.obtener_medio(medio_id), tipo, importe, documento,
         ))
     return caja
 
@@ -77,16 +84,26 @@ def guardar_venta(conexion, venta, movimientos, movimientos_caja):
         ],
     )
     guardar_movimientos(conexion, movimientos)
+    guardar_movimientos_caja(conexion, movimientos_caja)
+
+
+def guardar_movimientos_caja(conexion, movimientos_caja):
+    """Ingresos con su cobro y egresos con su reintegro."""
+    filas = []
+    for movimiento in movimientos_caja:
+        cobro, reintegro = movimiento.cobro, movimiento.reintegro
+        filas.append((
+            movimiento.identificador, movimiento.instante.isoformat(), movimiento.local.identificador,
+            movimiento.medio.identificador, movimiento.tipo, movimiento.importe_centavos,
+            cobro.venta.identificador if cobro else None, cobro.numero if cobro else None,
+            reintegro.devolucion.identificador if reintegro else None, reintegro.numero if reintegro else None,
+        ))
     conexion.executemany(
         """
         INSERT INTO movimientos_caja (
-            id, instante, local_id, medio_pago_id, tipo, importe_centavos, cobro_venta_id, cobro_numero
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            id, instante, local_id, medio_pago_id, tipo, importe_centavos, cobro_venta_id, cobro_numero,
+            reintegro_devolucion_id, reintegro_numero
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """,
-        [
-            (movimiento.identificador, movimiento.instante.isoformat(), movimiento.local.identificador,
-             movimiento.medio.identificador, movimiento.tipo, movimiento.importe_centavos,
-             movimiento.cobro.venta.identificador, movimiento.cobro.numero)
-            for movimiento in movimientos_caja
-        ],
+        filas,
     )
