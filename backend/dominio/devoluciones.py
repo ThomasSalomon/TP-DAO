@@ -224,7 +224,7 @@ class RegistroDevoluciones:
             remanente = self.remanente(detalle.detalle_venta)
             if detalle.cantidad > remanente:
                 raise ConflictoOperacionError(
-                    f"Línea {detalle.numero}: quedan {remanente} unidades sin devolver de "
+                    f"Línea {detalle.detalle_venta.numero}: quedan {remanente} unidades sin devolver de "
                     f"{detalle.producto.codigo} y se intenta devolver {detalle.cantidad}."
                 )
         for reintegro in devolucion.reintegros:

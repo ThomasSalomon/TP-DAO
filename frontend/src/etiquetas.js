@@ -14,6 +14,13 @@ export const ESTADOS_REMITO = { EMITIDO: 'Emitido', VERIFICADO: 'Verificado', RE
 
 export const TIPOS_CAJA = { INGRESO: 'Ingreso', EGRESO: 'Egreso' };
 
+// Origen de un movimiento de caja: el cobro de una venta o el reintegro de una devolución.
+export function origenCaja(movimiento) {
+  return movimiento.tipo === 'EGRESO'
+    ? `Devolución ${movimiento.devolucion} de la venta ${movimiento.comprobante}, reintegro ${movimiento.reintegro}`
+    : `Venta ${movimiento.comprobante}, cobro ${movimiento.cobro}`;
+}
+
 export function nombreCondicion(condicion) {
   return condicion === null ? 'Fuera de la ubicación' : CONDICIONES[condicion] ?? condicion;
 }

@@ -13,6 +13,7 @@ function cantidadMovimiento(item) {
 function documentoMovimiento(item) {
   if (item.compra_id !== null) return `Compra ${item.compra_id}, línea ${item.linea}`;
   if (item.venta_id !== null) return `Venta ${item.comprobante}, línea ${item.linea}`;
+  if (item.devolucion_id !== null) return `Devolución ${item.devolucion}, línea ${item.linea}`;
   return `Bulto ${item.bulto_codigo}`;
 }
 

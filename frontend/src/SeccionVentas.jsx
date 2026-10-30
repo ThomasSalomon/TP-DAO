@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { ErrorAPI, formatearInstante, stockAPI, ventasAPI } from './api';
 import ComprobanteVenta from './ComprobanteVenta';
-import { TIPOS_CAJA, nombreUbicacion } from './etiquetas';
+import { TIPOS_CAJA, nombreUbicacion, origenCaja } from './etiquetas';
 import { aCentavos, aTexto } from './importes';
 
 function lineaVacia(clave) {
@@ -24,7 +24,9 @@ function cantidadValida(texto) {
 
 const SIN_DATOS = { existencias: [], ventas: [], caja: null };
 
-export default function SeccionVentas({ productos, ubicaciones, bloqueado, estadoCatalogo, onActividad, onCambio }) {
+export default function SeccionVentas({
+  productos, ubicaciones, bloqueado, estadoCatalogo, revisionStock, onActividad, onCambio,
+}) {
   const locales = ubicaciones.filter((item) => item.tipo === 'LOCAL');
   const productosActivos = productos.filter((item) => item.activo);
   const siguienteClave = useRef(2);
@@ -80,7 +82,8 @@ export default function SeccionVentas({ productos, ubicaciones, bloqueado, estad
         if (!controller.signal.aborted) setConsulta({ estado: 'error', mensaje: fallo.message });
       });
     return () => controller.abort();
-  }, [localId, revision, productos]);
+    // revisionStock cambia también con las devoluciones, que modifican el stock y la caja del local.
+  }, [localId, revision, productos, revisionStock]);
 
   const disponibles = new Map(datos.existencias.map((item) => [item.producto.id, item.disponible]));
   const precios = new Map(productos.map((item) => [item.id, item.precio]));
@@ -383,7 +386,7 @@ export default function SeccionVentas({ productos, ubicaciones, bloqueado, estad
                         <td>{item.medio.nombre}</td>
                         <td>{TIPOS_CAJA[item.tipo] ?? item.tipo}</td>
                         <td className="price">$ {item.importe}</td>
-                        <td>Venta {item.comprobante}, cobro {item.cobro}</td>
+                        <td>{origenCaja(item)}</td>
                       </tr>
                     ))}</tbody>
                   </table>

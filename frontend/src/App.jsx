@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { catalogoAPI } from './api';
 import SeccionCatalogo from './SeccionCatalogo';
 import SeccionCompras from './SeccionCompras';
+import SeccionDevoluciones from './SeccionDevoluciones';
 import SeccionLogistica from './SeccionLogistica';
 import SeccionMinimos from './SeccionMinimos';
 import SeccionStock from './SeccionStock';
@@ -20,6 +21,7 @@ const GRUPOS = [
     { id: 'compras', titulo: 'Compras al CD' },
     { id: 'logistica', titulo: 'Reposición y logística' },
     { id: 'ventas', titulo: 'Ventas y caja' },
+    { id: 'devoluciones', titulo: 'Devoluciones' },
   ] },
   { id: 'consultas', titulo: 'Consultas', vistas: [
     { id: 'stock', titulo: 'Stock por ubicación' },
@@ -43,6 +45,7 @@ export default function App() {
   const [carga, setCarga] = useState({ estado: 'cargando' });
   const [ocupados, setOcupados] = useState({
     categorias: false, productos: false, proveedores: false, ubicaciones: false, minimos: false, compras: false, logistica: false, ventas: false,
+    devoluciones: false,
   });
   const bloqueado = carga.estado === 'cargando' || Object.values(ocupados).some(Boolean);
 
@@ -154,8 +157,16 @@ export default function App() {
     ventas: (
       <SeccionVentas
         productos={datos.productos} ubicaciones={datos.ubicaciones}
-        bloqueado={bloqueado} estadoCatalogo={carga.estado}
+        bloqueado={bloqueado} estadoCatalogo={carga.estado} revisionStock={revisionStock}
         onActividad={(valor) => setOcupados((actual) => ({ ...actual, ventas: valor }))}
+        onCambio={() => setRevisionStock((valor) => valor + 1)}
+      />
+    ),
+    devoluciones: (
+      <SeccionDevoluciones
+        ubicaciones={datos.ubicaciones}
+        bloqueado={bloqueado} estadoCatalogo={carga.estado} revisionStock={revisionStock}
+        onActividad={(valor) => setOcupados((actual) => ({ ...actual, devoluciones: valor }))}
         onCambio={() => setRevisionStock((valor) => valor + 1)}
       />
     ),

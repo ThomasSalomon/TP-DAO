@@ -129,6 +129,19 @@ export const ventasAPI = {
   caja: (localId, signal) => solicitar(`/api/ubicaciones/${localId}/caja`, { signal }),
 };
 
+export const devolucionesAPI = {
+  listar: async (signal) => (await solicitar('/api/devoluciones', { signal })).devoluciones,
+  // Por línea vendida, lo que queda por devolver; por medio cobrado, lo que queda por reintegrar.
+  deVenta: (ventaId, signal) => solicitar(`/api/ventas/${ventaId}/devoluciones`, { signal }),
+  // 201: devolución nueva; 200: la clave ya estaba registrada y Python devuelve esa devolución sin repetir efectos.
+  registrar: async (datos) => {
+    const { estado, datos: devolucion } = await solicitar('/api/devoluciones', {
+      method: 'POST', body: JSON.stringify(datos), conEstado: true,
+    });
+    return { devolucion, nueva: estado === 201 };
+  },
+};
+
 // Presenta el instante tal como lo registró Python, sin convertir zonas en el navegador.
 export function formatearInstante(instante) {
   const [fecha, hora] = instante.split('T');

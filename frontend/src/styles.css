@@ -146,6 +146,9 @@ fieldset > select, fieldset > input, form > select { max-width: 480px; }
 .purchase-line legend { font-weight: 500; }
 .line-fields { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 1fr) minmax(0, 1fr) auto; gap: 12px; align-items: end; max-width: 960px; }
 .sale-fields { grid-template-columns: minmax(0, 2fr) minmax(0, 1fr) minmax(0, 1fr) auto; }
+.return-selectors { margin-bottom: 8px; }
+.return-fields { grid-template-columns: minmax(0, 1fr) minmax(0, 1.5fr) minmax(0, 1fr) auto; }
+.return-reason { max-width: 480px; margin-top: 20px; }
 .compact-lines { grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); margin-top: 12px; }
 .line-price { margin: 0 0 10px; }
 .sale-total { margin: 20px 0 4px; font-size: var(--fs-section); }

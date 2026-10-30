@@ -144,6 +144,14 @@ def test_un_exceso_acumulado_en_una_linea_impide_toda_la_devolucion(esc):
     with pytest.raises(ConflictoOperacionError, match="Línea 2: quedan 1 unidades sin devolver de 002"):
         esc.devolver([(esc.linea_arroz, 1, True), (esc.linea_fideos, 2, True)], [(esc.efectivo, "3301")], clave="b")
 
+
+def test_el_exceso_informa_la_linea_de_la_venta(esc):
+    # La devolución sólo incluye los fideos: es su línea 1, pero en la venta son la línea 2.
+    esc.devolver([(esc.linea_fideos, 1, True)], [(esc.debito, "900.50")], clave="a")
+
+    with pytest.raises(ConflictoOperacionError, match="Línea 2: quedan 1 unidades sin devolver de 002"):
+        esc.devolver([(esc.linea_fideos, 2, True)], [(esc.efectivo, "1801")], clave="b")
+
     assert len(esc.devoluciones.listar()) == 1
     assert esc.inventario.cantidad(esc.local, esc.arroz) == 2 and esc.inventario.cantidad(esc.local, esc.fideos) == 2
     assert len(esc.caja.movimientos()) == 3
