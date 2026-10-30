@@ -1,20 +1,26 @@
 """Movimientos de caja por local y medio de pago (DN-05). Importes en ARS."""
 
 from .catalogo import PRECIO_MAXIMO_CENTAVOS, Ubicacion, _validar_identificador, importe_a_texto
+from .devoluciones import Devolucion, Reintegro
 from .fechas import validar_instante
 from .ventas import Cobro, MedioPago, Venta
 
+# Documento que causa cada tipo de movimiento.
+DOCUMENTOS_CAJA = {"INGRESO": Cobro, "EGRESO": Reintegro}
+
 
 class MovimientoCaja:
-    """Ingreso por un cobro o, desde F-05, egreso por un reintegro; no se modifica."""
+    """Ingreso por un cobro o egreso por un reintegro; no se modifica."""
 
-    def __init__(self, identificador, instante, local, medio, tipo, importe_centavos, cobro):
+    def __init__(self, identificador, instante, local, medio, tipo, importe_centavos, documento):
         _validar_identificador(identificador)
         validar_instante(instante)
         if not isinstance(local, Ubicacion) or not isinstance(medio, MedioPago):
             raise TypeError("El movimiento de caja requiere una Ubicacion y un MedioPago.")
-        if tipo != "INGRESO" or not isinstance(cobro, Cobro):
-            raise ValueError("Por ahora la caja sólo registra ingresos causados por un cobro.")
+        if tipo not in DOCUMENTOS_CAJA:
+            raise ValueError("El tipo de movimiento de caja debe ser INGRESO o EGRESO.")
+        if not isinstance(documento, DOCUMENTOS_CAJA[tipo]):
+            raise TypeError("Un ingreso lo causa un cobro y un egreso, un reintegro.")
         if type(importe_centavos) is not int or not 0 < importe_centavos <= PRECIO_MAXIMO_CENTAVOS:
             raise ValueError("El importe del movimiento de caja debe ser un entero positivo de centavos.")
         self._identificador = identificador
@@ -23,7 +29,7 @@ class MovimientoCaja:
         self._medio = medio
         self._tipo = tipo
         self._importe_centavos = importe_centavos
-        self._cobro = cobro
+        self._documento = documento
 
     @property
     def identificador(self):
@@ -54,8 +60,18 @@ class MovimientoCaja:
         return importe_a_texto(self._importe_centavos)
 
     @property
+    def documento(self):
+        return self._documento
+
+    @property
     def cobro(self):
-        return self._cobro
+        """None en un egreso."""
+        return self._documento if self._tipo == "INGRESO" else None
+
+    @property
+    def reintegro(self):
+        """None en un ingreso."""
+        return self._documento if self._tipo == "EGRESO" else None
 
 
 class Caja:
@@ -74,6 +90,20 @@ class Caja:
                 cobro.importe_centavos, cobro,
             )
             for numero, cobro in enumerate(venta.cobros, start=1)
+        )
+        self._movimientos.extend(movimientos)
+        return movimientos
+
+    def egresar_devolucion(self, devolucion):
+        """Un egreso por cada reintegro de la devolución, en el local de la venta y el medio del reintegro."""
+        if not isinstance(devolucion, Devolucion):
+            raise TypeError("La devolución debe ser una Devolucion.")
+        movimientos = tuple(
+            MovimientoCaja(
+                len(self._movimientos) + numero, devolucion.instante, devolucion.local, reintegro.medio, "EGRESO",
+                reintegro.importe_centavos, reintegro,
+            )
+            for numero, reintegro in enumerate(devolucion.reintegros, start=1)
         )
         self._movimientos.extend(movimientos)
         return movimientos

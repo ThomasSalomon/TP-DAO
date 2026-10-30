@@ -6,6 +6,7 @@ from .catalogo import (
 )
 from .caja import Caja, MovimientoCaja
 from .compras import Compra, DetalleCompra, RegistroCompras
+from .devoluciones import DetalleDevolucion, Devolucion, RegistroDevoluciones, Reintegro
 from .errores import ConflictoOperacionError
 from .fechas import ZONA_ARGENTINA, ahora
 from .inventario import CAUSAS, CONDICIONES, Inventario, MovimientoStock
@@ -19,6 +20,7 @@ from .ventas import MEDIOS_PAGO, Cobro, Comprobante, DetalleVenta, MedioPago, Re
 __all__ = [
     "CAUSAS", "CONDICIONES", "MEDIOS_PAGO", "Bulto", "Caja", "Catalogo", "Cobro", "Comprobante", "Categoria", "CentroDistribucionDuplicadoError",
     "CodigoDuplicadoError", "Compra", "ConflictoCatalogoError", "ConflictoOperacionError", "DetalleBulto",
+    "DetalleDevolucion", "Devolucion", "RegistroDevoluciones", "Reintegro",
     "DetalleCompra", "DetalleReposicion", "DetalleVenta", "MedioPago", "MovimientoCaja", "RegistroVentas", "Venta", "ESTADOS_BULTO", "EstadoBulto", "EventoEstadoBulto", "Inventario",
     "MovimientoStock", "NecesidadReposicion", "OrdenReposicion", "Producto", "Proveedor", "RegistroCompras",
     "RegistroLogistica", "RegistroReposicion", "Remito", "TransicionBultoError", "Ubicacion", "ZONA_ARGENTINA",

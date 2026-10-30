@@ -545,3 +545,31 @@ El usuario aprobó la propuesta de F-04 completa: DN-05, la numeración del comp
 
 - Cada línea guarda su número, precio unitario y costo de referencia del momento de la venta (DN-03); los cambios posteriores no los alteran (RB-12).
 - Los cobros conservan su medio. El reparto de un reintegro entre medios de una venta con cobros divididos se define en DN-07 antes de F-05.
+
+## O. Decisiones aprobadas para F-05 (29/10/2026)
+
+El usuario aprobó la política DN-07 con las opciones recomendadas: sin plazo, aptitud por línea, reparto del reintegro elegido por el cajero y reintegro al precio completo. Reemplaza las alternativas abiertas de DN-07; la devolución comercial sigue siendo un proceso distinto del rechazo logístico.
+
+### O.1 Devolución
+
+- Refiere a una venta registrada y se recibe en el mismo local de esa venta, que debe estar activo. No hay plazo: se acepta mientras la línea tenga cantidad sin devolver.
+- Una o más líneas de la venta, sin repetir, con cantidad entera positiva y un motivo escrito. La cantidad devuelta acumulada de cada línea no supera la vendida (RB-11); se admiten devoluciones parciales sucesivas.
+- Una devolución confirmada no se modifica ni se anula. La venta original no se reescribe: la devolución queda en su propio instante (DN-09).
+- Python confirma en una única transacción la devolución, sus líneas, los ingresos de stock, los reintegros y los egresos de caja. Una devolución inválida no cambia datos.
+
+### O.2 Aptitud y stock
+
+- El cajero indica por línea si la mercadería es apta. Esa revisión en el mostrador es el control exigido por RB-17 y no requiere remito ni bulto.
+- Apta: ingresa como DISPONIBLE en el local. No apta: ingresa como BLOQUEADO, en custodia y no vendible; no hay un proceso posterior para esas unidades en F-05.
+- Cada línea deja un movimiento de stock con causa DEVOLUCION y la línea de la devolución como documento.
+
+### O.3 Reintegro y caja
+
+- Importe por línea = cantidad × precio unitario histórico de la línea vendida, sea apta o no (RB-12).
+- El cajero reparte el total entre los medios cobrados en la venta: un medio distinto por reintegro, suma exacta igual al total, y en cada medio no más que lo cobrado con él menos lo ya reintegrado. Así la caja de un local y medio no queda negativa por reintegros.
+- Cada reintegro genera un movimiento de caja de egreso en el local y medio del reintegro.
+
+### O.4 Identificación y envío repetido
+
+- Identificador numérico secuencial; se muestra como `DV-00000001`.
+- Igual que la venta, el formulario envía una `clave_operacion` única por borrador; una clave ya registrada devuelve la devolución existente sin efectos nuevos (RB-10).

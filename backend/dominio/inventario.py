@@ -2,12 +2,13 @@
 
 from .catalogo import Producto, Ubicacion, _validar_identificador
 from .compras import Compra, DetalleCompra
+from .devoluciones import DetalleDevolucion, Devolucion
 from .errores import ConflictoOperacionError
 from .fechas import validar_instante
 from .logistica import Bulto, DetalleBulto
 from .ventas import DetalleVenta, Venta
 
-# Condiciones del modelo (DER). BLOQUEADO queda reservada para devoluciones no aptas (F-05).
+# Condiciones del modelo (DER). BLOQUEADO guarda en custodia las devoluciones no aptas (DN-07).
 CONDICIONES = ("DISPONIBLE", "RESERVADO", "EN_TRANSITO", "PENDIENTE", "RECHAZADO", "BLOQUEADO")
 # Causa de cada movimiento y tipo de documento que debe originarlo.
 CAUSAS = {
@@ -19,6 +20,7 @@ CAUSAS = {
     "VERIFICACION": DetalleBulto,
     "RECHAZO": DetalleBulto,
     "VENTA": DetalleVenta,
+    "DEVOLUCION": DetalleDevolucion,
 }
 # Mayor entero que SQLite almacena exactamente.
 SALDO_MAXIMO = 2**63 - 1
@@ -220,6 +222,16 @@ class Inventario:
             for detalle in venta.detalles
         ]
         return self._aplicar(pasos, venta.instante, "VENTA")
+
+    def devolver(self, devolucion):
+        """Entrada al local de la venta: lo apto como disponible y lo no apto bloqueado."""
+        if not isinstance(devolucion, Devolucion):
+            raise TypeError("La devolución debe ser una Devolucion.")
+        pasos = [
+            (devolucion.local, detalle.producto, detalle.cantidad, None, detalle.condicion_destino, detalle)
+            for detalle in devolucion.detalles
+        ]
+        return self._aplicar(pasos, devolucion.instante, "DEVOLUCION")
 
     def restaurar_saldo(self, ubicacion, producto, condicion, cantidad):
         """Carga un saldo ya confirmado; no genera movimiento."""
