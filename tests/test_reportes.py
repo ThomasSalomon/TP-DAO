@@ -7,7 +7,8 @@ import pytest
 from backend.dominio import (
     ESTRATEGIAS_AGRUPACION, Caja, Catalogo, EstrategiaAgrupacion, Inventario, Periodo, PorDia, PorLocal,
     PorMedioPago, RegistroCompras, RegistroDevoluciones, RegistroLogistica, RegistroReposicion, RegistroVentas,
-    ReporteVentas, ZONA_ARGENTINA, existencias_y_minimos, productos_mas_vendidos, rechazos_logisticos,
+    ReporteVentas, ZONA_ARGENTINA, existencias_y_minimos, importe_a_texto, productos_mas_vendidos,
+    rechazos_logisticos,
 )
 
 
@@ -466,6 +467,13 @@ def test_r04_rechaza_filtros_invalidos(esc):
         rechazos_logisticos(OCTUBRE, esc.logistica, local=esc.cd)
     with pytest.raises(TypeError, match="Producto"):
         rechazos_logisticos(OCTUBRE, esc.logistica, producto="002")
+
+
+@pytest.mark.parametrize("centavos, texto", [
+    (0, "0.00"), (5, "0.05"), (150050, "1500.50"), (-5, "-0.05"), (-150, "-1.50"), (-150000, "-1500.00"),
+])
+def test_importe_a_texto_con_netos_negativos(centavos, texto):
+    assert importe_a_texto(centavos) == texto
 
 
 # Los reportes sólo consultan.

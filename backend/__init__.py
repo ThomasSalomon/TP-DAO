@@ -15,6 +15,7 @@ def create_app(frontend_dist=None, base_datos=None):
     from .api_compras import api_compras
     from .api_devoluciones import api_devoluciones
     from .api_logistica import api_logistica
+    from .api_reportes import api_reportes
     from .api_ventas import api_ventas
     from .persistencia import BaseDatos, cargar_estado, ruta_base_datos_predeterminada
 
@@ -43,6 +44,7 @@ def create_app(frontend_dist=None, base_datos=None):
     app.register_blueprint(api_logistica)
     app.register_blueprint(api_ventas)
     app.register_blueprint(api_devoluciones)
+    app.register_blueprint(api_reportes)
 
     @app.get("/")
     def frontend():

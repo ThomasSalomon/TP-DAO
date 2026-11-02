@@ -72,8 +72,9 @@ def importe_a_centavos(importe, campo):
 
 
 def importe_a_texto(centavos):
-    """Representación textual en pesos ARS, siempre con dos decimales."""
-    return f"{centavos // 100}.{centavos % 100:02d}"
+    """Representación textual en pesos ARS, siempre con dos decimales; los netos de reportes pueden ser negativos."""
+    signo = "-" if centavos < 0 else ""
+    return f"{signo}{abs(centavos) // 100}.{abs(centavos) % 100:02d}"
 
 
 def _precio_a_centavos(precio):
