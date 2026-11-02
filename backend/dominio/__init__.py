@@ -14,6 +14,10 @@ from .logistica import (
     ESTADOS_BULTO, Bulto, DetalleBulto, EstadoBulto, EventoEstadoBulto, RegistroLogistica, Remito,
     TransicionBultoError,
 )
+from .reportes import (
+    ESTRATEGIAS_AGRUPACION, EstrategiaAgrupacion, Periodo, PorDia, PorLocal, PorMedioPago, ReporteVentas,
+    existencias_y_minimos, productos_mas_vendidos, rechazos_logisticos,
+)
 from .reposicion import DetalleReposicion, NecesidadReposicion, OrdenReposicion, RegistroReposicion
 from .ventas import MEDIOS_PAGO, Cobro, Comprobante, DetalleVenta, MedioPago, RegistroVentas, Venta
 
@@ -25,4 +29,6 @@ __all__ = [
     "MovimientoStock", "NecesidadReposicion", "OrdenReposicion", "Producto", "Proveedor", "RegistroCompras",
     "RegistroLogistica", "RegistroReposicion", "Remito", "TransicionBultoError", "Ubicacion", "ZONA_ARGENTINA",
     "ahora", "importe_a_texto",
+    "ESTRATEGIAS_AGRUPACION", "EstrategiaAgrupacion", "Periodo", "PorDia", "PorLocal", "PorMedioPago", "ReporteVentas",
+    "existencias_y_minimos", "productos_mas_vendidos", "rechazos_logisticos",
 ]

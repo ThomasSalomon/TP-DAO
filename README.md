@@ -1,4 +1,4 @@
-# TP DAO 2026 — catálogo, compras, logística CD–locales, ventas y devoluciones en SQLite (F-05.3)
+# TP DAO 2026 — catálogo, compras, logística CD–locales, ventas, devoluciones y reportes en SQLite (F-06.1)
 
 React + Vite y API Flask Python permiten registrar, consultar, modificar y desactivar lógicamente categorías, productos, proveedores y locales del catálogo POO, y configurar mínimos por producto/local. Las ubicaciones distinguen Locales y Centro de Distribución (CD). El CD se puede registrar, consultar y editar, pero su baja queda bloqueada hasta aprobar una política de reemplazo. `GET /api/health` sigue devolviendo HTTP 200 y `{"status":"ok"}` como comprobación técnica de disponibilidad.
 
@@ -9,8 +9,9 @@ Todo se guarda en SQLite mediante `sqlite3` y SQL parametrizado y se conserva al
 - **Ventas (F-04):** ventas multilínea en un local con cobros divididos por medio de pago, caja por local y medio, comprobante interno imprimible y protección contra envíos repetidos.
 - **Devoluciones (F-05):** devoluciones parciales de una venta en su local, con aptitud por línea (lo apto vuelve a estar disponible y lo no apto queda bloqueado) y reintegro repartido entre los medios cobrados, que egresa de la caja.
 - **Stock por ubicación:** saldos por condición y movimientos de cada ubicación, con su documento de origen.
+- **Reportes (F-06.1, sólo dominio):** cálculo de los reportes R-01 a R-04 con el patrón Strategy para agrupar ventas y caja; todavía sin API ni pantalla.
 
-Los mínimos siguen siendo configuración administrativa: no generan alertas ni reposición automática. No hay eliminación física, reactivación, relaciones producto–proveedor, reportes, autenticación ni ORM. El estado frente a la planificación está en «Alcance actual frente a la planificación», al final de este archivo.
+Los mínimos siguen siendo configuración administrativa: no generan reposición automática; sólo el reporte R-03 los compara con el stock. No hay eliminación física, reactivación, relaciones producto–proveedor, autenticación ni ORM. El estado frente a la planificación está en «Alcance actual frente a la planificación», al final de este archivo.
 
 ## Estructura
 
@@ -36,6 +37,7 @@ backend/
     ventas.py          Venta, DetalleVenta, Cobro, MedioPago, Comprobante y RegistroVentas
     caja.py            Caja y MovimientoCaja por local y medio de pago, con ingresos y egresos
     devoluciones.py    Devolucion, DetalleDevolucion, Reintegro y RegistroDevoluciones
+    reportes.py        Periodo, R-01 con patrón Strategy (ReporteVentas y sus agrupaciones) y R-02 a R-04
   persistencia/
     __init__.py        funciones públicas de acceso a datos
     base_datos.py      conexión, esquema, ruta y transacciones SQLite
@@ -92,6 +94,7 @@ tests/test_ventas.py   ventas, cobros divididos, caja, comprobante y clave de op
 tests/test_api_ventas.py contratos, reinicio, clave repetida, fallos, concurrencia, esquema y migración de ventas
 tests/test_api_devoluciones.py contratos, reinicio, clave repetida, fallos, concurrencia, esquema y migración de devoluciones
 tests/test_devoluciones.py devoluciones parciales, aptitud, reintegros por medio y clave de operación
+tests/test_reportes.py R-01 a R-04 sobre datos de control, intercambio de estrategias y reportes sin efectos
 tests/conftest.py      base temporal por aplicación; los tests nunca usan la base real
 pytest.ini
 docs/                  enunciado y planificación previa, conservados
@@ -474,6 +477,16 @@ La vista “Devoluciones” (grupo Operaciones, `#/devoluciones`) trabaja sobre 
 
 Cada devolución confirmada incrementa la revisión de stock compartida, así que Stock por ubicación muestra el ingreso con “Devolución DV-…, línea N” y Ventas y caja vuelve a consultar la caja, cuyos egresos se presentan como “Devolución DV-… de la venta CV-…, reintegro N” (`origenCaja` en `etiquetas.js`). `api.js` agrega `devolucionesAPI`. En el dominio, el rechazo por exceso sobre lo que queda (409) ahora nombra la línea de la venta, que es la que ve la pantalla, en lugar de la posición en la devolución.
 
+## F-06.1: dominio de reportes y patrón Strategy
+
+Aplica las decisiones de la sección P de `docs/DECISIONES_F00.md`. En esta parte sólo existe el cálculo en `backend/dominio/reportes.py` con sus pruebas: todavía no hay API ni pantalla de reportes (F-06.2 y F-06.3). Los reportes leen los registros en memoria (ventas, devoluciones, caja, inventario, logística y mínimos del catálogo) y no modifican nada. Los importes son centavos exactos; las magnitudes netas pueden ser negativas cuando lo devuelto en un período supera lo vendido en él.
+
+- **Período.** `Periodo(desde, hasta)` recibe fechas sin hora, con inicio incluido y fin excluido; la fecha de inicio debe ser anterior a la de fin. Cada operación cuenta en la fecha de su instante en la zona acordada: una devolución afecta su propio período, no el de la venta.
+- **R-01 Ventas, cobros e ingresos netos (Strategy).** `ReporteVentas` es el contexto: filtra por período y local, calcula aparte el total de ventas, el de devoluciones y la venta neta desde los documentos, y delega en una `EstrategiaAgrupacion` la clave de cada movimiento de caja. `PorDia`, `PorLocal` y `PorMedioPago` reciben los mismos movimientos (cobros y reintegros), se eligen desde afuera (`ESTRATEGIAS_AGRUPACION` por nombre) y se intercambian con `cambiar_estrategia()`, sin `if` por tipo en el contexto. Cada grupo informa cobros, reintegros e ingreso neto; ventas y devoluciones no se reparten entre medios. Una venta con dos medios no se cuenta dos veces, y el ingreso neto total coincide con la venta neta.
+- **R-02 Productos más vendidos y margen estimado.** Por producto: unidades vendidas, devueltas y netas, importe neto a precios históricos, costo neto con el costo de referencia guardado en cada línea (la devolución revierte el de la línea original) y margen = importe neto − costo neto. Se ordena por unidades netas descendentes y, ante empate, por identificador. Si a un producto le falta el costo, ni su margen ni el margen total se informan y el producto queda en `productos_sin_costo`. Su importe neto concilia con la venta neta de R-01 para el mismo período y local.
+- **R-03 Existencias, mínimos y faltantes.** Para un local o el CD, con categoría opcional y opción de sólo productos en mínimo: saldo en cada condición, mínimo, déficit = máximo entre mínimo − disponible y cero, y alerta cuando el disponible es menor o igual que el mínimo. Incluye los productos con mínimo aunque nunca hayan tenido stock; sin mínimo no hay déficit ni alerta, y el CD no tiene mínimos.
+- **R-04 Rechazos logísticos.** Por fecha del rechazo, con local destino y producto opcionales: cada bulto rechazado con remito, destino, motivo, unidades y valor bloqueado al costo guardado al preparar el bulto, y por local los bultos recibidos y rechazados del período. Un bulto cuenta una vez aunque tenga varias líneas y eventos; con filtro de producto sólo cuentan sus líneas. Una compra posterior no cambia el valor bloqueado, que no es una merma; si falta un costo, ese valor no se informa.
+
 ## Memoria, persistencia, pantalla y límites actuales
 
 `create_app` crea un `Catalogo` en `app.extensions["catalogo"]` y un `Lock` propio. La API utiliza esa misma instancia entre solicitudes; el bloqueo abarca las operaciones de dominio y la construcción de las respuestas para evitar carreras sobre códigos, IDs y referencias, incluida la comprobación de activos y su desactivación. No hay Singleton ni catálogo global compartido entre aplicaciones. Los tests crean aplicaciones aisladas. El dominio no añade sincronización para clientes Python externos: el adaptador HTTP es responsable de este bloqueo.
@@ -615,6 +628,8 @@ Desde la raíz:
 .\.venv\Scripts\python.exe -m pytest -q
 ```
 
+Verificación de F-06.1 el 01/11/2026: **766 casos aprobados** con la suite completa, en 4 minutos 1 segundo; los 734 previos siguen pasando. Se agregaron 32 casos en `tests/test_reportes.py`, sobre datos de control armados con las operaciones reales (compra en el CD, cuatro bultos a dos locales con dos rechazos, una compra posterior que cambia el costo, tres ventas con cobros divididos y dos devoluciones en distintos períodos) y resultados calculados a mano. Cubren: los límites del período, la zona horaria y las fechas invertidas; R-01 por medio, día y local con los mismos datos, una estrategia nueva sin cambiar el contexto, la venta con dos medios sin contarla dos veces y el ingreso neto igual a la venta neta; R-02 con costos históricos distintos para el mismo producto, el costo faltante sin tomarlo como cero, la devolución de otro período que revierte su costo, el empate por identificador y la conciliación con R-01; R-03 con el mínimo exacto, el déficit, un producto con mínimo y sin stock, la separación entre disponible, bloqueado y rechazado, los filtros y el CD; R-04 con un bulto de varias líneas que cuenta una vez, el filtro de producto, el período por fecha del rechazo, el caso sin datos y el valor bloqueado que no cambia con una compra posterior; los filtros inválidos y que ningún reporte modifica las operaciones. Python `-I -S` confirma que el dominio sigue sin cargar Flask ni SQLite. No hubo cambios de frontend, así que no se ejecutó `npm run build`.
+
 Verificación de F-05.3 el 29/10/2026: **734 casos aprobados** con la suite completa, en 2 minutos 59 segundos; los 733 previos siguen pasando y se agregó un caso en `tests/test_devoluciones.py` para el número de línea del rechazo por exceso. `npm run build` terminó correctamente. Prueba manual en el navegador integrado con el build servido por Flask en el puerto 5050 y `TP_DAO_DB` temporal, sobre la venta CV-00000001 de L1 (3 arroces y 2 fideos, 6301.00 cobrados con efectivo 4000 y débito 2301):
 
 - sin reintegros: “La devolución debe tener al menos un reintegro.”; efectivo 2000 para un estimado de 2400.50: rechazo con la diferencia; aptitud o motivo vacíos: el navegador impide enviar;
@@ -742,17 +757,17 @@ Las pruebas de API usan el cliente Flask y archivos temporales; la verificación
 
 ## Alcance actual frente a la planificación
 
-Estado al 29/10/2026 respecto de las fases F-00 a F-07 de `docs/PLANIFICACION_TP_POO.md` (sección I). Las decisiones aprobadas por fase están en las secciones L (F-02), M (F-03), N (F-04) y O (F-05) de `docs/DECISIONES_F00.md`; el resto de `docs/` conserva la planificación original.
+Estado al 01/11/2026 respecto de las fases F-00 a F-07 de `docs/PLANIFICACION_TP_POO.md` (sección I). Las decisiones aprobadas por fase están en las secciones L (F-02), M (F-03), N (F-04), O (F-05) y P (F-06) de `docs/DECISIONES_F00.md`; el resto de `docs/` conserva la planificación original.
 
 | Fase | Estado | Qué quedó implementado o qué falta |
 | --- | --- | --- |
-| F-00. Alcance y políticas | Parcial | DN-01 a DN-05, DN-07, DN-09, DN-10 y DN-11 aprobadas y las bases de DN-02, DN-06 y DN-08 aplicadas en F-01. Falta cerrar fórmulas, períodos y costos de los reportes antes de F-06. |
+| F-00. Alcance y políticas | Parcial | DN-01 a DN-05, DN-07, DN-09, DN-10 y DN-11 aprobadas y las bases de DN-02, DN-06 y DN-08 aplicadas en F-01. Las fórmulas, períodos y costos de los reportes se adoptaron en la sección P con las propuestas de la planificación (DN-06 y DN-09); falta el formato de salida de los reportes. |
 | F-01. Catálogo | Completa | Categorías, productos, proveedores, Locales/CD y mínimos por local, con baja lógica y códigos históricos (RF-01 a RF-04). |
 | F-02. Persistencia, compras e inventario del CD | Completa | SQLite con `sqlite3`, compras con ingreso al CD, existencias, movimientos y costo de referencia; pantallas de compras y stock (RF-05, RF-21). |
 | F-03. Circuito logístico con State | Completa | Necesidades, órdenes por destino, bultos con patrón State, remito, precinto, despacho, recepción, doble verificación y rechazo (RF-06 a RF-13). |
 | F-04. Venta, cobro y comprobante | Completa | Ventas multilínea, cobros divididos, caja por medio, comprobante `CV-…` y clave contra envíos repetidos (RF-14 a RF-16; la parte de ventas de RF-18). |
 | F-05. Devoluciones | Completa | Dominio (F-05.1), persistencia y API (F-05.2) y pantalla (F-05.3) de devoluciones parciales con aptitud por línea (apto a DISPONIBLE, no apto a `BLOQUEADO`), reintegro por medio cobrado y egresos de caja (RF-17 y la parte de devoluciones de RF-18). |
-| F-06. Cuatro reportes y Strategy | Pendiente | Sin reportes R-01 a R-04 ni resultado económico (RF-19, RF-20). Hoy sólo hay un patrón implementado (State); el segundo exigido por RT-04 es Strategy en esta fase. |
+| F-06. Cuatro reportes y Strategy | En curso | F-06.1: cálculo de R-01 a R-04 en el dominio, con Strategy para agrupar R-01 (segundo patrón de RT-04) y margen estimado como resultado económico del período (RF-19, RF-20). Faltan la API (F-06.2) y la pantalla (F-06.3), y decidir si los reportes se exportan a PDF o CSV. |
 | F-07. Integración y entrega | Pendiente | Escenarios integrados, revisión UML y artefactos de entrega. |
 
 Después de F-04.3 se reorganizó la pantalla React sin cambiar el alcance: navegación por grupos (Catálogo, Operaciones, Consultas) con una ruta en el hash por vista (`#/productos`) y sin el panel de estado técnico de conexión; `GET /api/health` sigue disponible en la API.

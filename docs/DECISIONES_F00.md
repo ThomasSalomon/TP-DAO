@@ -573,3 +573,37 @@ El usuario aprobó la política DN-07 con las opciones recomendadas: sin plazo, 
 
 - Identificador numérico secuencial; se muestra como `DV-00000001`.
 - Igual que la venta, el formulario envía una `clave_operacion` única por borrador; una clave ya registrada devuelve la devolución existente sin efectos nuevos (RB-10).
+
+## P. Decisiones adoptadas para F-06 (01/11/2026)
+
+El usuario pidió empezar F-06 sin otra ronda de decisiones. Se adoptan las propuestas de la planificación (P G.11, F.6 y C.6) y las recomendaciones de DN-06 y DN-09; pueden revisarse antes de cerrar la fase. El formato de salida (sólo pantalla, PDF o CSV) se decide antes de la pantalla de F-06.3. La consulta docente G-01 sobre el margen estimado sigue abierta.
+
+### P.1 Criterios comunes
+
+- Los reportes consultan operaciones confirmadas en memoria y no modifican stock, caja ni documentos.
+- Período: fechas con inicio incluido y fin excluido en la zona acordada; la fecha de inicio debe ser anterior a la de fin. Cada operación cuenta en la fecha de su instante: una devolución afecta su propio período, no el de la venta.
+- Importes exactos en centavos; las magnitudes netas pueden ser negativas cuando lo devuelto en un período supera lo vendido en él.
+- Un costo faltante se informa: nunca se toma como cero.
+
+### P.2 R-01 Ventas, cobros e ingresos netos (Strategy)
+
+- Total de ventas, de devoluciones y venta neta del período y local, calculados aparte desde los documentos.
+- La agrupación trabaja siempre sobre el mismo conjunto de hechos: los movimientos de caja (cobros y reintegros) con fecha, local y medio. `ReporteVentas` delega la clave del grupo en una `EstrategiaAgrupacion` elegida desde afuera: por día, por local o por medio de pago.
+- Ventas y devoluciones no se reparten entre medios. Como toda venta se cobra completa y todo reintegro cubre su devolución en el mismo instante y local, el ingreso neto total coincide con la venta neta.
+
+### P.3 R-02 Productos más vendidos y margen estimado
+
+- Por producto: unidades vendidas menos devueltas, importe neto a precios históricos, costo neto con el costo de referencia histórico de cada línea (la devolución revierte el costo de la línea original) y margen estimado = importe neto − costo neto.
+- Ranking por unidades netas descendentes y, ante empate, por identificador de producto ascendente.
+- Si a un producto le falta el costo en alguna línea, su costo y su margen no se informan y el margen total tampoco; el reporte lista esos productos.
+
+### P.4 R-03 Existencias, mínimos y faltantes (DN-06)
+
+- Por ubicación (local o CD) y categoría opcional: saldo en cada condición, mínimo configurado, déficit = máximo entre mínimo − disponible y cero, y alerta cuando el disponible es menor o igual que el mínimo.
+- Incluye los productos con saldo en la ubicación y los que tienen mínimo configurado aunque nunca tuvieron stock. Sin mínimo configurado no hay déficit ni alerta; el CD no tiene mínimos.
+
+### P.5 R-04 Rechazos logísticos
+
+- Período por la fecha del rechazo, con filtros opcionales de local destino y producto.
+- Por bulto rechazado: remito, destino, fecha, motivo, unidades y valor bloqueado con el costo de referencia guardado al preparar el bulto. Por local: bultos recibidos y rechazados en el período, unidades y valor bloqueado. Un bulto cuenta una sola vez aunque tenga varias líneas o eventos.
+- El valor bloqueado no es una merma ni una pérdida definitiva. Si falta un costo, ese valor no se informa.
