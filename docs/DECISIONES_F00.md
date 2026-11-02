@@ -613,3 +613,18 @@ El usuario pidió empezar F-06 sin otra ronda de decisiones. Se adoptan las prop
 - Los cuatro reportes se consultan en pantalla, en una vista Reportes del grupo Consultas, y se generan a pedido con los filtros elegidos. No se exportan a PDF ni a CSV: el enunciado pide implementar y mostrar los reportes, y ReportLab, Matplotlib y `csv` quedan como ampliación si el grupo la decide.
 - En la pantalla, el «hasta» es el último día incluido, que es lo habitual para quien lo usa; al consultar se envía el día siguiente, porque la API conserva el fin excluido de P.1.
 - Los importes y cálculos llegan de Python; la pantalla sólo les da formato y marca los negativos.
+
+## Q. Decisiones adoptadas para F-07 (01/11/2026)
+
+El usuario pidió continuar con la fase siguiente sin otra ronda de decisiones. F-07 (P I) integra y documenta; no agrega funcionalidad. Pueden revisarse antes de cerrar la fase.
+
+### Q.1 Partes de la fase
+
+- **F-07.1 Escenarios integrales:** los cuatro escenarios de P J.4 (feliz, bloqueo, rechazo y transaccional) como pruebas pytest por HTTP sobre una base temporal, con el dataset de control de P J.3 y reinicio sobre la misma base (T-31, T-30 en lo que toca a reinicio y rollback).
+- **F-07.2 Ejecución y restricciones técnicas:** build servido por Flask con Vite apagado, inventario de código, dependencias y puntos de entrada que confirme el backend sólo Python (T-29), y comandos del README comprobados.
+- **F-07.3 Modelo y entrega:** revisión del modelo POO y de los patrones contra el código (T-26) y documentación para demostrar el sistema. Los artefactos y la modalidad de entrega dependen de la rúbrica docente (G-06), que sigue pendiente y no se inventa.
+
+### Q.2 Dataset de control (F-07.1)
+
+- Se usa J.3 tal como está, en pesos y dentro de octubre de 2026: producto P a 100 con costo 60, 14 unidades compradas; A recibe 3 (dos necesidades consolidadas) y B 7 con doble verificación, y A recibe además un bulto de 4 con el precinto roto. A vende 3 a 100 (200 en efectivo y 100 con tarjeta de crédito); el precio pasa a 90 y B vende 2 (180 por transferencia); A devuelve 1 apta con reintegro de 100 en efectivo. Mínimos: A 2 y B 3.
+- Los resultados esperados son los de J.3, calculados antes de escribir las aserciones: venta bruta 480, devoluciones 100 y venta neta 380; ingreso neto 380 (efectivo 100, crédito 100, transferencia 180); unidades netas 4, costo neto 240 y margen 140; disponibles A 1 y B 5 con déficit 1 y 0; un bulto rechazado con 4 unidades y 240 bloqueados, que no es pérdida.

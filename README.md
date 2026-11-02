@@ -1,4 +1,4 @@
-# TP DAO 2026 — catálogo, compras, logística CD–locales, ventas, devoluciones y reportes en SQLite (F-06.3)
+# TP DAO 2026 — catálogo, compras, logística CD–locales, ventas, devoluciones y reportes en SQLite (F-07.1)
 
 React + Vite y API Flask Python permiten registrar, consultar, modificar y desactivar lógicamente categorías, productos, proveedores y locales del catálogo POO, y configurar mínimos por producto/local. Las ubicaciones distinguen Locales y Centro de Distribución (CD). El CD se puede registrar, consultar y editar, pero su baja queda bloqueada hasta aprobar una política de reemplazo. `GET /api/health` sigue devolviendo HTTP 200 y `{"status":"ok"}` como comprobación técnica de disponibilidad.
 
@@ -98,6 +98,7 @@ tests/test_api_devoluciones.py contratos, reinicio, clave repetida, fallos, conc
 tests/test_devoluciones.py devoluciones parciales, aptitud, reintegros por medio y clave de operación
 tests/test_reportes.py R-01 a R-04 sobre datos de control, intercambio de estrategias y reportes sin efectos
 tests/test_api_reportes.py parámetros, JSON, importes negativos, reinicio y reportes sin efectos
+tests/test_integracion.py escenarios integrales feliz, de bloqueo, de rechazo y transaccional con el dataset de control
 tests/conftest.py      base temporal por aplicación; los tests nunca usan la base real
 pytest.ini
 docs/                  enunciado y planificación previa, conservados
@@ -514,6 +515,15 @@ La vista “Reportes” (grupo Consultas, `#/reportes`) aplica la decisión P.6:
 
 `api.js` agrega `reportesAPI.generar`, que omite los filtros vacíos. No hay cambios de backend.
 
+## F-07.1: escenarios integrales de aceptación
+
+Aplica la sección Q de `docs/DECISIONES_F00.md`. `tests/test_integracion.py` recorre la API como lo hace la pantalla, cada escenario sobre su propia base temporal, y simula el reinicio creando otra aplicación sobre la misma base. No agrega funcionalidad ni modifica el backend o la pantalla.
+
+- **Feliz, con el dataset de control J.3.** Producto P a 100 con costo 60; compra de 14 unidades; el local A recibe 3 (dos necesidades consolidadas en una orden) y B 7, ambos con doble verificación; A recibe además un bulto de 4 con el precinto roto. A vende 3 a 100 con efectivo y crédito; P pasa a 90 y B vende 2 por transferencia; A devuelve 1 apta. Se comprueban stock y caja por local, la orden con sus necesidades, los comprobantes con el precio histórico y la reconsulta sin efectos, y los resultados de J.3 en los cuatro reportes: venta neta e ingreso neto 380, neto por medio 100 / 100 / 180, margen 140 sobre costo 240, déficit 1 en A y 0 en B, y 240 bloqueados por el rechazo. Después del reinicio, documentos, stock, caja, historia de bultos y reportes son idénticos, la numeración continúa (`CV-00000003`) y una clave repetida devuelve la devolución existente sin efectos.
+- **Bloqueo.** Con el stock en tránsito, recibido y con el bulto verificado pero el remito pendiente, la venta se rechaza (409); al verificar el remito queda disponible y se vende, y una unidad más vuelve a rechazarse.
+- **Rechazo.** El precinto roto deja el bulto Rechazado con sus cinco eventos, que no cambian; no se vende, no se puede verificar, no hay caja ni venta, y R-04 informa las 4 unidades y 240 bloqueados.
+- **Transaccional.** Una compra, una venta y una devolución fallan después de guardar parte de sus filas; ni la aplicación en uso ni una reiniciada muestran el documento, el stock o la caja parciales, y el reintento posterior deja los saldos y R-01 correctos.
+
 ## Memoria, persistencia, pantalla y límites actuales
 
 `create_app` crea un `Catalogo` en `app.extensions["catalogo"]` y un `Lock` propio. La API utiliza esa misma instancia entre solicitudes; el bloqueo abarca las operaciones de dominio y la construcción de las respuestas para evitar carreras sobre códigos, IDs y referencias, incluida la comprobación de activos y su desactivación. No hay Singleton ni catálogo global compartido entre aplicaciones. Los tests crean aplicaciones aisladas. El dominio no añade sincronización para clientes Python externos: el adaptador HTTP es responsable de este bloqueo.
@@ -655,6 +665,8 @@ Desde la raíz:
 .\.venv\Scripts\python.exe -m pytest -q
 ```
 
+Verificación de F-07.1 el 01/11/2026: **817 casos aprobados** con la suite completa, en 3 minutos 59 segundos; los 808 previos siguen pasando. Se agregaron 9 casos en `tests/test_integracion.py` con los cuatro escenarios de J.4; los resultados esperados del escenario feliz son los de J.3, calculados antes de escribir las aserciones. No hubo cambios de backend ni de frontend, así que no se ejecutó `npm run build`.
+
 Verificación de F-06.3 el 01/11/2026: no hubo cambios de backend, así que la suite sigue con los 808 casos aprobados de F-06.2 y no se volvió a ejecutar; `npm run build` terminó correctamente. Prueba manual en el navegador integrado con el build servido por Flask en el puerto 5050 y una base temporal cargada con el escenario de `tests/test_api_reportes.py` más una venta de 1 fideo con crédito (900.50) el 20/10:
 
 - R-01 de octubre por día: ventas 7201.50, grupos 05/10 (6301.00) y 20/10 (900.50); noviembre por medio: venta neta `−$ 1500.00` en rojo; período invertido: “La fecha de inicio debe ser anterior a la de fin.” junto a “Hasta”, con `aria-invalid`;
@@ -794,7 +806,7 @@ Las pruebas de API usan el cliente Flask y archivos temporales; la verificación
 
 ## Alcance actual frente a la planificación
 
-Estado al 01/11/2026 respecto de las fases F-00 a F-07 de `docs/PLANIFICACION_TP_POO.md` (sección I). Las decisiones aprobadas por fase están en las secciones L (F-02), M (F-03), N (F-04), O (F-05) y P (F-06) de `docs/DECISIONES_F00.md`; el resto de `docs/` conserva la planificación original.
+Estado al 01/11/2026 respecto de las fases F-00 a F-07 de `docs/PLANIFICACION_TP_POO.md` (sección I). Las decisiones aprobadas por fase están en las secciones L (F-02), M (F-03), N (F-04), O (F-05), P (F-06) y Q (F-07) de `docs/DECISIONES_F00.md`; el resto de `docs/` conserva la planificación original.
 
 | Fase | Estado | Qué quedó implementado o qué falta |
 | --- | --- | --- |
@@ -805,7 +817,7 @@ Estado al 01/11/2026 respecto de las fases F-00 a F-07 de `docs/PLANIFICACION_TP
 | F-04. Venta, cobro y comprobante | Completa | Ventas multilínea, cobros divididos, caja por medio, comprobante `CV-…` y clave contra envíos repetidos (RF-14 a RF-16; la parte de ventas de RF-18). |
 | F-05. Devoluciones | Completa | Dominio (F-05.1), persistencia y API (F-05.2) y pantalla (F-05.3) de devoluciones parciales con aptitud por línea (apto a DISPONIBLE, no apto a `BLOQUEADO`), reintegro por medio cobrado y egresos de caja (RF-17 y la parte de devoluciones de RF-18). |
 | F-06. Cuatro reportes y Strategy | Completa | F-06.1: cálculo de R-01 a R-04 en el dominio, con Strategy para agrupar R-01 (segundo patrón de RT-04) y margen estimado como resultado económico del período (RF-19, RF-20). F-06.2: API de sólo lectura de los cuatro reportes. F-06.3: vista Reportes en pantalla, sin exportación a PDF ni CSV (P.6). |
-| F-07. Integración y entrega | Pendiente | Escenarios integrados, revisión UML y artefactos de entrega. |
+| F-07. Integración y entrega | En curso | F-07.1: escenarios integrales feliz, de bloqueo, de rechazo y transaccional con el dataset de control J.3 (T-31). Faltan el build servido por Python y el inventario de backend sólo Python (F-07.2), y la revisión del modelo y los artefactos de entrega (F-07.3), que dependen de la rúbrica (G-06). |
 
 Después de F-04.3 se reorganizó la pantalla React sin cambiar el alcance: navegación por grupos (Catálogo, Operaciones, Consultas) con una ruta en el hash por vista (`#/productos`) y sin el panel de estado técnico de conexión; `GET /api/health` sigue disponible en la API.
 
