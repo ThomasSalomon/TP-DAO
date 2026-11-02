@@ -1,4 +1,4 @@
-# TP DAO 2026 — catálogo, compras, logística CD–locales, ventas, devoluciones y reportes en SQLite (F-06.2)
+# TP DAO 2026 — catálogo, compras, logística CD–locales, ventas, devoluciones y reportes en SQLite (F-06.3)
 
 React + Vite y API Flask Python permiten registrar, consultar, modificar y desactivar lógicamente categorías, productos, proveedores y locales del catálogo POO, y configurar mínimos por producto/local. Las ubicaciones distinguen Locales y Centro de Distribución (CD). El CD se puede registrar, consultar y editar, pero su baja queda bloqueada hasta aprobar una política de reemplazo. `GET /api/health` sigue devolviendo HTTP 200 y `{"status":"ok"}` como comprobación técnica de disponibilidad.
 
@@ -9,7 +9,7 @@ Todo se guarda en SQLite mediante `sqlite3` y SQL parametrizado y se conserva al
 - **Ventas (F-04):** ventas multilínea en un local con cobros divididos por medio de pago, caja por local y medio, comprobante interno imprimible y protección contra envíos repetidos.
 - **Devoluciones (F-05):** devoluciones parciales de una venta en su local, con aptitud por línea (lo apto vuelve a estar disponible y lo no apto queda bloqueado) y reintegro repartido entre los medios cobrados, que egresa de la caja.
 - **Stock por ubicación:** saldos por condición y movimientos de cada ubicación, con su documento de origen.
-- **Reportes (F-06.1 y F-06.2):** cálculo de los reportes R-01 a R-04 con el patrón Strategy para agrupar ventas y caja, consultables por la API; todavía sin pantalla.
+- **Reportes (F-06.1 a F-06.3):** cálculo de los reportes R-01 a R-04 con el patrón Strategy para agrupar ventas y caja, consultables por la API y en la vista Reportes.
 
 Los mínimos siguen siendo configuración administrativa: no generan reposición automática; sólo el reporte R-03 los compara con el stock. No hay eliminación física, reactivación, relaciones producto–proveedor, autenticación ni ORM. El estado frente a la planificación está en «Alcance actual frente a la planificación», al final de este archivo.
 
@@ -64,6 +64,7 @@ frontend/
     SeccionStock.jsx   saldos por condición, costo de referencia y movimientos por ubicación
     SeccionVentas.jsx  venta por local con cobros, ventas registradas y caja por medio
     SeccionDevoluciones.jsx devolución de una venta con aptitud, reintegros por medio y devoluciones del local
+    SeccionReportes.jsx filtros y presentación de los reportes R-01 a R-04 calculados por Python
     ComprobanteVenta.jsx comprobante interno en pantalla y copia para imprimir
     importes.js        importes ARS en centavos con BigInt para las estimaciones del borrador
     etiquetas.js       textos de estados y condiciones devueltos por Python
@@ -503,6 +504,16 @@ Aplica las decisiones de la sección P de `docs/DECISIONES_F00.md`. En esta part
 
 Las fechas van como `AAAA-MM-DD`, con `desde` incluido y `hasta` excluido: octubre es `desde=2026-10-01&hasta=2026-11-01`. Los importes son texto con dos decimales y pueden ser negativos (`"-1500.00"`) cuando lo devuelto en el período supera lo vendido; para eso `importe_a_texto` ahora antepone el signo. Un costo faltante se informa como `null`, nunca como `"0.00"`. Un parámetro faltante, desconocido, repetido o con formato inválido, una fecha inexistente, el período invertido o vacío, una agrupación desconocida y el CD como `local_id` son 400 con el parámetro en `fields`; una ubicación, categoría o producto inexistentes son 404 con su parámetro. Las rutas sólo admiten `GET`: otro método es 405 JSON.
 
+## F-06.3: pantalla de reportes
+
+La vista “Reportes” (grupo Consultas, `#/reportes`) aplica la decisión P.6: los cuatro reportes se generan a pedido y se muestran en pantalla, sin exportar a PDF ni CSV.
+
+- **Filtros.** Un selector elige R-01 a R-04 y muestra sólo sus filtros: período (por defecto, del primer día del mes actual a hoy), agrupación de R-01 (Día, Local o Medio de pago), local opcional, producto opcional en R-04, y en R-03 la ubicación obligatoria, la categoría y “Sólo productos en su mínimo”. El campo “Hasta (inclusive)” es el último día incluido; al consultar se envía el día siguiente porque la API mantiene el fin excluido. Las listas incluyen registros inactivos, que pueden tener operaciones en el período.
+- **Validación.** La pantalla sólo exige completar las fechas (`required`); el orden del período, las referencias y el CD como local los valida Python, y sus errores 400 o 404 de Python se muestran sobre el formulario y junto al campo indicado, con `aria-invalid`. Cada reporte conserva su último resultado al cambiar de tipo, y una consulta nueva cancela la anterior del mismo tipo.
+- **Presentación.** Cada resultado indica el período y el alcance consultados, un resumen y tablas con totales al pie. Los importes llegan como texto de Python; la pantalla sólo antepone `$` y marca los negativos (`−$ 1500.00`). Un costo faltante aparece como “Sin costo” o “Incompleto”, nunca como cero; el déficit sin mínimo configurado, como “—”, también en el total del CD. R-03 sólo muestra las condiciones con saldo además de Disponible. Cada reporte explica debajo sus fórmulas y lo que no incluye.
+
+`api.js` agrega `reportesAPI.generar`, que omite los filtros vacíos. No hay cambios de backend.
+
 ## Memoria, persistencia, pantalla y límites actuales
 
 `create_app` crea un `Catalogo` en `app.extensions["catalogo"]` y un `Lock` propio. La API utiliza esa misma instancia entre solicitudes; el bloqueo abarca las operaciones de dominio y la construcción de las respuestas para evitar carreras sobre códigos, IDs y referencias, incluida la comprobación de activos y su desactivación. No hay Singleton ni catálogo global compartido entre aplicaciones. Los tests crean aplicaciones aisladas. El dominio no añade sincronización para clientes Python externos: el adaptador HTTP es responsable de este bloqueo.
@@ -644,6 +655,14 @@ Desde la raíz:
 .\.venv\Scripts\python.exe -m pytest -q
 ```
 
+Verificación de F-06.3 el 01/11/2026: no hubo cambios de backend, así que la suite sigue con los 808 casos aprobados de F-06.2 y no se volvió a ejecutar; `npm run build` terminó correctamente. Prueba manual en el navegador integrado con el build servido por Flask en el puerto 5050 y una base temporal cargada con el escenario de `tests/test_api_reportes.py` más una venta de 1 fideo con crédito (900.50) el 20/10:
+
+- R-01 de octubre por día: ventas 7201.50, grupos 05/10 (6301.00) y 20/10 (900.50); noviembre por medio: venta neta `−$ 1500.00` en rojo; período invertido: “La fecha de inicio debe ser anterior a la de fin.” junto a “Hasta”, con `aria-invalid`;
+- R-02 del 01/10 al 30/11: fideos 3 u. netas, 2701.50, costo 1200.00 y margen 1501.50; arroz 2 u. netas, 3000.00, 2000.00 y 1000.00; importe total 5701.50, igual a la venta neta de R-01;
+- R-03 del CD: arroz 15 y fideos 5 disponibles, mínimo y déficit “—”, también en el total; de L1: arroz 3 con mínimo 2 y déficit 0, fideos 0 con mínimo 2, déficit 2 y “En mínimo”; con “Sólo productos en su mínimo”, sólo los fideos;
+- R-04 del 01/10 al 30/11: B-000002 / R-000002 a L2, 02/10/2026 09:00:00, “Precinto roto.”, 2 u. de fideos y $ 800.00 bloqueados; por local, L1 con 1 recibido y 0 rechazados y L2 con 1 y 1;
+- a 375 px de ancho, sin desplazamiento horizontal de la página (las tablas se desplazan dentro de su contenedor); en la consola, sólo el 400 esperado del período invertido.
+
 Verificación de F-06.2 el 01/11/2026: **808 casos aprobados** con la suite completa, en 3 minutos 34 segundos; los 766 previos siguen pasando. Se agregaron 36 casos en `tests/test_api_reportes.py`, sobre un escenario armado por HTTP con el reloj de los adaptadores fijado en cada paso (compra y bulto verificado a L1 el 01/10, bulto rechazado a L2 el 02/10, venta con efectivo y débito el 05/10, devolución el 02/11 y mínimos en L1): el JSON completo de los cuatro reportes, importes negativos de la devolución de otro período, la agrupación por día por defecto, el período vacío, la conciliación entre R-02 y R-01, los filtros de R-03 y R-04, 22 parámetros inválidos con su campo y su código (400 o 404), 405 ante un `POST`, consultas de ventas, devoluciones, bultos, remitos, saldos, movimientos y caja idénticas antes y después de los reportes, y los mismos reportes después de reiniciar con la misma base. En `tests/test_reportes.py` se agregaron 6 casos de `importe_a_texto` con importes negativos. No hubo cambios de frontend, así que no se ejecutó `npm run build`.
 
 Verificación de F-06.1 el 01/11/2026: **766 casos aprobados** con la suite completa, en 4 minutos 1 segundo; los 734 previos siguen pasando. Se agregaron 32 casos en `tests/test_reportes.py`, sobre datos de control armados con las operaciones reales (compra en el CD, cuatro bultos a dos locales con dos rechazos, una compra posterior que cambia el costo, tres ventas con cobros divididos y dos devoluciones en distintos períodos) y resultados calculados a mano. Cubren: los límites del período, la zona horaria y las fechas invertidas; R-01 por medio, día y local con los mismos datos, una estrategia nueva sin cambiar el contexto, la venta con dos medios sin contarla dos veces y el ingreso neto igual a la venta neta; R-02 con costos históricos distintos para el mismo producto, el costo faltante sin tomarlo como cero, la devolución de otro período que revierte su costo, el empate por identificador y la conciliación con R-01; R-03 con el mínimo exacto, el déficit, un producto con mínimo y sin stock, la separación entre disponible, bloqueado y rechazado, los filtros y el CD; R-04 con un bulto de varias líneas que cuenta una vez, el filtro de producto, el período por fecha del rechazo, el caso sin datos y el valor bloqueado que no cambia con una compra posterior; los filtros inválidos y que ningún reporte modifica las operaciones. Python `-I -S` confirma que el dominio sigue sin cargar Flask ni SQLite. No hubo cambios de frontend, así que no se ejecutó `npm run build`.
@@ -779,13 +798,13 @@ Estado al 01/11/2026 respecto de las fases F-00 a F-07 de `docs/PLANIFICACION_TP
 
 | Fase | Estado | Qué quedó implementado o qué falta |
 | --- | --- | --- |
-| F-00. Alcance y políticas | Parcial | DN-01 a DN-05, DN-07, DN-09, DN-10 y DN-11 aprobadas y las bases de DN-02, DN-06 y DN-08 aplicadas en F-01. Las fórmulas, períodos y costos de los reportes se adoptaron en la sección P con las propuestas de la planificación (DN-06 y DN-09); falta el formato de salida de los reportes. |
+| F-00. Alcance y políticas | Parcial | DN-01 a DN-05, DN-07, DN-09, DN-10 y DN-11 aprobadas y las bases de DN-02, DN-06 y DN-08 aplicadas en F-01. Las fórmulas, períodos y costos de los reportes se adoptaron en la sección P con las propuestas de la planificación (DN-06 y DN-09), y su salida en pantalla en P.6. |
 | F-01. Catálogo | Completa | Categorías, productos, proveedores, Locales/CD y mínimos por local, con baja lógica y códigos históricos (RF-01 a RF-04). |
 | F-02. Persistencia, compras e inventario del CD | Completa | SQLite con `sqlite3`, compras con ingreso al CD, existencias, movimientos y costo de referencia; pantallas de compras y stock (RF-05, RF-21). |
 | F-03. Circuito logístico con State | Completa | Necesidades, órdenes por destino, bultos con patrón State, remito, precinto, despacho, recepción, doble verificación y rechazo (RF-06 a RF-13). |
 | F-04. Venta, cobro y comprobante | Completa | Ventas multilínea, cobros divididos, caja por medio, comprobante `CV-…` y clave contra envíos repetidos (RF-14 a RF-16; la parte de ventas de RF-18). |
 | F-05. Devoluciones | Completa | Dominio (F-05.1), persistencia y API (F-05.2) y pantalla (F-05.3) de devoluciones parciales con aptitud por línea (apto a DISPONIBLE, no apto a `BLOQUEADO`), reintegro por medio cobrado y egresos de caja (RF-17 y la parte de devoluciones de RF-18). |
-| F-06. Cuatro reportes y Strategy | En curso | F-06.1: cálculo de R-01 a R-04 en el dominio, con Strategy para agrupar R-01 (segundo patrón de RT-04) y margen estimado como resultado económico del período (RF-19, RF-20). F-06.2: API de sólo lectura de los cuatro reportes. Falta la pantalla (F-06.3) y decidir si los reportes se exportan a PDF o CSV. |
+| F-06. Cuatro reportes y Strategy | Completa | F-06.1: cálculo de R-01 a R-04 en el dominio, con Strategy para agrupar R-01 (segundo patrón de RT-04) y margen estimado como resultado económico del período (RF-19, RF-20). F-06.2: API de sólo lectura de los cuatro reportes. F-06.3: vista Reportes en pantalla, sin exportación a PDF ni CSV (P.6). |
 | F-07. Integración y entrega | Pendiente | Escenarios integrados, revisión UML y artefactos de entrega. |
 
 Después de F-04.3 se reorganizó la pantalla React sin cambiar el alcance: navegación por grupos (Catálogo, Operaciones, Consultas) con una ruta en el hash por vista (`#/productos`) y sin el panel de estado técnico de conexión; `GET /api/health` sigue disponible en la API.

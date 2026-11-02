@@ -231,6 +231,18 @@ summary:hover { color: var(--text); }
 .cash-balances { max-width: 640px; margin-bottom: 16px; }
 .receipt-print { display: none; }
 
+/* Reportes: cifras principales en línea, totales al pie y negativos en rojo. */
+.report h4 { margin-top: 24px; }
+.report-help { max-width: 72ch; margin: 12px 0 0; }
+.report-check { display: flex; align-items: flex-end; padding-bottom: 8px; }
+.report-check .check-option { margin: 0; }
+.report-summary { display: flex; flex-wrap: wrap; gap: 12px 40px; margin: 0 0 8px; }
+.report-summary dt { color: var(--muted); font-size: var(--fs-small); }
+.report-summary dd { margin: 2px 0 0; font-size: var(--fs-section); font-weight: 600; font-variant-numeric: tabular-nums; }
+.report tfoot th, .report tfoot td { padding-top: 10px; color: var(--text); font-size: var(--fs-body); font-weight: 600; border-top: 1px solid var(--border); border-bottom: 0; }
+.negativo { color: var(--negative); }
+.badge-alerta { color: var(--pill-warning-ink); background: var(--pill-warning-bg); }
+
 /* Al imprimir con un comprobante abierto, sólo se imprime su copia. */
 @media print {
   body { padding: 0; background: white; }

@@ -142,6 +142,14 @@ export const devolucionesAPI = {
   },
 };
 
+export const reportesAPI = {
+  // tipo: ventas, productos, existencias o rechazos. Los filtros vacíos no se envían.
+  generar: (tipo, parametros, signal) => {
+    const consulta = new URLSearchParams(Object.entries(parametros).filter(([, valor]) => valor !== ''));
+    return solicitar(`/api/reportes/${tipo}?${consulta}`, { signal });
+  },
+};
+
 // Presenta el instante tal como lo registró Python, sin convertir zonas en el navegador.
 export function formatearInstante(instante) {
   const [fecha, hora] = instante.split('T');

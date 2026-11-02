@@ -576,7 +576,7 @@ El usuario aprobó la política DN-07 con las opciones recomendadas: sin plazo, 
 
 ## P. Decisiones adoptadas para F-06 (01/11/2026)
 
-El usuario pidió empezar F-06 sin otra ronda de decisiones. Se adoptan las propuestas de la planificación (P G.11, F.6 y C.6) y las recomendaciones de DN-06 y DN-09; pueden revisarse antes de cerrar la fase. El formato de salida (sólo pantalla, PDF o CSV) se decide antes de la pantalla de F-06.3. La consulta docente G-01 sobre el margen estimado sigue abierta.
+El usuario pidió empezar F-06 sin otra ronda de decisiones. Se adoptan las propuestas de la planificación (P G.11, F.6 y C.6) y las recomendaciones de DN-06 y DN-09; pueden revisarse antes de cerrar la fase. El formato de salida se fijó en P.6 al empezar la pantalla de F-06.3. La consulta docente G-01 sobre el margen estimado sigue abierta.
 
 ### P.1 Criterios comunes
 
@@ -607,3 +607,9 @@ El usuario pidió empezar F-06 sin otra ronda de decisiones. Se adoptan las prop
 - Período por la fecha del rechazo, con filtros opcionales de local destino y producto.
 - Por bulto rechazado: remito, destino, fecha, motivo, unidades y valor bloqueado con el costo de referencia guardado al preparar el bulto. Por local: bultos recibidos y rechazados en el período, unidades y valor bloqueado. Un bulto cuenta una sola vez aunque tenga varias líneas o eventos.
 - El valor bloqueado no es una merma ni una pérdida definitiva. Si falta un costo, ese valor no se informa.
+
+### P.6 Presentación (F-06.3)
+
+- Los cuatro reportes se consultan en pantalla, en una vista Reportes del grupo Consultas, y se generan a pedido con los filtros elegidos. No se exportan a PDF ni a CSV: el enunciado pide implementar y mostrar los reportes, y ReportLab, Matplotlib y `csv` quedan como ampliación si el grupo la decide.
+- En la pantalla, el «hasta» es el último día incluido, que es lo habitual para quien lo usa; al consultar se envía el día siguiente, porque la API conserva el fin excluido de P.1.
+- Los importes y cálculos llegan de Python; la pantalla sólo les da formato y marca los negativos.

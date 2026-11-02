@@ -5,6 +5,7 @@ import SeccionCompras from './SeccionCompras';
 import SeccionDevoluciones from './SeccionDevoluciones';
 import SeccionLogistica from './SeccionLogistica';
 import SeccionMinimos from './SeccionMinimos';
+import SeccionReportes from './SeccionReportes';
 import SeccionStock from './SeccionStock';
 import SeccionVentas from './SeccionVentas';
 
@@ -25,6 +26,7 @@ const GRUPOS = [
   ] },
   { id: 'consultas', titulo: 'Consultas', vistas: [
     { id: 'stock', titulo: 'Stock por ubicación' },
+    { id: 'reportes', titulo: 'Reportes' },
   ] },
 ];
 const VISTAS = GRUPOS.flatMap((grupo) => grupo.vistas);
@@ -174,6 +176,12 @@ export default function App() {
       <SeccionStock
         ubicaciones={datos.ubicaciones} productos={datos.productos}
         bloqueado={bloqueado} estadoCatalogo={carga.estado} revisionStock={revisionStock}
+      />
+    ),
+    reportes: (
+      <SeccionReportes
+        ubicaciones={datos.ubicaciones} productos={datos.productos} categorias={datos.categorias}
+        estadoCatalogo={carga.estado}
       />
     ),
   };
