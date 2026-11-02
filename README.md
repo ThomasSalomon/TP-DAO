@@ -103,7 +103,7 @@ tests/test_restricciones.py backend sólo Python, dependencias declaradas y SQL 
 tests/test_modelo.py   jerarquías, estado interno, partes compuestas y delegación de State y Strategy
 tests/conftest.py      base temporal por aplicación; los tests nunca usan la base real
 pytest.ini
-docs/                  enunciado, planificación y decisiones; MODELO_POO.md, DER.md y DEMOSTRACION.md describen el sistema implementado
+docs/                  enunciado, planificación y decisiones; MODELO_POO.md, DER.md y DEMOSTRACION.md describen el sistema implementado y CIERRE_F07.md registra la evidencia del cierre
 ```
 
 La presentación HTTP vive en `backend/api.py` y los módulos `backend/api_*.py`; la creación/configuración de Flask, en `backend/__init__.py`; el dominio, en `backend/dominio`; el acceso a SQLite, en `backend/persistencia`. El dominio no importa SQLite ni Flask. Los imports HTTP se ejecutan al llamar a `create_app`, por lo que importar y usar el dominio no requiere Flask instalado. React captura datos y presenta respuestas de Python. Node ejecuta herramientas frontend; no hay backend, SSR, BFF, reglas ni persistencia en Node.
@@ -548,6 +548,8 @@ Aplica la sección Q.3 de `docs/DECISIONES_F00.md`. No cambia el backend ni la p
 
 Los artefactos y el formato de entrega exigidos por la cátedra siguen pendientes de la rúbrica (G-06).
 
+**Cierre de F-07.** `docs/CIERRE_F07.md` marca cada punto del checklist L.2 y cada criterio de la Definition of Done M de la planificación con su evidencia, y relaciona T-01 a T-31 con las pruebas reales. Quedan pendientes sólo los puntos que dependen de la cátedra (sección 5 de ese documento).
+
 ## Memoria, persistencia, pantalla y límites actuales
 
 `create_app` crea un `Catalogo` en `app.extensions["catalogo"]` y un `Lock` propio. La API utiliza esa misma instancia entre solicitudes; el bloqueo abarca las operaciones de dominio y la construcción de las respuestas para evitar carreras sobre códigos, IDs y referencias, incluida la comprobación de activos y su desactivación. No hay Singleton ni catálogo global compartido entre aplicaciones. Los tests crean aplicaciones aisladas. El dominio no añade sincronización para clientes Python externos: el adaptador HTTP es responsable de este bloqueo.
@@ -848,7 +850,7 @@ Las pruebas de API usan el cliente Flask y archivos temporales; la verificación
 
 ## Alcance actual frente a la planificación
 
-Estado al 02/11/2026 respecto de las fases F-00 a F-07 de `docs/PLANIFICACION_TP_POO.md` (sección I). Las decisiones aprobadas por fase están en las secciones L (F-02), M (F-03), N (F-04), O (F-05), P (F-06) y Q (F-07) de `docs/DECISIONES_F00.md`. `docs/MODELO_POO.md`, `docs/DER.md` y `docs/DEMOSTRACION.md` describen el sistema implementado; el resto de `docs/` conserva la planificación original.
+Estado al 02/11/2026 respecto de las fases F-00 a F-07 de `docs/PLANIFICACION_TP_POO.md` (sección I). Las decisiones aprobadas por fase están en las secciones L (F-02), M (F-03), N (F-04), O (F-05), P (F-06) y Q (F-07) de `docs/DECISIONES_F00.md`. `docs/MODELO_POO.md`, `docs/DER.md` y `docs/DEMOSTRACION.md` describen el sistema implementado y `docs/CIERRE_F07.md` registra el estado del checklist L.2 y de la Definition of Done M; el resto de `docs/` conserva la planificación original.
 
 | Fase | Estado | Qué quedó implementado o qué falta |
 | --- | --- | --- |
@@ -859,7 +861,7 @@ Estado al 02/11/2026 respecto de las fases F-00 a F-07 de `docs/PLANIFICACION_TP
 | F-04. Venta, cobro y comprobante | Completa | Ventas multilínea, cobros divididos, caja por medio, comprobante `CV-…` y clave contra envíos repetidos (RF-14 a RF-16; la parte de ventas de RF-18). |
 | F-05. Devoluciones | Completa | Dominio (F-05.1), persistencia y API (F-05.2) y pantalla (F-05.3) de devoluciones parciales con aptitud por línea (apto a DISPONIBLE, no apto a `BLOQUEADO`), reintegro por medio cobrado y egresos de caja (RF-17 y la parte de devoluciones de RF-18). |
 | F-06. Cuatro reportes y Strategy | Completa | F-06.1: cálculo de R-01 a R-04 en el dominio, con Strategy para agrupar R-01 (segundo patrón de RT-04) y margen estimado como resultado económico del período (RF-19, RF-20). F-06.2: API de sólo lectura de los cuatro reportes. F-06.3: vista Reportes en pantalla, sin exportación a PDF ni CSV (P.6). |
-| F-07. Integración y entrega | En curso | F-07.1: escenarios integrales feliz, de bloqueo, de rechazo y transaccional con el dataset de control J.3 (T-31). F-07.2: backend sólo Python y SQL con parámetros comprobados sobre el repositorio (T-29, T-30), y comandos de ejecución, build servido por Flask y reinicio verificados. F-07.3: revisión del modelo contra el código (T-26), DER alineado con el esquema y guion de demostración. Faltan los artefactos de entrega que exija la rúbrica (G-06). |
+| F-07. Integración y entrega | Completa, salvo la entrega | F-07.1: escenarios integrales feliz, de bloqueo, de rechazo y transaccional con el dataset de control J.3 (T-31). F-07.2: backend sólo Python y SQL con parámetros comprobados sobre el repositorio (T-29, T-30), y comandos de ejecución, build servido por Flask y reinicio verificados. F-07.3: revisión del modelo contra el código (T-26), DER alineado con el esquema y guion de demostración. Cierre en `docs/CIERRE_F07.md`. Faltan los artefactos de entrega que exija la rúbrica (G-06). |
 
 Después de F-04.3 se reorganizó la pantalla React sin cambiar el alcance: navegación por grupos (Catálogo, Operaciones, Consultas) con una ruta en el hash por vista (`#/productos`) y sin el panel de estado técnico de conexión; `GET /api/health` sigue disponible en la API.
 

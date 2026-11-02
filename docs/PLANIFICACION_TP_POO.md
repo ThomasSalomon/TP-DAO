@@ -947,52 +947,54 @@ No se estiman horas ni fechas. Puede prepararse la especificación de reportes m
 
 ### L.2 Checklist verificable
 
+Estado al cierre de F-07 (02/11/2026), con la evidencia de cada punto, en `CIERRE_F07.md`. Quedan sin marcar los que dependen de la cátedra (G-06).
+
 **Alcance y acuerdos**
 
-- [ ] Resolver/adoptar las políticas de K necesarias para cada fase y registrar su fuente.
+- [x] Resolver/adoptar las políticas de K necesarias para cada fase y registrar su fuente.
 - [x] Registrar React + Vite y API Flask acordadas para planificación.
 - [ ] Confirmar modalidad operativa DN-11 y formato de entrega.
-- [ ] Conservar los siete procesos E2 y cinco validaciones E4 en aceptación.
-- [ ] Acordar integración mínima de compras y significado del resultado económico.
-- [ ] Seleccionar cuatro reportes distintos y justificar dos patrones.
+- [x] Conservar los siete procesos E2 y cinco validaciones E4 en aceptación.
+- [x] Acordar integración mínima de compras y significado del resultado económico.
+- [x] Seleccionar cuatro reportes distintos y justificar dos patrones.
 
 **Funcionalidad e integración**
 
-- [ ] Maestros y duplicados controlados; precios/mínimos válidos.
-- [ ] Compra ingresada una sola vez y persistente en CD.
-- [ ] Necesidades consolidadas conservando origen, destino y cantidades.
-- [ ] Bultos con contenido, remito y precinto; reservas coherentes.
-- [ ] Despacho/recepción registrados sin duplicar unidades.
-- [ ] Remito y bulto verificados antes de disponibilidad.
-- [ ] Precinto roto rechaza y bloquea venta.
-- [ ] Historia inmutable consultable; estados sin saltos inválidos.
-- [ ] Venta multilinea, cobro, caja y comprobante coherentes.
-- [ ] Devolución válida con stock/caja y límites acumulados acordados.
-- [ ] Cuatro reportes con filtros, fórmulas, vacío y resultados reconciliables.
+- [x] Maestros y duplicados controlados; precios/mínimos válidos.
+- [x] Compra ingresada una sola vez y persistente en CD.
+- [x] Necesidades consolidadas conservando origen, destino y cantidades.
+- [x] Bultos con contenido, remito y precinto; reservas coherentes.
+- [x] Despacho/recepción registrados sin duplicar unidades.
+- [x] Remito y bulto verificados antes de disponibilidad.
+- [x] Precinto roto rechaza y bloquea venta.
+- [x] Historia inmutable consultable; estados sin saltos inválidos.
+- [x] Venta multilinea, cobro, caja y comprobante coherentes.
+- [x] Devolución válida con stock/caja y límites acumulados acordados.
+- [x] Cuatro reportes con filtros, fórmulas, vacío y resultados reconciliables.
 
 **POO y restricciones técnicas**
 
-- [ ] Estado protegido; colecciones propias gestionadas por su dueño.
-- [ ] Composición/asociación/cardinalidad justificadas; no borrar documentos auditados.
-- [ ] State delega de verdad; cada estado cumple el contrato.
-- [ ] Strategy intercambia agrupaciones sin selección de tipos en el contexto.
-- [ ] Clases abstractas e inicialización correctas; sin herencia artificial.
-- [ ] Backend y cualquier lógica servidor sólo Python; sin SSR/BFF ajeno.
-- [ ] SQLite directo, parámetros, transacciones y recursos cerrados.
-- [ ] Versiones/dependencias React/Vite/Flask verificadas y restricciones académicas concretas atendidas, sin permiso genérico inventado.
+- [x] Estado protegido; colecciones propias gestionadas por su dueño.
+- [x] Composición/asociación/cardinalidad justificadas; no borrar documentos auditados.
+- [x] State delega de verdad; cada estado cumple el contrato.
+- [x] Strategy intercambia agrupaciones sin selección de tipos en el contexto.
+- [x] Clases abstractas e inicialización correctas; sin herencia artificial.
+- [x] Backend y cualquier lógica servidor sólo Python; sin SSR/BFF ajeno.
+- [x] SQLite directo, parámetros, transacciones y recursos cerrados.
+- [x] Versiones/dependencias React/Vite/Flask verificadas y restricciones académicas concretas atendidas, sin permiso genérico inventado.
 
 **Pruebas, documentación y entrega**
 
-- [ ] Ejecutar pruebas por fase, con comandos/resultados reales.
-- [ ] Cubrir normal/límite/error, repetición, reinicio y rollback.
-- [ ] Completar T-01 a T-31 y escenarios integrales acordados.
-- [ ] Usar base aislada; evitar datos reales y efectos externos en tests.
-- [ ] Verificar cuatro resultados con dataset de control manual.
-- [ ] Actualizar modelo/diagramas y decisiones contra implementación final.
-- [ ] Documentar versión Python, instalación/ejecución y dependencia de tests verificadas.
-- [ ] Preparar demostración del rechazo, doble verificación, devolución y patrones.
+- [x] Ejecutar pruebas por fase, con comandos/resultados reales.
+- [x] Cubrir normal/límite/error, repetición, reinicio y rollback.
+- [x] Completar T-01 a T-31 y escenarios integrales acordados.
+- [x] Usar base aislada; evitar datos reales y efectos externos en tests.
+- [x] Verificar cuatro resultados con dataset de control manual.
+- [x] Actualizar modelo/diagramas y decisiones contra implementación final.
+- [x] Documentar versión Python, instalación/ejecución y dependencia de tests verificadas.
+- [x] Preparar demostración del rechazo, doble verificación, devolución y patrones.
 - [ ] Inspeccionar rúbrica/instrucciones de entrega cuando estén disponibles.
-- [ ] Revisar diff y cumplimiento integral, sin cambios ajenos.
+- [x] Revisar diff y cumplimiento integral, sin cambios ajenos.
 
 ## M. Definition of Done global del Trabajo Práctico
 
@@ -1011,6 +1013,8 @@ El sistema estará terminado cuando exista evidencia de todos estos criterios, n
 11. La suite pertinente y los escenarios integrales pasan; se registran comandos, resultados y comprobaciones omitidas con su impacto. No quedan fallos materiales ocultos.
 12. La documentación permite ejecutar y demostrar el sistema, explica patrones/reportes/políticas y coincide con código y comandos reales.
 13. Los artefactos y modalidad de entrega cumplen las indicaciones docentes obtenidas. Mientras la rúbrica no esté disponible, esa condición sigue pendiente y no se inventa.
+
+Estado al 02/11/2026 en `CIERRE_F07.md`, sección 3: los criterios 1 a 8 y 10 a 12 tienen evidencia; el 9 es parcial y el 13 sigue pendiente, ambos por consultas docentes abiertas.
 
 ## N. Validación y Definition of Done de esta planificación
 

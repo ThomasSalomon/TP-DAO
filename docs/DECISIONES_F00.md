@@ -638,3 +638,7 @@ El usuario pidió implementar la fase siguiente. Se adopta lo previsto en Q.1 si
 - **DER:** `docs/DER.md` se alinea con el esquema real de `base_datos.py`; deja de describirse como modelo previsto.
 - **Demostración:** `docs/DEMOSTRACION.md` es un guion para la pantalla con el dataset J.3 y su correspondencia con los procesos y validaciones del enunciado.
 - **Pendiente:** los artefactos y el formato de entrega exigidos por la cátedra (G-06). No se arma un informe, una presentación ni un paquete de entrega hasta conocer la rúbrica.
+
+### Q.4 Cierre de F-07 (02/11/2026)
+
+El usuario pidió cerrar F-07 con documentación, sin cambios de código. `CIERRE_F07.md` registra el estado de cada punto del checklist L.2 y de cada criterio de la Definition of Done M de la planificación, con su evidencia, y relaciona T-01 a T-31 con las pruebas reales. En la planificación se marcan los puntos cumplidos; quedan sin marcar la confirmación del formato de entrega y la inspección de la rúbrica (G-06). Las consultas G-01 a G-06 y la del formato del comprobante siguen abiertas; lo que se decidió mientras tanto es decisión del grupo, sin aval docente.
