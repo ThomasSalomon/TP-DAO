@@ -1,0 +1,15 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "flask-demo-reportes",
+      "runtimeExecutable": ".venv/Scripts/python.exe",
+      "runtimeArgs": [
+        "-m", "flask",
+        "--app", "backend:create_app(base_datos='C:/Users/salom/AppData/Local/Temp/claude/C--Users-salom-OneDrive-Documentos-FACULTAD-4to-TP-DAO/40ccf45d-94b2-4e52-b552-59738b6a29c6/scratchpad/demo.db')",
+        "--no-debug", "run", "--host", "127.0.0.1", "--port", "5050", "--no-reload"
+      ],
+      "port": 5050
+    }
+  ]
+}

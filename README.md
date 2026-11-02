@@ -1,4 +1,4 @@
-# TP DAO 2026 — catálogo, compras, logística CD–locales, ventas, devoluciones y reportes en SQLite (F-07.1)
+# TP DAO 2026 — catálogo, compras, logística CD–locales, ventas, devoluciones y reportes en SQLite (F-07.2)
 
 React + Vite y API Flask Python permiten registrar, consultar, modificar y desactivar lógicamente categorías, productos, proveedores y locales del catálogo POO, y configurar mínimos por producto/local. Las ubicaciones distinguen Locales y Centro de Distribución (CD). El CD se puede registrar, consultar y editar, pero su baja queda bloqueada hasta aprobar una política de reemplazo. `GET /api/health` sigue devolviendo HTTP 200 y `{"status":"ok"}` como comprobación técnica de disponibilidad.
 
@@ -99,6 +99,7 @@ tests/test_devoluciones.py devoluciones parciales, aptitud, reintegros por medio
 tests/test_reportes.py R-01 a R-04 sobre datos de control, intercambio de estrategias y reportes sin efectos
 tests/test_api_reportes.py parámetros, JSON, importes negativos, reinicio y reportes sin efectos
 tests/test_integracion.py escenarios integrales feliz, de bloqueo, de rechazo y transaccional con el dataset de control
+tests/test_restricciones.py backend sólo Python, dependencias declaradas y SQL con parámetros
 tests/conftest.py      base temporal por aplicación; los tests nunca usan la base real
 pytest.ini
 docs/                  enunciado y planificación previa, conservados
@@ -524,6 +525,17 @@ Aplica la sección Q de `docs/DECISIONES_F00.md`. `tests/test_integracion.py` re
 - **Rechazo.** El precinto roto deja el bulto Rechazado con sus cinco eventos, que no cambian; no se vende, no se puede verificar, no hay caja ni venta, y R-04 informa las 4 unidades y 240 bloqueados.
 - **Transaccional.** Una compra, una venta y una devolución fallan después de guardar parte de sus filas; ni la aplicación en uso ni una reiniciada muestran el documento, el stock o la caja parciales, y el reintento posterior deja los saldos y R-01 correctos.
 
+## F-07.2: ejecución y restricciones técnicas
+
+`tests/test_restricciones.py` revisa el repositorio con `ast` y los archivos de dependencias, sin ejecutar Node ni levantar servidores (T-29 y parte de T-30):
+
+- `backend/` contiene sólo módulos Python y sus dos archivos de requisitos; sus importaciones son de la biblioteca estándar, Flask o Werkzeug, y ninguna lanza procesos (`subprocess`).
+- La única dependencia de ejecución es Flask; pytest sólo figura en los requisitos de desarrollo.
+- En `frontend/package.json`, los scripts sólo ejecutan Vite (`dev`, `build`, `preview`) y las dependencias son React y React DOM; el cliente no importa otros paquetes. Node construye el cliente o lo sirve en desarrollo, pero no ejecuta reglas: la API y el build compilado los sirve Flask.
+- El SQL de `backend/persistencia` recibe los valores como parámetros `?`. Los únicos f-strings insertan nombres de tabla o columna de tuplas fijas del código (`tabla`, `nombre`, `definicion`), porque SQLite no admite parámetros para identificadores; un SQL armado con `%`, `+` o `.format()` hace fallar la prueba.
+
+La independencia del dominio respecto de Flask y SQLite ya la comprueba `tests/test_catalogo.py` con Python `-I -S`, y el build servido por Flask, `tests/test_api.py`. Los comandos de las secciones siguientes se ejecutaron tal como están escritos (ver la verificación de F-07.2).
+
 ## Memoria, persistencia, pantalla y límites actuales
 
 `create_app` crea un `Catalogo` en `app.extensions["catalogo"]` y un `Lock` propio. La API utiliza esa misma instancia entre solicitudes; el bloqueo abarca las operaciones de dominio y la construcción de las respuestas para evitar carreras sobre códigos, IDs y referencias, incluida la comprobación de activos y su desactivación. No hay Singleton ni catálogo global compartido entre aplicaciones. Los tests crean aplicaciones aisladas. El dominio no añade sincronización para clientes Python externos: el adaptador HTTP es responsable de este bloqueo.
@@ -564,11 +576,12 @@ Cada vista tiene su ruta en el hash (`#/categorias`, `#/compras`, `#/stock`, …
 
 | Componente | Versión verificada |
 | --- | --- |
-| Python | 3.11.2, disponible mediante `py -3.11` |
+| Python | 3.11.2 (`py -3.11`) en el equipo donde se armó el entorno; 3.13.5 (`py -3.13`) en la `.venv` usada para F-06 y F-07 |
 | Flask | 3.1.3 |
+| Werkzeug | 3.1.9, instalado con Flask |
 | pytest | 9.1.1 |
 | Node.js | 22.14.0 |
-| npm | 11.6.0 |
+| npm | 11.6.0 en el equipo original; 10.9.2 en el equipo de F-06 y F-07 |
 | React / React DOM | 19.3.1 |
 | Vite | 8.3.4 |
 | @vitejs/plugin-react | 6.1.2 |
@@ -584,7 +597,7 @@ py -3.11 -m venv .venv
 .\.venv\Scripts\python.exe -m pip install -r backend/requirements-dev.txt
 ```
 
-El comando `python` del entorno inspeccionado apunta al alias de Microsoft Store. Por eso se usa el lanzador `py` al crear el entorno y luego el ejecutable de `.venv`, sin depender de activar scripts de PowerShell. Para ejecutar sólo el backend se puede instalar `backend/requirements.txt`; el archivo de desarrollo incluye Flask y pytest.
+El comando `python` del entorno inspeccionado apunta al alias de Microsoft Store. Por eso se usa el lanzador `py` al crear el entorno y luego el ejecutable de `.venv`, sin depender de activar scripts de PowerShell. `py -0` lista las versiones instaladas; si no está la 3.11, usar la disponible (por ejemplo `py -3.13`, con la que se verificaron F-06 y F-07). Para ejecutar sólo el backend se puede instalar `backend/requirements.txt`; el archivo de desarrollo incluye Flask y pytest.
 
 Preparar el frontend:
 
@@ -610,7 +623,7 @@ cd frontend
 npm run dev
 ```
 
-Abrir [frontend de desarrollo](http://127.0.0.1:5173/). La pantalla abre en Catálogo / Categorías y permite pasar a productos, proveedores, ubicaciones, mínimos, compras, reposición y logística, ventas y caja, y stock por ubicación. El estado de salud se comprueba directamente sobre la API (ver más abajo). Los comandos de desarrollo se conservan en F-01.6.
+Abrir [frontend de desarrollo](http://127.0.0.1:5173/). La pantalla abre en Catálogo / Categorías y permite pasar a productos, proveedores, ubicaciones, mínimos, compras, reposición y logística, ventas y caja, devoluciones, stock por ubicación y reportes. El estado de salud se comprueba directamente sobre la API (ver más abajo). Los comandos de desarrollo se conservan en F-01.6.
 
 Camino de la solicitud: navegador → `http://127.0.0.1:5173/api/health` → proxy Vite → `http://127.0.0.1:5000/api/health`. Se conserva `/api`, sin transformación ni lógica de aplicación en el proxy. No es necesario configurar CORS para este camino.
 
@@ -649,7 +662,7 @@ cd ..
 .\.venv\Scripts\python.exe -m flask --app backend:create_app --no-debug run --host 127.0.0.1 --port 5000 --no-reload
 ```
 
-Si Flask ya está ejecutándose, no iniciar otra instancia: alcanza con generar el build. Detener Vite y abrir [frontend compilado](http://127.0.0.1:5000/). Flask sirve `index.html`, los recursos de `/assets` y la API desde el mismo origen. Las solicitudes relativas `/api/health` siguen funcionando; Node no participa en la ejecución del backend ni del build ya servido.
+Si Flask ya está ejecutándose, no iniciar otra instancia: alcanza con generar el build. En Windows, una segunda instancia en el mismo puerto arranca sin ningún error (comprobado el 01/11/2026), y dos procesos con memoria propia sobre la misma base rompen el supuesto de un único proceso escritor (DN-11). Antes de iniciar, comprobar que no quede otra: `Get-CimInstance Win32_Process -Filter "Name='python.exe'" | Where-Object CommandLine -like '*flask*'` no debe listar ninguna. Detener Vite y abrir [frontend compilado](http://127.0.0.1:5000/). Flask sirve `index.html`, los recursos de `/assets` y la API desde el mismo origen. Las solicitudes relativas `/api/health` siguen funcionando; Node no participa en la ejecución del backend ni del build ya servido.
 
 La base predeterminada queda fuera de la carpeta del repositorio, que puede estar sincronizada con OneDrive: no sincronizar ni compartir un archivo SQLite abierto. Para empezar con datos vacíos, detener Flask y usar otra ruta en `TP_DAO_DB` o borrar ese archivo manualmente.
 
@@ -664,6 +677,14 @@ Desde la raíz:
 ```powershell
 .\.venv\Scripts\python.exe -m pytest -q
 ```
+
+Verificación de F-07.2 el 01/11/2026: **823 casos aprobados** con la suite completa, en 5 minutos 14 segundos; los 817 previos siguen pasando. Se agregaron 6 casos en `tests/test_restricciones.py`; para confirmar que detectan una violación, se los ejecutó contra una copia falsa del backend con un archivo `.js`, `import subprocess` y `import requests`, y SQL armado con `%`: las tres pruebas correspondientes fallaron. Con Python 3.13.5 y npm 10.9.2, desde un `dist` borrado:
+
+- `npm.cmd run build` terminó correctamente; con Vite apagado, el comando de “Build servido por Python” con `TP_DAO_DB` temporal sirvió `/` (200), el JavaScript de `/assets` (200), `/api/health` (`{"status":"ok"}`) y `/api/no-existe` como 404 JSON; `/reportes` dio 404, porque no hay router SPA. En el navegador cargó el catálogo con las once vistas y sin errores de consola.
+- Reinicio controlado: una categoría creada por la API siguió presente después de detener Flask (sin respuesta en el puerto) e iniciarlo otra vez con la misma base.
+- Modo de dos terminales: `/api/health` respondió en el 5000 y a través del proxy de Vite en el 5173, que sirvió el índice y conservó el 404 JSON de la API; al detenerlos, los dos puertos quedaron libres.
+- En Windows, una segunda instancia de Flask en el puerto 5000 arrancó sin ningún error mientras la primera seguía activa; se documentó cómo comprobarlo antes de iniciar.
+- Diferencias corregidas en la documentación: `py -3.11` no está disponible en este equipo (la `.venv` usa 3.13.5), npm es 10.9.2 y no 11.6.0, la lista de vistas omitía Devoluciones y Reportes, y `docs/LEVANTAR_PROYECTO.md` estimaba la suite en más de 20 minutos.
 
 Verificación de F-07.1 el 01/11/2026: **817 casos aprobados** con la suite completa, en 3 minutos 59 segundos; los 808 previos siguen pasando. Se agregaron 9 casos en `tests/test_integracion.py` con los cuatro escenarios de J.4; los resultados esperados del escenario feliz son los de J.3, calculados antes de escribir las aserciones. No hubo cambios de backend ni de frontend, así que no se ejecutó `npm run build`.
 
@@ -817,7 +838,7 @@ Estado al 01/11/2026 respecto de las fases F-00 a F-07 de `docs/PLANIFICACION_TP
 | F-04. Venta, cobro y comprobante | Completa | Ventas multilínea, cobros divididos, caja por medio, comprobante `CV-…` y clave contra envíos repetidos (RF-14 a RF-16; la parte de ventas de RF-18). |
 | F-05. Devoluciones | Completa | Dominio (F-05.1), persistencia y API (F-05.2) y pantalla (F-05.3) de devoluciones parciales con aptitud por línea (apto a DISPONIBLE, no apto a `BLOQUEADO`), reintegro por medio cobrado y egresos de caja (RF-17 y la parte de devoluciones de RF-18). |
 | F-06. Cuatro reportes y Strategy | Completa | F-06.1: cálculo de R-01 a R-04 en el dominio, con Strategy para agrupar R-01 (segundo patrón de RT-04) y margen estimado como resultado económico del período (RF-19, RF-20). F-06.2: API de sólo lectura de los cuatro reportes. F-06.3: vista Reportes en pantalla, sin exportación a PDF ni CSV (P.6). |
-| F-07. Integración y entrega | En curso | F-07.1: escenarios integrales feliz, de bloqueo, de rechazo y transaccional con el dataset de control J.3 (T-31). Faltan el build servido por Python y el inventario de backend sólo Python (F-07.2), y la revisión del modelo y los artefactos de entrega (F-07.3), que dependen de la rúbrica (G-06). |
+| F-07. Integración y entrega | En curso | F-07.1: escenarios integrales feliz, de bloqueo, de rechazo y transaccional con el dataset de control J.3 (T-31). F-07.2: backend sólo Python y SQL con parámetros comprobados sobre el repositorio (T-29, T-30), y comandos de ejecución, build servido por Flask y reinicio verificados. Falta la revisión del modelo y los artefactos de entrega (F-07.3), que dependen de la rúbrica (G-06). |
 
 Después de F-04.3 se reorganizó la pantalla React sin cambiar el alcance: navegación por grupos (Catálogo, Operaciones, Consultas) con una ruta en el hash por vista (`#/productos`) y sin el panel de estado técnico de conexión; `GET /api/health` sigue disponible en la API.
 

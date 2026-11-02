@@ -4,7 +4,7 @@ Guía rápida para ver la aplicación en el navegador. El detalle completo está
 
 ## Stack
 
-- Backend: Flask 3.1.3 (Python 3.11) en `backend/`, fábrica `backend:create_app`.
+- Backend: Flask 3.1.3 (Python 3.11 o 3.13) en `backend/`, fábrica `backend:create_app`.
 - Frontend: React 19 + Vite 8 en `frontend/`; Vite hace proxy de `/api` a Flask.
 - Base: SQLite en `%LOCALAPPDATA%\TP-DAO\tp_dao.db` (se cambia con la variable `TP_DAO_DB`).
 
@@ -15,6 +15,7 @@ Guía rápida para ver la aplicación en el navegador. El detalle completo está
   py -3.11 -m venv .venv
   .\.venv\Scripts\python.exe -m pip install -r backend/requirements-dev.txt
   ```
+  `py -0` lista las versiones instaladas; si no está la 3.11, usar la disponible (por ejemplo `py -3.13`).
 - `frontend/node_modules`. Si falta: `cd frontend; npm.cmd install`.
 - Node `^20.19.0 || >=22.12.0` (instalado: 22.14.0).
 
@@ -56,7 +57,8 @@ Invoke-RestMethod http://127.0.0.1:5173/api/health   # mismo resultado, vía pro
 ## Notas
 
 - Antes de levantar, comprobar que los puertos estén libres: `netstat -ano | findstr ":5000 :5173"`. Vite usa puerto estricto: si 5173 está ocupado, falla en vez de elegir otro.
+- Flask no falla si ya hay otra instancia en el 5000: en Windows arranca igual, y dos procesos sobre la misma base no deben convivir. Comprobar que no quede ninguno con `Get-CimInstance Win32_Process -Filter "Name='python.exe'" | Where-Object CommandLine -like '*flask*'`.
 - Para cambiar puertos: copiar `frontend/.env.example` a `frontend/.env.local` (`FRONTEND_PORT`, `API_PROXY_TARGET`) y usar el mismo puerto en `--port` de Flask.
 - Para probar con datos vacíos sin tocar la base real: `$env:TP_DAO_DB = "$env:TEMP\tp_prueba.db"` antes de iniciar Flask.
 - Detener cada servidor con Ctrl+C (si `npm.cmd` pregunta, responder `S`).
-- Tests: `.\.venv\Scripts\python.exe -m pytest -q` (la suite completa puede tardar más de 20 minutos).
+- Tests: `.\.venv\Scripts\python.exe -m pytest -q` (la suite completa tarda unos 4 minutos).
