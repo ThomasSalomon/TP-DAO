@@ -61,4 +61,4 @@ Invoke-RestMethod http://127.0.0.1:5173/api/health   # mismo resultado, vía pro
 - Para cambiar puertos: copiar `frontend/.env.example` a `frontend/.env.local` (`FRONTEND_PORT`, `API_PROXY_TARGET`) y usar el mismo puerto en `--port` de Flask.
 - Para probar con datos vacíos sin tocar la base real: `$env:TP_DAO_DB = "$env:TEMP\tp_prueba.db"` antes de iniciar Flask.
 - Detener cada servidor con Ctrl+C (si `npm.cmd` pregunta, responder `S`).
-- Tests: `.\.venv\Scripts\python.exe -m pytest -q` (la suite completa tarda unos 4 minutos).
+- Tests: `.\.venv\Scripts\python.exe -m pytest -q` (la suite completa tarda entre 4 y 5 minutos en el equipo de F-07.2; en el equipo original llegó a 48 minutos).

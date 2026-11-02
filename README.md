@@ -1,4 +1,4 @@
-# TP DAO 2026 — catálogo, compras, logística CD–locales, ventas, devoluciones y reportes en SQLite (F-07.2)
+# TP DAO 2026 — catálogo, compras, logística CD–locales, ventas, devoluciones y reportes en SQLite (F-07.3)
 
 React + Vite y API Flask Python permiten registrar, consultar, modificar y desactivar lógicamente categorías, productos, proveedores y locales del catálogo POO, y configurar mínimos por producto/local. Las ubicaciones distinguen Locales y Centro de Distribución (CD). El CD se puede registrar, consultar y editar, pero su baja queda bloqueada hasta aprobar una política de reemplazo. `GET /api/health` sigue devolviendo HTTP 200 y `{"status":"ok"}` como comprobación técnica de disponibilidad.
 
@@ -100,9 +100,10 @@ tests/test_reportes.py R-01 a R-04 sobre datos de control, intercambio de estrat
 tests/test_api_reportes.py parámetros, JSON, importes negativos, reinicio y reportes sin efectos
 tests/test_integracion.py escenarios integrales feliz, de bloqueo, de rechazo y transaccional con el dataset de control
 tests/test_restricciones.py backend sólo Python, dependencias declaradas y SQL con parámetros
+tests/test_modelo.py   jerarquías, estado interno, partes compuestas y delegación de State y Strategy
 tests/conftest.py      base temporal por aplicación; los tests nunca usan la base real
 pytest.ini
-docs/                  enunciado y planificación previa, conservados
+docs/                  enunciado, planificación y decisiones; MODELO_POO.md, DER.md y DEMOSTRACION.md describen el sistema implementado
 ```
 
 La presentación HTTP vive en `backend/api.py` y los módulos `backend/api_*.py`; la creación/configuración de Flask, en `backend/__init__.py`; el dominio, en `backend/dominio`; el acceso a SQLite, en `backend/persistencia`. El dominio no importa SQLite ni Flask. Los imports HTTP se ejecutan al llamar a `create_app`, por lo que importar y usar el dominio no requiere Flask instalado. React captura datos y presenta respuestas de Python. Node ejecuta herramientas frontend; no hay backend, SSR, BFF, reglas ni persistencia en Node.
@@ -536,6 +537,17 @@ Aplica la sección Q de `docs/DECISIONES_F00.md`. `tests/test_integracion.py` re
 
 La independencia del dominio respecto de Flask y SQLite ya la comprueba `tests/test_catalogo.py` con Python `-I -S`, y el build servido por Flask, `tests/test_api.py`. Los comandos de las secciones siguientes se ejecutaron tal como están escritos (ver la verificación de F-07.2).
 
+## F-07.3: modelo y demostración
+
+Aplica la sección Q.3 de `docs/DECISIONES_F00.md`. No cambia el backend ni la pantalla.
+
+- `docs/MODELO_POO.md`: revisión del modelo contra el código (T-26), con el diagrama de clases implementado, responsabilidades, encapsulamiento, composición y agregación, herencia, State y Strategy, las diferencias con el UML preliminar de la planificación y las observaciones que quedaron sin cambiar.
+- `tests/test_modelo.py`: comprueba con `ast` que las únicas jerarquías son los dos contratos abstractos y las excepciones, que sólo los resultados de los reportes tienen atributos públicos, que cada parte compuesta la crea sólo su contenedor y que `Bulto` y `ReporteVentas` delegan sin elegir comportamiento por clase concreta.
+- `docs/DER.md`: alineado con el esquema real de SQLite (ventas, cobros, devoluciones, reintegros, caja, movimientos y códigos reservados).
+- `docs/DEMOSTRACION.md`: guion para mostrar el sistema desde la pantalla con el dataset J.3, con la correspondencia entre cada paso y los procesos y validaciones del enunciado.
+
+Los artefactos y el formato de entrega exigidos por la cátedra siguen pendientes de la rúbrica (G-06).
+
 ## Memoria, persistencia, pantalla y límites actuales
 
 `create_app` crea un `Catalogo` en `app.extensions["catalogo"]` y un `Lock` propio. La API utiliza esa misma instancia entre solicitudes; el bloqueo abarca las operaciones de dominio y la construcción de las respuestas para evitar carreras sobre códigos, IDs y referencias, incluida la comprobación de activos y su desactivación. No hay Singleton ni catálogo global compartido entre aplicaciones. Los tests crean aplicaciones aisladas. El dominio no añade sincronización para clientes Python externos: el adaptador HTTP es responsable de este bloqueo.
@@ -576,12 +588,12 @@ Cada vista tiene su ruta en el hash (`#/categorias`, `#/compras`, `#/stock`, …
 
 | Componente | Versión verificada |
 | --- | --- |
-| Python | 3.11.2 (`py -3.11`) en el equipo donde se armó el entorno; 3.13.5 (`py -3.13`) en la `.venv` usada para F-06 y F-07 |
+| Python | 3.11.2 (`py -3.11`) en el equipo donde se armó el entorno, también usado en F-07.3; 3.13.5 (`py -3.13`) en la `.venv` usada para F-06 a F-07.2 |
 | Flask | 3.1.3 |
 | Werkzeug | 3.1.9, instalado con Flask |
 | pytest | 9.1.1 |
 | Node.js | 22.14.0 |
-| npm | 11.6.0 en el equipo original; 10.9.2 en el equipo de F-06 y F-07 |
+| npm | 11.6.0 en el equipo original y en F-07.3; 10.9.2 en el equipo de F-06 a F-07.2 |
 | React / React DOM | 19.3.1 |
 | Vite | 8.3.4 |
 | @vitejs/plugin-react | 6.1.2 |
@@ -677,6 +689,15 @@ Desde la raíz:
 ```powershell
 .\.venv\Scripts\python.exe -m pytest -q
 ```
+
+Verificación de F-07.3 el 02/11/2026, con Python 3.11.2 y npm 11.6.0: **835 casos aprobados** con la suite completa; los 823 previos siguen pasando. En este equipo la suite tardó 48 minutos 24 segundos, mientras corría en paralelo la prueba en el navegador; en el equipo de F-07.2 tardaba unos 5 minutos. Se agregaron 12 casos en `tests/test_modelo.py`; ejecutados sobre una copia del backend con un atributo público en `Venta`, una cadena `isinstance` en `Bulto.verificar`, un `DetalleVenta` creado en la persistencia y una subclase de `Ubicacion`, fallaron las cinco pruebas correspondientes. `npm.cmd run build` terminó correctamente y el guion de `docs/DEMOSTRACION.md` se recorrió con el build servido por Flask sobre una base temporal (cargando el catálogo, la compra y parte de la logística por la API y el resto desde la pantalla):
+
+- la venta en A se rechazó con el stock en tránsito, recibido y con el bulto verificado y el remito pendiente; después de verificar el remito quedaron 3 disponibles. El precinto roto dejó el bulto y su remito rechazados con cinco eventos y 4 unidades `RECHAZADO`, y verificarlo dio 409;
+- el comprobante conservó el precio 100 después de pasarlo a 90; la devolución `DV-00000001` dejó 1 disponible en A, y devolver 3 cuando quedaban 2 se rechazó desde Python sin registrar nada;
+- los cuatro reportes dieron los valores de J.3 (380 de venta e ingreso neto, 100 / 100 / 180 por medio, margen 140 sobre costo 240, déficit 1 en A y 0 en B, 240 bloqueados), y se mantuvieron después de reiniciar Flask sobre la misma base;
+- en la consola sólo aparecieron los 409 y el 400 de los rechazos provocados. Los dos diagramas Mermaid de `docs/MODELO_POO.md` y `docs/DER.md` se validaron con Mermaid 10.9.1.
+
+Al recorrerlo se corrigió el guion: la pantalla de devoluciones sólo ofrece los medios cobrados en la venta, y el período por defecto de los reportes ya abarca la demostración.
 
 Verificación de F-07.2 el 01/11/2026: **823 casos aprobados** con la suite completa, en 5 minutos 14 segundos; los 817 previos siguen pasando. Se agregaron 6 casos en `tests/test_restricciones.py`; para confirmar que detectan una violación, se los ejecutó contra una copia falsa del backend con un archivo `.js`, `import subprocess` y `import requests`, y SQL armado con `%`: las tres pruebas correspondientes fallaron. Con Python 3.13.5 y npm 10.9.2, desde un `dist` borrado:
 
@@ -827,7 +848,7 @@ Las pruebas de API usan el cliente Flask y archivos temporales; la verificación
 
 ## Alcance actual frente a la planificación
 
-Estado al 01/11/2026 respecto de las fases F-00 a F-07 de `docs/PLANIFICACION_TP_POO.md` (sección I). Las decisiones aprobadas por fase están en las secciones L (F-02), M (F-03), N (F-04), O (F-05), P (F-06) y Q (F-07) de `docs/DECISIONES_F00.md`; el resto de `docs/` conserva la planificación original.
+Estado al 02/11/2026 respecto de las fases F-00 a F-07 de `docs/PLANIFICACION_TP_POO.md` (sección I). Las decisiones aprobadas por fase están en las secciones L (F-02), M (F-03), N (F-04), O (F-05), P (F-06) y Q (F-07) de `docs/DECISIONES_F00.md`. `docs/MODELO_POO.md`, `docs/DER.md` y `docs/DEMOSTRACION.md` describen el sistema implementado; el resto de `docs/` conserva la planificación original.
 
 | Fase | Estado | Qué quedó implementado o qué falta |
 | --- | --- | --- |
@@ -838,7 +859,7 @@ Estado al 01/11/2026 respecto de las fases F-00 a F-07 de `docs/PLANIFICACION_TP
 | F-04. Venta, cobro y comprobante | Completa | Ventas multilínea, cobros divididos, caja por medio, comprobante `CV-…` y clave contra envíos repetidos (RF-14 a RF-16; la parte de ventas de RF-18). |
 | F-05. Devoluciones | Completa | Dominio (F-05.1), persistencia y API (F-05.2) y pantalla (F-05.3) de devoluciones parciales con aptitud por línea (apto a DISPONIBLE, no apto a `BLOQUEADO`), reintegro por medio cobrado y egresos de caja (RF-17 y la parte de devoluciones de RF-18). |
 | F-06. Cuatro reportes y Strategy | Completa | F-06.1: cálculo de R-01 a R-04 en el dominio, con Strategy para agrupar R-01 (segundo patrón de RT-04) y margen estimado como resultado económico del período (RF-19, RF-20). F-06.2: API de sólo lectura de los cuatro reportes. F-06.3: vista Reportes en pantalla, sin exportación a PDF ni CSV (P.6). |
-| F-07. Integración y entrega | En curso | F-07.1: escenarios integrales feliz, de bloqueo, de rechazo y transaccional con el dataset de control J.3 (T-31). F-07.2: backend sólo Python y SQL con parámetros comprobados sobre el repositorio (T-29, T-30), y comandos de ejecución, build servido por Flask y reinicio verificados. Falta la revisión del modelo y los artefactos de entrega (F-07.3), que dependen de la rúbrica (G-06). |
+| F-07. Integración y entrega | En curso | F-07.1: escenarios integrales feliz, de bloqueo, de rechazo y transaccional con el dataset de control J.3 (T-31). F-07.2: backend sólo Python y SQL con parámetros comprobados sobre el repositorio (T-29, T-30), y comandos de ejecución, build servido por Flask y reinicio verificados. F-07.3: revisión del modelo contra el código (T-26), DER alineado con el esquema y guion de demostración. Faltan los artefactos de entrega que exija la rúbrica (G-06). |
 
 Después de F-04.3 se reorganizó la pantalla React sin cambiar el alcance: navegación por grupos (Catálogo, Operaciones, Consultas) con una ruta en el hash por vista (`#/productos`) y sin el panel de estado técnico de conexión; `GET /api/health` sigue disponible en la API.
 

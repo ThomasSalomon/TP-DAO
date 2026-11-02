@@ -628,3 +628,13 @@ El usuario pidió continuar con la fase siguiente sin otra ronda de decisiones. 
 
 - Se usa J.3 tal como está, en pesos y dentro de octubre de 2026: producto P a 100 con costo 60, 14 unidades compradas; A recibe 3 (dos necesidades consolidadas) y B 7 con doble verificación, y A recibe además un bulto de 4 con el precinto roto. A vende 3 a 100 (200 en efectivo y 100 con tarjeta de crédito); el precio pasa a 90 y B vende 2 (180 por transferencia); A devuelve 1 apta con reintegro de 100 en efectivo. Mínimos: A 2 y B 3.
 - Los resultados esperados son los de J.3, calculados antes de escribir las aserciones: venta bruta 480, devoluciones 100 y venta neta 380; ingreso neto 380 (efectivo 100, crédito 100, transferencia 180); unidades netas 4, costo neto 240 y margen 140; disponibles A 1 y B 5 con déficit 1 y 0; un bulto rechazado con 4 unidades y 240 bloqueados, que no es pérdida.
+
+### Q.3 Modelo y entrega (F-07.3, 02/11/2026)
+
+El usuario pidió implementar la fase siguiente. Se adopta lo previsto en Q.1 sin agregar funcionalidad:
+
+- **Revisión del modelo (T-26):** `docs/MODELO_POO.md` describe el modelo implementado (diagrama de clases, responsabilidades, encapsulamiento, composición y agregación, herencia, State y Strategy) y lo compara con el UML preliminar de P C.4. Las observaciones se registran sin cambiar el código.
+- **Comprobación automática:** `tests/test_modelo.py` verifica con `ast` las afirmaciones que valen para todo el dominio: jerarquías, atributos internos, creación de las partes compuestas y delegación de los contextos.
+- **DER:** `docs/DER.md` se alinea con el esquema real de `base_datos.py`; deja de describirse como modelo previsto.
+- **Demostración:** `docs/DEMOSTRACION.md` es un guion para la pantalla con el dataset J.3 y su correspondencia con los procesos y validaciones del enunciado.
+- **Pendiente:** los artefactos y el formato de entrega exigidos por la cátedra (G-06). No se arma un informe, una presentación ni un paquete de entrega hasta conocer la rúbrica.

@@ -1,8 +1,8 @@
 # DER — Sistema de Ventas e Inventario: CD a Locales
 
-Diagrama Entidad-Relación del alcance completo del sistema (implementado y previsto). Se basa en `tema3.pdf`, `PLANIFICACION_TP_POO.md` (secciones C, F.1 a F.6) y `DECISIONES_F00.md`, y respeta los atributos ya implementados en `backend/dominio/catalogo.py` (identificador, código único, nombre, estado activo y precio en centavos).
+Diagrama Entidad-Relación del sistema implementado. Se basa en `tema3.pdf`, `PLANIFICACION_TP_POO.md` (secciones C, F.1 a F.6) y `DECISIONES_F00.md`.
 
-Es un modelo conceptual-lógico para SQLite: los nombres de tablas y campos son candidatos y no existe todavía el esquema. Las políticas pendientes (DN-01, DN-04, DN-05 y DN-07) se modelan con la recomendación técnica vigente.
+Se revisó contra el esquema real de `backend/persistencia/base_datos.py` en F-07.3 (02/11/2026): entidades, claves y campos coinciden con las tablas SQLite. Los nombres de las entidades son conceptuales; la tabla de cada una figura en «Entidades por área». El modelo de objetos que usa estas tablas está en `MODELO_POO.md`.
 
 ## Diagrama
 
@@ -36,41 +36,41 @@ erDiagram
     PRODUCTO ||--o{ DETALLE_VENTA : identifica
     VENTA ||--|{ COBRO : cobra
     MEDIO_PAGO ||--o{ COBRO : clasifica
-    VENTA ||--|| COMPROBANTE : documenta
 
     VENTA ||--o{ DEVOLUCION : admite
-    UBICACION ||--o{ DEVOLUCION : recibe
     DEVOLUCION ||--|{ DETALLE_DEVOLUCION : contiene
     DETALLE_VENTA ||--o{ DETALLE_DEVOLUCION : revierte
+    DEVOLUCION ||--|{ REINTEGRO : reintegra
+    MEDIO_PAGO ||--o{ REINTEGRO : clasifica
 
     PRODUCTO ||--o{ MOVIMIENTO_STOCK : registra
     UBICACION ||--o{ MOVIMIENTO_STOCK : afecta
-    DETALLE_COMPRA |o--o{ MOVIMIENTO_STOCK : "origina (ingreso)"
+    DETALLE_COMPRA |o--o| MOVIMIENTO_STOCK : "origina (ingreso)"
     BULTO |o--o{ MOVIMIENTO_STOCK : "origina (traslado)"
-    DETALLE_VENTA |o--o{ MOVIMIENTO_STOCK : "origina (venta)"
-    DETALLE_DEVOLUCION |o--o{ MOVIMIENTO_STOCK : "origina (devolucion)"
+    DETALLE_VENTA |o--o| MOVIMIENTO_STOCK : "origina (venta)"
+    DETALLE_DEVOLUCION |o--o| MOVIMIENTO_STOCK : "origina (devolucion)"
 
     UBICACION ||--o{ MOVIMIENTO_CAJA : registra
     MEDIO_PAGO ||--o{ MOVIMIENTO_CAJA : clasifica
     COBRO |o--|| MOVIMIENTO_CAJA : "origina (ingreso)"
-    DEVOLUCION |o--o{ MOVIMIENTO_CAJA : "origina (reintegro)"
+    REINTEGRO |o--|| MOVIMIENTO_CAJA : "origina (egreso)"
 
     UBICACION {
         int id PK
-        string codigo UK
+        string codigo "vigente; unicidad en CODIGO_RESERVADO"
         string nombre
-        string tipo "CD | LOCAL"
+        string tipo "CD | LOCAL; un solo CD"
         bool activo
     }
     CATEGORIA {
         int id PK
-        string codigo UK
+        string codigo "vigente; unicidad en CODIGO_RESERVADO"
         string nombre
         bool activo
     }
     PRODUCTO {
         int id PK
-        string codigo UK
+        string codigo "vigente; unicidad en CODIGO_RESERVADO"
         string nombre
         int categoria_id FK
         int precio_centavos "mayor que 0"
@@ -78,14 +78,20 @@ erDiagram
     }
     PROVEEDOR {
         int id PK
-        string codigo UK
+        string codigo "vigente; unicidad en CODIGO_RESERVADO"
         string nombre
         bool activo
+    }
+    CODIGO_RESERVADO {
+        string entidad PK "categoria | producto | proveedor | ubicacion"
+        string clave PK "codigo en casefold"
+        string codigo
+        int entidad_id "vigente o historico; nunca se libera"
     }
     MINIMO_EXISTENCIA {
         int ubicacion_id PK, FK "solo LOCAL"
         int producto_id PK, FK
-        int cantidad_minima "mayor o igual a 0"
+        int minimo "mayor o igual a 0"
     }
     EXISTENCIA {
         int ubicacion_id PK, FK
@@ -150,105 +156,107 @@ erDiagram
     }
     MOVIMIENTO_STOCK {
         int id PK
-        int producto_id FK
-        int ubicacion_id FK
-        string condicion_origen
-        string condicion_destino
-        int cantidad "mayor que 0"
-        string causa
         datetime instante
+        int ubicacion_id FK
+        int producto_id FK
+        int cantidad "mayor que 0"
+        string condicion_origen "nula en un ingreso"
+        string condicion_destino "nula en una salida"
+        string causa
         int compra_id FK "con compra_linea"
         int compra_linea FK
         int bulto_id FK "con producto_id identifica la linea del bulto"
-        int detalle_venta_id FK
-        int detalle_devolucion_id FK
-    }
-    VENTA {
-        int id PK
-        int local_id FK
-        datetime fecha_hora
-        int total_centavos
-        string estado
-    }
-    DETALLE_VENTA {
-        int id PK
-        int venta_id FK
-        int producto_id FK
-        int cantidad "mayor que 0"
-        int precio_unitario_centavos "historico"
-        int costo_referencia_centavos "historico"
+        int venta_id FK "con venta_linea"
+        int venta_linea FK
+        int devolucion_id FK "con devolucion_linea"
+        int devolucion_linea FK
     }
     MEDIO_PAGO {
         int id PK
         string codigo UK
         string nombre
-        bool activo
+    }
+    VENTA {
+        int id PK "comprobante CV-00000001"
+        int local_id FK
+        datetime instante
+        string clave_operacion UK "envio repetido"
+    }
+    DETALLE_VENTA {
+        int venta_id PK, FK
+        int linea PK
+        int producto_id FK "unico por venta"
+        int cantidad "mayor que 0"
+        int precio_unitario_centavos "historico"
+        int costo_referencia_centavos "historico; nulo si falta"
     }
     COBRO {
-        int id PK
-        int venta_id FK
-        int medio_pago_id FK
+        int venta_id PK, FK
+        int numero PK
+        int medio_pago_id FK "unico por venta"
         int importe_centavos "mayor que 0"
-        datetime fecha_hora
-    }
-    COMPROBANTE {
-        int id PK
-        int venta_id FK, UK
-        string numero UK
-        datetime fecha_emision
     }
     DEVOLUCION {
-        int id PK
-        int venta_id FK
-        int local_id FK "mismo local de la venta"
-        datetime fecha_hora
+        int id PK "numero DV-00000001"
+        int venta_id FK "su local es el de la venta"
+        datetime instante
         string motivo
+        string clave_operacion UK "envio repetido"
     }
     DETALLE_DEVOLUCION {
-        int id PK
-        int devolucion_id FK
-        int detalle_venta_id FK
+        int devolucion_id PK, FK
+        int linea PK
+        int venta_id FK "de la misma venta"
+        int venta_linea FK "unica por devolucion"
         int cantidad "acumulada no supera lo vendido"
-        string condicion_destino "APTO | NO_APTO"
-        int importe_reintegro_centavos
+        bool apto "DISPONIBLE o BLOQUEADO"
+    }
+    REINTEGRO {
+        int devolucion_id PK, FK
+        int numero PK
+        int medio_pago_id FK "unico por devolucion; cobrado en la venta"
+        int importe_centavos "mayor que 0"
     }
     MOVIMIENTO_CAJA {
         int id PK
+        datetime instante
         int local_id FK
         int medio_pago_id FK
         string tipo "INGRESO | EGRESO"
         int importe_centavos "mayor que 0"
-        datetime fecha_hora
-        int cobro_id FK, UK
-        int devolucion_id FK
+        int cobro_venta_id FK "con cobro_numero; solo INGRESO"
+        int cobro_numero FK
+        int reintegro_devolucion_id FK "con reintegro_numero; solo EGRESO"
+        int reintegro_numero FK
     }
 ```
 
 ## Entidades por área
 
-| Área | Entidades | Estado |
+| Área | Entidad → tabla | Fase |
 | --- | --- | --- |
-| Catálogo y ubicaciones | `UBICACION`, `CATEGORIA`, `PRODUCTO`, `PROVEEDOR`, `MINIMO_EXISTENCIA` | Implementado en memoria (F-01); persistencia en F-02. |
-| Inventario | `EXISTENCIA`, `MOVIMIENTO_STOCK` | Previsto (F-02 a F-05). |
-| Compras | `COMPRA`, `DETALLE_COMPRA` | Previsto (F-02). |
-| Reposición | `NECESIDAD_REPOSICION`, `ORDEN_REPOSICION` | Implementado en F-03.1 y F-03.2. Los detalles por producto se calculan desde las necesidades consolidadas; no se guardan. |
-| Logística | `REMITO`, `BULTO`, `DETALLE_BULTO`, `EVENTO_ESTADO_BULTO` | Implementado en F-03.1 y F-03.2. |
-| Ventas y caja | `VENTA`, `DETALLE_VENTA`, `MEDIO_PAGO`, `COBRO`, `COMPROBANTE`, `MOVIMIENTO_CAJA` | Previsto (F-04). |
-| Devoluciones | `DEVOLUCION`, `DETALLE_DEVOLUCION` | Previsto (F-05). |
+| Catálogo y ubicaciones | `UBICACION` → `ubicaciones`, `CATEGORIA` → `categorias`, `PRODUCTO` → `productos`, `PROVEEDOR` → `proveedores`, `MINIMO_EXISTENCIA` → `minimos`, `CODIGO_RESERVADO` → `codigos_reservados` | F-01 en memoria; SQLite desde F-02.1. |
+| Inventario | `EXISTENCIA` → `existencias`, `MOVIMIENTO_STOCK` → `movimientos_stock` | F-02.2; columnas de bulto, venta y devolución agregadas en F-03, F-04 y F-05. |
+| Compras | `COMPRA` → `compras`, `DETALLE_COMPRA` → `detalles_compra` | F-02.2. |
+| Reposición | `NECESIDAD_REPOSICION` → `necesidades`, `ORDEN_REPOSICION` → `ordenes_reposicion` | F-03.2. Los detalles por producto se calculan desde las necesidades consolidadas; no se guardan. |
+| Logística | `REMITO` → `remitos`, `BULTO` → `bultos`, `DETALLE_BULTO` → `detalles_bulto`, `EVENTO_ESTADO_BULTO` → `eventos_bulto` | F-03.2. |
+| Ventas y caja | `VENTA` → `ventas`, `DETALLE_VENTA` → `detalles_venta`, `MEDIO_PAGO` → `medios_pago`, `COBRO` → `cobros`, `MOVIMIENTO_CAJA` → `movimientos_caja` | F-04.2. |
+| Devoluciones | `DEVOLUCION` → `devoluciones`, `DETALLE_DEVOLUCION` → `detalles_devolucion`, `REINTEGRO` → `reintegros` | F-05.2. |
 
 ## Restricciones y reglas que el diagrama no muestra
 
-- **Códigos únicos:** `codigo` de producto, proveedor, categoría, ubicación y medio de pago es único y no se reutiliza tras una baja lógica (`activo = false`). No se borran registros referenciados.
-- **Un solo CD:** `UBICACION.tipo` distingue CD y LOCAL; los mínimos solo se configuran para locales.
+- **Códigos únicos:** el código de categoría, producto, proveedor y ubicación es único por tipo sin distinguir mayúsculas y no se reutiliza tras una baja lógica (`activo = 0`) ni tras reemplazarlo: `codigos_reservados` conserva el vigente y los históricos. El de medio de pago es `UNIQUE` en su tabla. No se borran registros referenciados.
+- **Un solo CD:** `UBICACION.tipo` distingue CD y LOCAL; un índice único parcial impide un segundo CD, y los mínimos sólo se configuran para locales.
 - **Composición:** compra, orden, bulto, venta y devolución crean y contienen sus detalles; no hay borrado en cascada de documentos confirmados.
-- **Historial inmutable:** `EVENTO_ESTADO_BULTO` solo admite inserciones; `(bulto_id, secuencia)` es única y las transiciones válidas las controla el patrón State en Python.
-- **Doble verificación:** el stock pasa de `PENDIENTE` a `DISPONIBLE` en el local solo cuando el bulto y su remito están en `VERIFICADO`. Con precinto roto, el bulto pasa a `RECHAZADO` y su contenido a la condición `RECHAZADO`.
+- **Historial inmutable:** `EVENTO_ESTADO_BULTO` sólo admite inserciones (triggers contra `UPDATE` y `DELETE`); `(bulto_id, secuencia)` es única y las transiciones válidas las controla el patrón State en Python.
+- **Doble verificación:** el stock pasa de `PENDIENTE` a `DISPONIBLE` en el local sólo cuando el bulto y su remito están en `VERIFICADO`. Con precinto roto, el bulto pasa a `RECHAZADO` y su contenido a la condición `RECHAZADO`.
 - **Remito:** uno por bulto (DN-01 aprobada), emitido al precintar.
-- **Reserva y recorrido:** al preparar un bulto, las unidades pasan de `DISPONIBLE` a `RESERVADO` en el CD; al despachar salen del CD y entran `EN_TRANSITO` al local; al recibir pasan a `PENDIENTE`, y con el remito verificado a `DISPONIBLE`. Un precinto roto o distinto las deja `RECHAZADO` en el local.
-- **No sobreventa:** una venta solo descuenta stock `DISPONIBLE` del local, y toda la venta se confirma en una sola transacción.
+- **Reserva y recorrido:** al preparar un bulto, las unidades pasan de `DISPONIBLE` a `RESERVADO` en el CD; al despachar salen del CD y entran `EN_TRANSITO` al local; al recibir pasan a `PENDIENTE`, y con el remito verificado a `DISPONIBLE`. Un precinto roto o distinto las deja `RECHAZADO` en el local. Anular un bulto preparado devuelve la reserva a `DISPONIBLE`.
+- **No sobreventa:** una venta sólo descuenta stock `DISPONIBLE` del local, y toda la venta se confirma en una sola transacción.
 - **Datos históricos:** `DETALLE_VENTA` copia precio y costo; `DETALLE_BULTO` copia el costo de referencia al preparar. Cambios posteriores del catálogo o de compras no los alteran.
-- **Comprobante:** uno por venta (`venta_id` único).
-- **Devoluciones:** cada detalle referencia una línea de venta existente; la suma de lo devuelto no supera la cantidad vendida.
-- **Movimientos trazables:** cada `MOVIMIENTO_STOCK` referencia exactamente un documento de origen, y cada `MOVIMIENTO_CAJA` proviene de un cobro o de una devolución (uno de los dos, no ambos).
+- **Comprobante:** no tiene tabla; su número `CV-…` se deriva del identificador de la venta, uno por venta.
+- **Envíos repetidos:** `clave_operacion` es única en ventas y devoluciones; repetirla devuelve el documento existente sin efectos nuevos.
+- **Devoluciones:** cada detalle referencia una línea de la misma venta (trigger) y la suma de lo devuelto no supera la cantidad vendida (trigger). Cada reintegro usa un medio cobrado en la venta.
+- **Movimientos trazables:** cada `MOVIMIENTO_STOCK` referencia su documento de origen, con índices únicos para que cada línea de compra, venta o devolución y cada causa logística por bulto se apliquen una sola vez. Cada `MOVIMIENTO_CAJA` proviene de un cobro (ingreso) o de un reintegro (egreso), uno de los dos, y no admite `UPDATE` ni `DELETE`.
 - **Importes:** todos en centavos y en una sola moneda.
-- **Sin tablas de patrones:** los estados (State) y las estrategias de agrupación (Strategy) son comportamiento en Python; solo se persiste el nombre del estado y sus eventos.
+- **Sin tablas de patrones:** los estados (State) y las estrategias de agrupación (Strategy) son comportamiento en Python; sólo se persiste el nombre del estado y sus eventos.
