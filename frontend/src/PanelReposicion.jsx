@@ -119,11 +119,12 @@ export default function PanelReposicion({ datos, productos, ubicaciones, bloquea
         <div className="table-scroll" role="region" aria-label="Órdenes de reposición" tabIndex="0">
           <table>
             <caption className="sr-only">Órdenes de reposición, de la más reciente a la más antigua</caption>
-            <thead><tr><th scope="col">N.º</th><th scope="col">Fecha y hora</th><th scope="col">Destino</th><th scope="col">Estado</th><th scope="col">Productos (pedido · en bultos · pendiente)</th><th scope="col">Bultos</th></tr></thead>
+            <thead><tr><th scope="col">N.º</th><th scope="col">Fecha y hora</th><th scope="col">Origen</th><th scope="col">Destino</th><th scope="col">Estado</th><th scope="col">Productos (pedido · en bultos · pendiente)</th><th scope="col">Bultos</th></tr></thead>
             <tbody>{[...datos.ordenes].reverse().map((orden) => (
               <tr key={orden.id}>
                 <td>{orden.id}</td>
                 <td>{formatearInstante(orden.instante)}</td>
+                <td>{orden.centro.codigo}</td>
                 <td>{nombreUbicacion(orden.destino)}</td>
                 <td>{orden.estado === 'COMPLETA' ? 'Completa' : 'Abierta'}</td>
                 <td><ul className="plain-list">{orden.lineas.map((linea) => (
