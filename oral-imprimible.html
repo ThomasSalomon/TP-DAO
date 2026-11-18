@@ -1,0 +1,1096 @@
+<!doctype html>
+<html lang="es" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Guía del oral · Versión para imprimir</title>
+<style>
+:root{
+  --bg:#f7f6f2;--card:#ffffff;--ink:#1d1f24;--muted:#5d6370;--line:#d9d6cc;
+  --accent:#2f5d8a;--accent-soft:#e3ecf5;--ok:#2e7d4f;--ok-soft:#e1f1e7;
+  --bad:#b23b3b;--bad-soft:#f6e0e0;--warn:#9a6b12;--warn-soft:#f6ecd6;--code:#f0eee8;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#15171b;--card:#1e2127;--ink:#e7e8ea;--muted:#a1a7b2;--line:#353a44;
+  --accent:#7fb0e0;--accent-soft:#22324a;--ok:#6fcf97;--ok-soft:#1f3a2a;
+  --bad:#ef8a8a;--bad-soft:#3d2224;--warn:#e3b65b;--warn-soft:#3a3020;--code:#262a31;}}
+:root[data-theme="dark"]{
+  --bg:#15171b;--card:#1e2127;--ink:#e7e8ea;--muted:#a1a7b2;--line:#353a44;
+  --accent:#7fb0e0;--accent-soft:#22324a;--ok:#6fcf97;--ok-soft:#1f3a2a;
+  --bad:#ef8a8a;--bad-soft:#3d2224;--warn:#e3b65b;--warn-soft:#3a3020;--code:#262a31;}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.6 system-ui,-apple-system,"Segoe UI",sans-serif}
+header{padding:40px 16px 24px;max-width:960px;margin:auto}
+header h1{margin:0 0 6px;font-size:2rem}
+header p{margin:0;color:var(--muted)}
+nav{position:sticky;top:0;z-index:5;background:var(--bg);border-bottom:1px solid var(--line)}
+nav ol{display:flex;gap:6px;overflow-x:auto;margin:0 auto;padding:10px 16px;max-width:960px;list-style:none}
+nav a{display:block;white-space:nowrap;padding:5px 12px;border-radius:99px;background:var(--card);border:1px solid var(--line);color:var(--ink);text-decoration:none;font-size:.9rem}
+nav a:hover{border-color:var(--accent);color:var(--accent)}
+main{max-width:960px;margin:auto;padding:8px 16px 80px}
+section{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:24px;margin:24px 0}
+h2{margin:0 0 4px;font-size:1.5rem}
+h2 .n{display:inline-grid;place-items:center;width:34px;height:34px;border-radius:50%;background:var(--accent);color:var(--card);font-size:1rem;margin-right:8px;vertical-align:middle}
+h3{margin:26px 0 8px;font-size:1.1rem}
+.short{background:var(--accent-soft);border:1px solid var(--accent);padding:12px 16px;border-radius:8px;margin:14px 0}
+.short > b:first-child{display:block;font-size:.75rem;letter-spacing:.06em;text-transform:uppercase;color:var(--accent);margin-bottom:2px}
+.q{background:var(--warn-soft);border:1px solid var(--warn);padding:10px 16px;border-radius:8px;margin:10px 0}
+.q b{color:var(--warn)}
+code{font-family:ui-monospace,Consolas,monospace;font-size:.88em;background:var(--code);padding:1px 5px;border-radius:4px}
+pre{background:var(--code);padding:14px;border-radius:8px;overflow-x:auto;font-size:.85rem;line-height:1.5}
+pre code{background:none;padding:0}
+.cm{color:var(--muted)} .kw{color:var(--accent);font-weight:600} .hl{background:var(--warn-soft);border-radius:3px}
+.table{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:.92rem}
+th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+th{color:var(--muted);font-weight:600;font-size:.82rem;text-transform:uppercase;letter-spacing:.04em}
+.fig{margin:16px 0;padding:12px;border:1px solid var(--line);border-radius:10px;overflow-x:auto}
+.fig svg{display:block;width:100%;height:auto;min-width:560px}
+.fig figcaption{color:var(--muted);font-size:.85rem;margin-top:6px}
+svg text{fill:var(--ink);font-family:system-ui,sans-serif}
+svg .box{fill:var(--card);stroke:var(--line);stroke-width:1.5}
+svg .boxA{fill:var(--accent-soft);stroke:var(--accent);stroke-width:1.5}
+svg .boxOk{fill:var(--ok-soft);stroke:var(--ok);stroke-width:1.5}
+svg .boxBad{fill:var(--bad-soft);stroke:var(--bad);stroke-width:1.5}
+svg .boxW{fill:var(--warn-soft);stroke:var(--warn);stroke-width:1.5}
+svg .ln{stroke:var(--muted);stroke-width:1.5;fill:none}
+svg .lnA{stroke:var(--accent);stroke-width:2;fill:none}
+svg .lnBad{stroke:var(--bad);stroke-width:2;fill:none;stroke-dasharray:5 4}
+svg .lnOk{stroke:var(--ok);stroke-width:2;fill:none}
+svg .sm{font-size:12px;fill:var(--muted)}
+svg .b{font-weight:600}
+svg .it{font-style:italic}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+@media (max-width:700px){.grid2{grid-template-columns:1fr} section{padding:18px}}
+.pill{display:inline-block;padding:1px 8px;border-radius:99px;font-size:.8rem;font-weight:600}
+.p-ok{background:var(--ok-soft);color:var(--ok)} .p-bad{background:var(--bad-soft);color:var(--bad)} .p-a{background:var(--accent-soft);color:var(--accent)}
+.cheat li{margin:4px 0}
+.layer{border:1px solid var(--line);border-radius:10px;padding:12px 14px;margin:6px 0}
+.layer-h{display:flex;flex-wrap:wrap;align-items:center;gap:8px;font-size:.9rem;color:var(--muted)}
+.layer pre{margin:10px 0 6px}
+.layer-n{margin:0;font-size:.9rem;color:var(--muted)}
+.tag{display:inline-block;padding:2px 10px;border-radius:99px;font-size:.8rem;font-weight:700}
+.t-front{background:var(--code);color:var(--ink)}
+.t-api{background:var(--warn-soft);color:var(--warn)}
+.t-dom{background:var(--accent-soft);color:var(--accent)}
+.t-db{background:var(--ok-soft);color:var(--ok)}
+.lines{border:1px solid var(--accent);border-radius:10px;padding:10px 14px;margin:12px 0;background:var(--accent-soft)}
+.lines-h{font-weight:600;margin-bottom:4px}
+.lines table{font-size:.88rem}
+.ln-n{font-family:ui-monospace,Consolas,monospace;font-weight:700;color:var(--accent);white-space:nowrap}
+.arrow{text-align:center;color:var(--muted);font-size:.9rem;margin:4px 0}
+.lead{color:var(--muted);margin:16px 0 0}
+section{scroll-margin-top:60px}
+
+.part{max-width:960px;margin:16px auto 0;padding:0 16px}
+.print-button{margin-top:12px;padding:8px 14px;font:inherit;cursor:pointer}
+@page{
+  size:A4;
+  margin:14mm 14mm 16mm;
+  @bottom-right{content:counter(page) " / " counter(pages);font:9pt system-ui;color:#444}
+}
+@media print{
+  :root[data-theme="light"]{
+    --bg:#fff;--card:#fff;--ink:#111;--muted:#333;--line:#777;
+    --accent:#222;--ok:#222;--bad:#222;--warn:#222;
+    --accent-soft:#fff;--ok-soft:#fff;--bad-soft:#fff;--warn-soft:#fff;--code:#fff;
+  }
+  body{font-size:11pt;line-height:1.35}
+  .print-button{display:none}
+  header,main,.part{max-width:none;padding:0}
+  header{margin:0 0 5mm}
+  header h1{font-size:22pt}
+  .part{font-size:18pt;border-bottom:1pt solid;padding-bottom:1.5mm}
+  #v-tecnica{break-before:page}
+  nav{position:static;border:0;break-inside:avoid}
+  nav ol{padding:1.5mm 0;flex-wrap:wrap;overflow:visible;gap:1mm 4mm}
+  nav a{padding:0;border:0;border-radius:0;font-size:9pt}
+  section{border:0;border-radius:0;padding:0;margin:5mm 0}
+  h2{font-size:15pt}
+  h2 .n{display:inline;width:auto;height:auto;color:inherit;background:none;vertical-align:baseline}
+  h3{font-size:12pt;margin:4mm 0 1.5mm}
+  h1,h2,h3,.lines-h,.layer-h{break-after:avoid}
+  p,li{orphans:3;widows:3}
+  .short,.q,.fig{break-inside:avoid;margin:2.5mm 0;padding:2mm 3mm}
+  .grid2{display:block}
+  .table,.fig,pre{overflow:visible}
+  .fig svg{min-width:0}
+  table{font-size:9.5pt}
+  th,td{padding:1.2mm 1.5mm;overflow-wrap:anywhere}
+  thead{display:table-header-group}
+  tr{break-inside:avoid}
+  code{padding:0;overflow-wrap:anywhere}
+  pre{font-size:9pt;line-height:1.35;white-space:pre-wrap;overflow-wrap:anywhere;border:1px solid var(--line);padding:2mm;orphans:3;widows:3}
+  pre code{font-size:inherit}
+  .lines,.layer{border-radius:0;padding:2mm 3mm}
+}
+</style>
+</head>
+<body>
+<header>
+  <h1>Guía para el oral</h1>
+  <p>TP Integrador 2026 · Tema 3. Dos exposiciones del mismo trabajo: elegí el enfoque según lo que pregunte el profesor.</p>
+  <button class="print-button" type="button" onclick="window.print()">Imprimir guía</button>
+</header>
+<div class="view" id="v-negocio">
+<h2 class="part">Enfoque de negocio</h2>
+<nav><ol>
+  <li><a href="#n-dominio">1 · Dominio</a></li>
+  <li><a href="#n-reglas">2 · Reglas</a></li>
+  <li><a href="#n-ciclo">3 · Ciclo del bulto</a></li>
+  <li><a href="#n-patrones">4 · Por qué los patrones</a></li>
+  <li><a href="#n-reportes">5 · Reportes</a></li>
+  <li><a href="#n-roles">6 · Roles</a></li>
+  <li><a href="#n-librerias">7 · Librerías</a></li>
+</ol></nav>
+<main>
+<p class="lead">Enfoque de <b>negocio</b>: dominio, reglas, ciclo del bulto, <b>por qué</b> elegimos cada patrón, reportes y roles. Se explica con palabras del negocio y diagramas, <b>casi sin código</b>. Si el profesor pide ver el código, pasá al <a href="#v-tecnica">enfoque técnico</a>.</p>
+<section id="n-dominio">
+<h2><span class="n">1</span>Dominio</h2>
+<div class="short"><b>Cómo lo contaríamos</b>Es un comercio con varios locales que se abastecen desde un Centro de Distribución. El problema central es que <b>tener la mercadería físicamente no significa poder venderla</b>: entre el CD y el local hay un viaje, un precinto y dos controles. El sistema sigue cada unidad por <b>dónde está</b> y <b>en qué condición</b> (reservada, en tránsito, pendiente, disponible, rechazada) y sólo deja vender lo disponible. Además, cada venta y devolución impacta a la vez en stock y en caja, y con eso se arman los reportes económicos por período.</div>
+<figure class="fig">
+<svg viewBox="0 0 900 150" role="img" aria-label="Vida de una unidad de mercadería">
+  <defs><marker id="arP" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0L10,5L0,10z" fill="var(--accent)"/></marker></defs>
+  <rect class="box" x="10" y="40" width="120" height="56" rx="8"/><text x="70" y="64" text-anchor="middle" class="b">Comprada</text><text x="70" y="82" text-anchor="middle" class="sm">en el CD</text>
+  <rect class="box" x="160" y="40" width="120" height="56" rx="8"/><text x="220" y="64" text-anchor="middle" class="b">Reservada</text><text x="220" y="82" text-anchor="middle" class="sm">en un bulto</text>
+  <rect class="box" x="310" y="40" width="120" height="56" rx="8"/><text x="370" y="64" text-anchor="middle" class="b">En tránsito</text><text x="370" y="82" text-anchor="middle" class="sm">precintada</text>
+  <rect class="boxW" x="460" y="40" width="120" height="56" rx="8"/><text x="520" y="64" text-anchor="middle" class="b">Pendiente</text><text x="520" y="82" text-anchor="middle" class="sm">llegó, sin verificar</text>
+  <rect class="boxOk" x="610" y="40" width="120" height="56" rx="8"/><text x="670" y="64" text-anchor="middle" class="b">Disponible</text><text x="670" y="82" text-anchor="middle" class="sm">se puede vender</text>
+  <rect class="box" x="760" y="40" width="130" height="56" rx="8"/><text x="825" y="64" text-anchor="middle" class="b">Vendida</text><text x="825" y="82" text-anchor="middle" class="sm">sale stock, entra caja</text>
+  <line class="lnA" x1="130" y1="68" x2="156" y2="68" marker-end="url(#arP)"/>
+  <line class="lnA" x1="280" y1="68" x2="306" y2="68" marker-end="url(#arP)"/>
+  <line class="lnA" x1="430" y1="68" x2="456" y2="68" marker-end="url(#arP)"/>
+  <line class="lnA" x1="580" y1="68" x2="606" y2="68" marker-end="url(#arP)"/>
+  <line class="lnA" x1="730" y1="68" x2="756" y2="68" marker-end="url(#arP)"/>
+  <text x="520" y="122" text-anchor="middle" class="sm">doble control:</text>
+  <text x="520" y="138" text-anchor="middle" class="sm">bulto + remito</text>
+  <text x="370" y="122" text-anchor="middle" class="sm" style="fill:var(--bad)">precinto roto → rechazada,</text>
+  <text x="370" y="138" text-anchor="middle" class="sm" style="fill:var(--bad)">nunca disponible</text>
+</svg>
+<figcaption>La idea que conviene repetir: <b>“nada entra a stock vendible sin verificación”</b>.</figcaption>
+</figure>
+<h3>Cómo se encadenan los procesos</h3>
+<figure class="fig">
+<svg viewBox="0 0 900 230" role="img" aria-label="Flujo del negocio">
+  <defs><marker id="ar2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0L10,5L0,10z" fill="currentColor" style="color:var(--accent)"/></marker></defs>
+  <g>
+    <rect class="box" x="10" y="20" width="130" height="56" rx="8"/><text x="75" y="44" text-anchor="middle" class="b">Proveedor</text><text x="75" y="62" text-anchor="middle" class="sm">Compra → CD</text>
+    <rect class="boxA" x="190" y="20" width="150" height="56" rx="8"/><text x="265" y="44" text-anchor="middle" class="b">Centro Distrib.</text><text x="265" y="62" text-anchor="middle" class="sm">stock DISPONIBLE</text>
+    <rect class="box" x="390" y="20" width="150" height="56" rx="8"/><text x="465" y="44" text-anchor="middle" class="b">Orden reposición</text><text x="465" y="62" text-anchor="middle" class="sm">consolida necesidades</text>
+    <rect class="boxW" x="590" y="20" width="140" height="56" rx="8"/><text x="660" y="44" text-anchor="middle" class="b">Bulto + Remito</text><text x="660" y="62" text-anchor="middle" class="sm">precinto único</text>
+    <rect class="box" x="770" y="20" width="120" height="56" rx="8"/><text x="830" y="44" text-anchor="middle" class="b">Local</text><text x="830" y="62" text-anchor="middle" class="sm">recibe, verifica</text>
+    <line class="lnA" x1="140" y1="48" x2="186" y2="48" marker-end="url(#ar2)"/>
+    <line class="lnA" x1="340" y1="48" x2="386" y2="48" marker-end="url(#ar2)"/>
+    <line class="lnA" x1="540" y1="48" x2="586" y2="48" marker-end="url(#ar2)"/>
+    <line class="lnA" x1="730" y1="48" x2="766" y2="48" marker-end="url(#ar2)"/>
+    <path class="lnA" d="M465,140 H465" />
+    <path class="lnA" d="M830,76 V150 H700" marker-end="url(#ar2)"/>
+    <rect class="boxOk" x="540" y="128" width="156" height="50" rx="8"/><text x="618" y="150" text-anchor="middle" class="b">Venta</text><text x="618" y="167" text-anchor="middle" class="sm">detalles + cobros + comprob.</text>
+    <rect class="box" x="330" y="128" width="160" height="50" rx="8"/><text x="410" y="150" text-anchor="middle" class="b">Caja</text><text x="410" y="167" text-anchor="middle" class="sm">ingresos / egresos</text>
+    <rect class="box" x="540" y="190" width="156" height="34" rx="8"/><text x="618" y="212" text-anchor="middle" class="b">Devolución</text>
+    <line class="lnA" x1="540" y1="153" x2="494" y2="153" marker-end="url(#ar2)"/>
+    <line class="ln" x1="618" y1="178" x2="618" y2="190"/>
+    <text x="760" y="140" class="sm">sólo stock verificado</text>
+    <text x="215" y="210" class="sm">Inventario: único que mueve saldos</text>
+  </g>
+</svg>
+</figure>
+
+
+<p><b>Entidades principales, en una frase cada una:</b></p>
+<ul>
+<li><b>Ubicación</b>: un local o el único CD. El CD no vende; los locales tienen stock mínimo por producto.</li>
+<li><b>Producto, Categoría y Proveedor</b>: el catálogo. Cada uno tiene un código que no se repite, y las bajas son lógicas para conservar la historia.</li>
+<li><b>Compra</b>: mercadería de un proveedor que entra al CD.</li>
+<li><b>Necesidad y Orden de reposición</b>: el local pide, y el CD junta los pedidos en una orden CD → local.</li>
+<li><b>Bulto y Remito</b>: la caja física, con su precinto, y el documento que la acompaña. El bulto tiene un ciclo de vida con historial.</li>
+<li><b>Inventario</b>: lleva cuántas unidades hay por ubicación, producto y condición. Es el único que mueve stock.</li>
+<li><b>Venta, Cobro y Comprobante</b>: lo que se vende, cómo se paga y el ticket.</li>
+<li><b>Caja</b>: registra cada ingreso y egreso de dinero.</li>
+<li><b>Devolución y Reintegro</b>: el cliente devuelve parte de una venta y se le reintegra el dinero.</li>
+</ul>
+
+
+</section>
+
+<section id="n-reglas">
+<h2><span class="n">2</span>Reglas de negocio</h2>
+<p>Las primeras cinco las exige el enunciado; las demás son reglas que agregamos nosotros para que el sistema sea coherente (el enunciado pide identificar reglas adicionales).</p>
+<div class="table"><table>
+<thead><tr><th>Regla</th><th>En palabras</th><th>Origen</th></tr></thead><tbody>
+<tr><td>RB-01</td><td>El stock llega como disponible al local sólo cuando se verifican <b>el bulto y el remito</b>. Verificar uno solo no alcanza para venderla.</td><td><span class="pill p-a">Enunciado</span></td></tr>
+<tr><td>RB-02</td><td>Si el precinto llega roto o no coincide, el bulto queda <b>Rechazado</b> y esa mercadería no se puede vender.</td><td><span class="pill p-a">Enunciado</span></td></tr>
+<tr><td>RB-03</td><td>La historia de estados del bulto <b>no se edita ni se borra</b>.</td><td><span class="pill p-a">Enunciado</span></td></tr>
+<tr><td>RB-04</td><td>No se vende más que lo disponible y verificado. Si una línea no alcanza, <b>no se registra nada de la venta</b>.</td><td><span class="pill p-a">Enunciado</span></td></tr>
+<tr><td>RB-05</td><td>No hay productos ni proveedores con el mismo código.</td><td><span class="pill p-a">Enunciado</span></td></tr>
+<tr><td>RB-06 / 11</td><td>Sólo se devuelve algo de una venta registrada, y nunca más de lo que se vendió, aunque se hagan varias devoluciones parciales.</td><td><span class="pill p-a">Enunciado</span></td></tr>
+<tr><td>RB-09</td><td>Lo que se prepara en un bulto queda <b>reservado</b> en el CD: las mismas unidades no pueden ir a dos bultos.</td><td><span class="pill p-ok">Propia</span></td></tr>
+<tr><td>RB-10</td><td>Si se confirma dos veces la misma operación (por ejemplo, un doble clic), no se duplican el stock, la caja ni la historia.</td><td><span class="pill p-ok">Propia</span></td></tr>
+<tr><td>RB-12</td><td>La venta guarda el precio y el costo de ese momento: cambiar el catálogo no altera ventas ni márgenes pasados.</td><td><span class="pill p-ok">Propia</span></td></tr>
+<tr><td>RB-13</td><td>Un traslado cambia la ubicación o la condición, pero <b>no crea unidades</b>.</td><td><span class="pill p-ok">Propia</span></td></tr>
+<tr><td>RB-14</td><td>Después de precintado, el contenido del bulto no cambia.</td><td><span class="pill p-ok">Propia</span></td></tr>
+<tr><td>RB-15</td><td>No se pueden saltar estados: de Preparado no se pasa directo a Verificado, y los estados finales no se reabren.</td><td><span class="pill p-ok">Propia</span></td></tr>
+<tr><td>RB-16</td><td>Un rechazo logístico no es una devolución ni una pérdida: la mercadería queda en custodia del local, sin sumar stock ni caja.</td><td><span class="pill p-ok">Propia</span></td></tr>
+<tr><td>—</td><td>La devolución reingresa lo apto como disponible y lo no apto como bloqueado. El dinero se reintegra por el medio con que se cobró.</td><td><span class="pill p-ok">Propia</span></td></tr>
+</tbody></table></div>
+<div class="q"><b>¿Dónde se controlan?</b> Siempre en el backend Python, dentro del objeto dueño de ese dato (por ejemplo, el inventario controla los saldos y la venta controla que los cobros sumen el total). La pantalla puede avisar antes, pero no es la que decide. Algunas reglas tienen además una protección en la base, como los triggers del historial y de las devoluciones.</div>
+
+
+</section>
+
+<section id="n-ciclo">
+<h2><span class="n">3</span>Ciclo de vida del bulto</h2>
+<div class="short"><b>Respuesta corta</b>El bulto es la caja precintada que viaja del CD al local. Pasa por <b>Preparado → Precintado → En tránsito → Recibido → Verificado</b>, o termina <b>Rechazado</b> (precinto roto o distinto) o <b>Anulado</b> (se desarma antes de precintar). Cada paso queda anotado en un historial que no se puede modificar, y la mercadería recién se puede vender cuando se verifican <b>el bulto y el remito</b>.</div>
+<figure class="fig">
+<svg viewBox="0 0 900 330" role="img" aria-label="Diagrama de estados del bulto">
+  <defs><marker id="ar7n" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0,0L10,5L0,10z" fill="var(--accent)"/></marker>
+  <marker id="ar8n" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0,0L10,5L0,10z" fill="var(--bad)"/></marker></defs>
+  <circle cx="30" cy="90" r="9" fill="var(--ink)"/>
+  <line class="lnA" x1="39" y1="90" x2="66" y2="90" marker-end="url(#ar7n)"/>
+  <rect class="box" x="70" y="62" width="130" height="56" rx="28"/><text x="135" y="86" text-anchor="middle" class="b">PREPARADO</text><text x="135" y="104" text-anchor="middle" class="sm">CD: RESERVADO</text>
+  <rect class="box" x="260" y="62" width="130" height="56" rx="28"/><text x="325" y="86" text-anchor="middle" class="b">PRECINTADO</text><text x="325" y="104" text-anchor="middle" class="sm">remito EMITIDO</text>
+  <rect class="box" x="450" y="62" width="140" height="56" rx="28"/><text x="520" y="86" text-anchor="middle" class="b">EN_TRANSITO</text><text x="520" y="104" text-anchor="middle" class="sm">stock EN_TRANSITO</text>
+  <rect class="box" x="650" y="62" width="120" height="56" rx="28"/><text x="710" y="86" text-anchor="middle" class="b">RECIBIDO</text><text x="710" y="104" text-anchor="middle" class="sm">local: PENDIENTE</text>
+  <rect class="boxOk" x="650" y="200" width="130" height="56" rx="28"/><text x="715" y="224" text-anchor="middle" class="b">VERIFICADO</text><text x="715" y="242" text-anchor="middle" class="sm">final</text>
+  <rect class="boxBad" x="440" y="200" width="160" height="56" rx="28"/><text x="520" y="224" text-anchor="middle" class="b">RECHAZADO</text><text x="520" y="242" text-anchor="middle" class="sm">final · stock RECHAZADO</text>
+  <rect class="box" x="70" y="200" width="130" height="56" rx="28"/><text x="135" y="224" text-anchor="middle" class="b">ANULADO</text><text x="135" y="242" text-anchor="middle" class="sm">final · libera reserva</text>
+  <line class="lnA" x1="200" y1="90" x2="256" y2="90" marker-end="url(#ar7n)"/><text x="228" y="82" text-anchor="middle" class="sm">precintar</text>
+  <line class="lnA" x1="390" y1="90" x2="446" y2="90" marker-end="url(#ar7n)"/><text x="418" y="82" text-anchor="middle" class="sm">despachar</text>
+  <line class="lnA" x1="590" y1="90" x2="646" y2="90" marker-end="url(#ar7n)"/><text x="618" y="58" text-anchor="middle" class="sm">recibir</text><text x="618" y="72" text-anchor="middle" class="sm">(precinto OK)</text>
+  <line class="lnA" x1="712" y1="118" x2="714" y2="196" marker-end="url(#ar7n)"/><text x="722" y="162" class="sm">verificar</text>
+  <line class="lnA" x1="135" y1="118" x2="135" y2="196" marker-end="url(#ar7n)"/><text x="143" y="162" class="sm">anular</text>
+  <path class="lnBad" d="M520,118 V196" marker-end="url(#ar8n)"/><text x="528" y="146" class="sm" style="fill:var(--bad)">recibir con precinto</text><text x="528" y="160" class="sm" style="fill:var(--bad)">roto o distinto</text>
+  <text x="528" y="174" class="sm" style="fill:var(--bad)">(RECIBIDO→RECHAZADO juntos)</text>
+  <circle cx="715" cy="298" r="8" fill="none" stroke="var(--ok)" stroke-width="2"/><circle cx="715" cy="298" r="4" fill="var(--ok)"/>
+  <path class="lnOk" d="M780,228 H840 V298 H727" /><text x="700" y="302" text-anchor="end" class="sm b" style="fill:var(--ok)">Remito.verificar → stock DISPONIBLE ✓</text>
+</svg>
+<figcaption>Cualquier otra operación se rechaza y el bulto queda como estaba. Verificado, Rechazado y Anulado son finales: no se reabren.</figcaption>
+</figure>
+<h3>Qué pasa con el stock en cada paso</h3>
+<div class="table"><table>
+<thead><tr><th>Paso</th><th>Estado del bulto</th><th>Stock (condición en el Inventario)</th></tr></thead><tbody>
+<tr><td>Preparar</td><td><span class="pill p-a">PREPARADO</span></td><td>CD: DISPONIBLE → RESERVADO</td></tr>
+<tr><td>Anular</td><td><span class="pill p-a">ANULADO</span></td><td>CD: RESERVADO → DISPONIBLE</td></tr>
+<tr><td>Precintar</td><td><span class="pill p-a">PRECINTADO</span></td><td>Sin cambio; se fija precinto y se emite el remito</td></tr>
+<tr><td>Despachar</td><td><span class="pill p-a">EN_TRANSITO</span></td><td>CD RESERVADO → local EN_TRANSITO</td></tr>
+<tr><td>Recibir OK</td><td><span class="pill p-a">RECIBIDO</span></td><td>EN_TRANSITO → PENDIENTE (todavía <b>no vendible</b>)</td></tr>
+<tr><td>Recibir con precinto roto</td><td><span class="pill p-bad">RECHAZADO</span></td><td>EN_TRANSITO → RECHAZADO (en custodia, no vendible); remito RECHAZADO</td></tr>
+<tr><td>Verificar bulto</td><td><span class="pill p-ok">VERIFICADO</span></td><td><b>Sin cambio</b>: falta el remito</td></tr>
+<tr><td>Verificar remito</td><td>(bulto ya VERIFICADO)</td><td>PENDIENTE → <b>DISPONIBLE</b> ✓ recién acá se vende</td></tr>
+</tbody></table></div>
+
+<h3>Ideas clave para decir</h3>
+<ul>
+<li><b>Doble control:</b> primero se verifica el contenido del bulto y después el remito (el documento). La mercadería pasa a disponible recién cuando están verificados los dos.</li>
+<li><b>Rechazo sin ventana de riesgo:</b> si el precinto llega roto, en el mismo momento de la recepción el bulto queda rechazado. Nunca hay un instante en el que esa mercadería sea vendible.</li>
+<li><b>Trazabilidad:</b> cada cambio de estado deja un registro con fecha, estado anterior, estado nuevo y motivo. Ese historial no se edita ni se borra; la base de datos también lo impide.</li>
+<li><b>Sin atajos:</b> no se puede pasar de Preparado a Verificado ni reabrir un bulto rechazado.</li>
+</ul>
+<div class="q"><b>¿Rechazado es una pérdida o una devolución?</b> Ninguna de las dos: la mercadería queda en custodia del local, bloqueada para la venta. No suma stock vendible ni mueve caja.</div>
+</section>
+
+<section id="n-patrones">
+<h2><span class="n">4</span>Por qué elegimos cada patrón</h2>
+<div class="grid2">
+<div class="layer">
+  <div class="layer-h"><span class="tag t-dom">State</span>ciclo de vida del bulto</div>
+  <p><b>El problema:</b> lo que se puede hacer con un bulto <b>depende del estado en que está</b>. Sólo se despacha si está precintado y sólo se verifica si fue recibido. El enunciado dice que este ciclo se evalúa críticamente.</p>
+  <p><b>Por qué State y no condicionales:</b> con <code>if</code> cada operación preguntaría por todos los estados, y las reglas de un mismo estado quedarían repartidas en cinco métodos. Con State, cada estado es una clase que sabe qué permite y a qué estado pasa. Lo que no permite se rechaza por defecto, así que es <b>imposible saltear la verificación</b>.</p>
+  <p><b>Lo que ganamos:</b> las reglas de cada estado quedan juntas, para agregar un estado alcanza con una clase nueva y toda transición pasa por un único punto que deja el registro en el historial. <b>El costo:</b> siete clases chicas.</p>
+</div>
+<div class="layer">
+  <div class="layer-h"><span class="tag t-db">Strategy</span>agrupación del reporte de ventas</div>
+  <p><b>El problema:</b> el reporte de ventas e ingresos tiene que poder verse <b>por día, por local o por medio de pago</b>. El cálculo es el mismo y cambia sólo la forma de agrupar.</p>
+  <p><b>Por qué Strategy:</b> cada forma de agrupar es un algoritmo intercambiable y la elige el usuario desde afuera. Ese es exactamente el caso de Strategy. El reporte no tiene un <code>if</code> por agrupación: le pide la clave a la estrategia que recibió.</p>
+  <p><b>Lo que ganamos:</b> agregar una agrupación nueva (por ejemplo, por categoría) es agregar una clase. <b>Honestidad:</b> con tres opciones, un <code>if</code> también funcionaría. Elegimos el patrón porque el problema encaja con lo que resuelve Strategy y el enunciado pide dos patrones aplicados a problemas reales.</p>
+</div>
+</div>
+<div class="q"><b>¿Por qué no Singleton, Factory, Observer o Iterator?</b> No encontramos un problema del dominio que los necesite, y meter un patrón sin un problema real que lo justifique es sobreingeniería. Por ejemplo, con un Singleton los tests no podrían usar cada uno su propia base.</div>
+
+
+<h3>State vs Strategy, en una frase</h3>
+<p><b>Strategy</b> responde “¿qué cálculo uso?” y lo elige el usuario desde afuera. <b>State</b> responde “¿qué se puede hacer ahora?” y lo decide el propio objeto según su estado.</p>
+</section>
+
+<section id="n-reportes">
+<h2><span class="n">5</span>Reportes</h2>
+<div class="table"><table>
+<thead><tr><th>Reporte</th><th>Qué pregunta responde</th><th>Filtros</th></tr></thead><tbody>
+<tr><td><b>R-01 · Ventas e ingresos</b></td><td>¿Cuánto vendimos y cuánto dinero entró neto (cobros menos reintegros)?</td><td>Período, local; agrupado por día, local o medio de pago</td></tr>
+<tr><td><b>R-02 · Más vendidos y margen</b></td><td>¿Qué productos se venden más y cuánto ganamos con cada uno (precio − costo, descontando devoluciones)?</td><td>Período, local</td></tr>
+<tr><td><b>R-03 · Existencias y mínimos</b></td><td>¿Cuánto stock hay en cada condición y qué productos están por debajo del mínimo del local?</td><td>Ubicación, categoría, sólo en mínimo</td></tr>
+<tr><td><b>R-04 · Rechazos logísticos</b></td><td>¿Cuántos bultos llegaron con el precinto roto, a qué local y cuánta mercadería quedó bloqueada?</td><td>Período, local, producto</td></tr>
+</tbody></table></div>
+<ul>
+<li><b>Por qué son “no triviales”:</b> cada uno cruza varias entidades (ventas, devoluciones, caja, inventario, historial de bultos), agrupa, calcula y se puede filtrar. Ninguno es un listado directo de una tabla.</li>
+<li><b>Sólo consultan:</b> no cambian stock ni caja, y trabajan sobre operaciones confirmadas.</li>
+<li><b>Netos de devoluciones:</b> una venta devuelta no infla los números.</li>
+<li><b>Valores históricos:</b> el margen usa el precio y el costo del momento de la venta, no los actuales.</li>
+<li><b>Importes en centavos enteros</b>, para no tener errores de redondeo.</li>
+<li>Se ven en pantalla. El comprobante de venta se imprime desde el navegador (decisión del grupo, sin PDF).</li>
+</ul>
+
+
+</section>
+
+<section id="n-roles">
+<h2><span class="n">6</span>Roles de usuario</h2>
+<div class="short"><b>Respuesta honesta</b><b>No implementamos usuarios, login ni permisos.</b> Fue una decisión del grupo: el enunciado no pide autenticación ni perfiles, así que lo dejamos fuera del alcance para concentrarnos en lo que sí se evalúa (procesos, validaciones, ciclo del bulto, patrones y reportes). Sí identificamos los <b>actores del dominio</b>, es decir quién hace cada cosa en el negocio, y el sistema está organizado según esas responsabilidades.</div>
+<figure class="fig">
+<svg viewBox="0 0 900 290" role="img" aria-label="Actores del dominio y procesos">
+  <defs><marker id="arR" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0L10,5L0,10z" fill="var(--muted)"/></marker></defs>
+  <g font-size="13">
+  <rect class="boxA" x="10" y="10" width="250" height="42" rx="8"/><text x="135" y="36" text-anchor="middle" class="b">Responsable de administración</text>
+  <rect class="boxA" x="10" y="66" width="250" height="42" rx="8"/><text x="135" y="92" text-anchor="middle" class="b">Responsable de compras / CD</text>
+  <rect class="boxA" x="10" y="122" width="250" height="42" rx="8"/><text x="135" y="148" text-anchor="middle" class="b">Receptor del local</text>
+  <rect class="boxA" x="10" y="178" width="250" height="42" rx="8"/><text x="135" y="204" text-anchor="middle" class="b">Vendedor / cajero del local</text>
+  <rect class="boxA" x="10" y="234" width="250" height="42" rx="8"/><text x="135" y="260" text-anchor="middle" class="b">Responsable de gestión</text>
+  <rect class="box" x="330" y="10" width="560" height="42" rx="8"/><text x="345" y="36">Locales, CD, productos, categorías, precios, mínimos, proveedores</text>
+  <rect class="box" x="330" y="66" width="560" height="42" rx="8"/><text x="345" y="92">Compras, órdenes de reposición, preparar, precintar y despachar bultos</text>
+  <rect class="box" x="330" y="122" width="560" height="42" rx="8"/><text x="345" y="148">Recibir, revisar el precinto, verificar bulto y remito o rechazar</text>
+  <rect class="box" x="330" y="178" width="560" height="42" rx="8"/><text x="345" y="204">Ventas, cobros, comprobante y devoluciones</text>
+  <rect class="box" x="330" y="234" width="560" height="42" rx="8"/><text x="345" y="260">Reportes R-01 a R-04</text>
+  </g>
+  <line class="ln" x1="260" y1="31" x2="326" y2="31" marker-end="url(#arR)"/>
+  <line class="ln" x1="260" y1="87" x2="326" y2="87" marker-end="url(#arR)"/>
+  <line class="ln" x1="260" y1="143" x2="326" y2="143" marker-end="url(#arR)"/>
+  <line class="ln" x1="260" y1="199" x2="326" y2="199" marker-end="url(#arR)"/>
+  <line class="ln" x1="260" y1="255" x2="326" y2="255" marker-end="url(#arR)"/>
+</svg>
+<figcaption>Son actores del negocio, no cuentas del sistema: una misma persona puede cumplir varios. Proveedor y comprador participan en el dominio pero no usan el sistema.</figcaption>
+</figure>
+<div class="q"><b>Si pregunta “¿y cómo lo agregarían?”:</b> se sumarían una entidad <code>Usuario</code> con su rol y su local asignado, un login en el backend Python y un control antes de cada operación. Por ejemplo, el cajero sólo vende en su local y únicamente el receptor verifica bultos. Como la API ya separa cada proceso en su propio endpoint, el control se agrega en esa capa sin tocar las reglas del dominio. Además, cada operación podría guardar quién la hizo, lo que reforzaría la trazabilidad.</div>
+
+</section>
+
+
+<section id="n-librerias">
+<h2><span class="n">7</span>¿Usamos librerías?</h2>
+<div class="short"><b>Respuesta corta</b>Muy pocas, y a propósito. <b>Toda la lógica del negocio está escrita por nosotros en Python puro</b>: las clases, las reglas, los patrones, los cálculos de los reportes y el SQL. Las librerías externas son sólo para lo que no es del dominio: <b>Flask</b> para recibir los pedidos de la pantalla, <b>React</b> para la pantalla y <b>pytest</b> para las pruebas. La base de datos es <b>SQLite</b>, que viene incluida en Python.</div>
+<div class="table"><table>
+<thead><tr><th>Librería</th><th>Para qué la usamos</th><th>Tipo</th></tr></thead><tbody>
+<tr><td><b>sqlite3</b></td><td>Guardar los datos en una base local, con SQL escrito por nosotros</td><td><span class="pill p-ok">Incluida en Python</span></td></tr>
+<tr><td><b>abc</b></td><td>Clases abstractas de los patrones (<code>ABC</code>, <code>@abstractmethod</code>)</td><td><span class="pill p-ok">Incluida en Python</span></td></tr>
+<tr><td><b>Flask</b></td><td>Exponer las operaciones como una API que usa la pantalla</td><td><span class="pill p-a">Externa · backend</span></td></tr>
+<tr><td><b>pytest</b></td><td>Pruebas automáticas de las reglas y validaciones</td><td><span class="pill p-a">Externa · sólo pruebas</span></td></tr>
+<tr><td><b>React + Vite</b></td><td>La interfaz en el navegador y su servidor de desarrollo</td><td><span class="pill p-a">Externa · frontend</span></td></tr>
+</tbody></table></div>
+<div class="q"><b>¿Por qué no un ORM (por ejemplo SQLAlchemy)?</b> La cátedra trabaja SQLite con <code>sqlite3</code> y SQL directo. Con un ORM las transacciones y el SQL quedarían ocultos, y son justamente lo que se evalúa.</div>
+<div class="q"><b>¿Y ReportLab, Matplotlib o pandas para los reportes?</b> No los usamos: los reportes se calculan en Python y se muestran en pantalla, y el comprobante se imprime desde el navegador. Fue una decisión del grupo para no sumar dependencias que el enunciado no pedía.</div>
+</section>
+</main>
+</div>
+<div class="view" id="v-tecnica">
+<h2 class="part">Enfoque técnico</h2>
+<nav><ol>
+  <li><a href="#arq">0 · Arquitectura</a></li>
+  <li><a href="#dominio">1 · Dominio</a></li>
+  <li><a href="#patrones">2 · Patrones</a></li>
+  <li><a href="#tx">3 · Transacción</a></li>
+  <li><a href="#ciclo">4 · Ciclo de vida</a></li>
+  <li><a href="#reportes">5 · Reportes</a></li>
+  <li><a href="#abc">6 · @abstractmethod</a></li>
+  <li><a href="#librerias">7 · Librerías</a></li>
+</ol></nav>
+<main>
+<p class="lead">Enfoque <b>técnico</b>: capas, clases, cómo están implementados los patrones (con números de línea), transacción, ciclo del bulto en código, reportes y <code>@abstractmethod</code>. Usalo cuando el profesor pida ver el código.</p>
+<!-- ============ 0 ============ -->
+<section id="arq">
+<h2><span class="n">0</span>Cómo está armado</h2>
+<p>Por si arranca con “contame cómo está organizado”. Cuatro capas; el <b>dominio no importa Flask ni SQLite</b>.</p>
+<figure class="fig">
+<svg viewBox="0 0 900 200" role="img" aria-label="Capas del sistema">
+  <defs><marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0L10,5L0,10z" fill="currentColor" style="color:var(--muted)"/></marker></defs>
+  <rect class="box" x="10" y="50" width="180" height="90" rx="10"/>
+  <text x="100" y="82" text-anchor="middle" class="b">Presentación</text>
+  <text x="100" y="102" text-anchor="middle" class="sm">frontend/src (React)</text>
+  <text x="100" y="120" text-anchor="middle" class="sm">muestra, no decide reglas</text>
+  <rect class="box" x="240" y="50" width="190" height="90" rx="10"/>
+  <text x="335" y="82" text-anchor="middle" class="b">API (adaptadores)</text>
+  <text x="335" y="102" text-anchor="middle" class="sm">backend/api_*.py</text>
+  <text x="335" y="120" text-anchor="middle" class="sm">valida JSON, busca objetos</text>
+  <rect class="boxA" x="480" y="50" width="190" height="90" rx="10"/>
+  <text x="575" y="82" text-anchor="middle" class="b">Dominio</text>
+  <text x="575" y="102" text-anchor="middle" class="sm">backend/dominio</text>
+  <text x="575" y="120" text-anchor="middle" class="sm">clases, reglas, patrones</text>
+  <rect class="box" x="720" y="50" width="170" height="90" rx="10"/>
+  <text x="805" y="82" text-anchor="middle" class="b">Persistencia</text>
+  <text x="805" y="102" text-anchor="middle" class="sm">backend/persistencia</text>
+  <text x="805" y="120" text-anchor="middle" class="sm">sqlite3, SQL con ?</text>
+  <line class="ln" x1="190" y1="95" x2="236" y2="95" marker-end="url(#ar)"/>
+  <text x="213" y="85" text-anchor="middle" class="sm">HTTP</text>
+  <line class="ln" x1="430" y1="95" x2="476" y2="95" marker-end="url(#ar)"/>
+  <text x="453" y="85" text-anchor="middle" class="sm">mensaje</text>
+  <path class="ln" d="M335,140 V175 H805 V144" marker-end="url(#ar)"/>
+  <text x="570" y="192" text-anchor="middle" class="sm">guardar_cambio → una transacción</text>
+</svg>
+<figcaption>Recorrido de toda operación: API valida → dominio valida y modifica la memoria → <code>guardar_cambio</code> confirma en una transacción → si falla, rollback y se recarga la memoria.</figcaption>
+</figure>
+
+<h3>Ejemplo concreto: registrar una venta, capa por capa</h3>
+<p>El mismo pedido atraviesa las cuatro capas. Cada bloque es código real del proyecto (recortado) y dice a qué componente pertenece.</p>
+
+<div class="layer">
+  <div class="layer-h"><span class="tag t-front">1 · Presentación</span><code>frontend/src/SeccionVentas.jsx</code> → <code>frontend/src/api.js</code></div>
+<pre><code><span class="cm">// SeccionVentas.jsx — el formulario sólo junta los datos</span>
+<span class="kw">const</span> { venta, nueva } = <span class="kw">await</span> <span class="hl">ventasAPI.registrar</span>({
+  local_id: Number(localId),
+  clave_operacion: claveOperacion.current,
+  lineas: lineas.map((l) => ({ producto_id: ..., cantidad: ... })),
+  cobros: cobros.map((c) => ({ medio_pago_id: ..., importe: ... })),
+});
+
+<span class="cm">// api.js — lo envía por HTTP como JSON</span>
+registrar: <span class="kw">async</span> (datos) => solicitar(<span class="hl">'/api/ventas'</span>, { method: <span class="kw">'POST'</span>, body: JSON.stringify(datos) }),</code></pre>
+  <p class="layer-n">No valida stock ni totales: sólo captura y muestra. La autoridad es Python.</p>
+</div>
+<div class="arrow">↓ <code>POST /api/ventas</code> con JSON</div>
+
+<div class="layer">
+  <div class="layer-h"><span class="tag t-api">2 · API (adaptador HTTP)</span><code>backend/api_ventas.py</code></div>
+<pre><code>@api_ventas.post(<span class="kw">"/ventas"</span>)
+<span class="kw">def</span> registrar_venta():
+    datos = <span class="hl">datos_json</span>({<span class="kw">"local_id"</span>: int, <span class="kw">"clave_operacion"</span>: str, <span class="kw">"lineas"</span>: list, <span class="kw">"cobros"</span>: list})  <span class="cm"># valida el transporte</span>
+    <span class="kw">with</span> current_app.extensions[<span class="kw">"catalogo_lock"</span>]:
+        local = obtener(catalogo.obtener_ubicacion, datos[<span class="kw">"local_id"</span>], ...)                         <span class="cm"># id → objeto</span>
+        venta, movimientos, movimientos_caja, nueva = operacion_dominio(
+            <span class="hl">ventas.registrar</span>, local, lineas_dominio, cobros_dominio, ahora(), ...)          <span class="cm"># → DOMINIO</span>
+        <span class="kw">if</span> nueva:
+            <span class="hl">guardar_cambio(guardar_venta, venta, movimientos, movimientos_caja)</span>          <span class="cm"># → PERSISTENCIA</span>
+    <span class="kw">return</span> jsonify(_venta_json(venta)), 201</code></pre>
+  <p class="layer-n">Traduce JSON ↔ objetos y errores del dominio ↔ códigos HTTP (409, 400), sin contener reglas de negocio.</p>
+</div>
+<div class="arrow">↓ mensaje a objetos Python</div>
+
+<div class="layer">
+  <div class="layer-h"><span class="tag t-dom">3 · Dominio</span><code>backend/dominio/ventas.py</code>, <code>inventario.py</code>, <code>caja.py</code></div>
+<pre><code><span class="kw">class</span> RegistroVentas:
+    <span class="kw">def</span> registrar(self, local, lineas, cobros, instante, clave_operacion, inventario, caja, compras):
+        venta = <span class="hl">Venta(...)</span>                         <span class="cm"># valida que los cobros sumen el total</span>
+        movimientos = <span class="hl">inventario.vender(venta)</span>       <span class="cm"># falla si alguna línea no tiene stock DISPONIBLE</span>
+        movimientos_caja = <span class="hl">caja.ingresar_venta(venta)</span>
+        self._guardar(venta)
+        <span class="kw">return</span> venta, movimientos, movimientos_caja, True</code></pre>
+  <p class="layer-n">Acá están las reglas. Modifica la memoria y devuelve los movimientos a guardar, sin depender de Flask ni de SQLite.</p>
+</div>
+<div class="arrow">↓ objetos ya validados</div>
+
+<div class="layer">
+  <div class="layer-h"><span class="tag t-db">4 · Persistencia</span><code>backend/persistencia/ventas_sqlite.py</code> + <code>base_datos.py</code></div>
+<pre><code><span class="kw">def</span> guardar_venta(conexion, venta, movimientos, movimientos_caja):
+    conexion.execute(<span class="kw">"INSERT INTO ventas (id, local_id, instante, clave_operacion) VALUES (?, ?, ?, ?)"</span>, (...))
+    conexion.executemany(<span class="kw">"INSERT INTO detalles_venta (...) VALUES (?, ?, ?, ?, ?, ?)"</span>, [...])
+    conexion.executemany(<span class="kw">"INSERT INTO cobros (...) VALUES (?, ?, ?, ?)"</span>, [...])
+    guardar_movimientos(conexion, movimientos)
+    guardar_movimientos_caja(conexion, movimientos_caja)
+<span class="cm"># lo ejecuta base_datos.ejecutar_transaccion → un solo commit() o rollback()</span></code></pre>
+  <p class="layer-n">SQL parametrizado con <code>?</code>. Todo en la misma conexión y la misma transacción.</p>
+</div>
+<div class="arrow">↑ vuelve <code>201</code> con la venta en JSON → la pantalla muestra “Venta … confirmada”</div>
+</section>
+
+<!-- ============ 1 ============ -->
+<section id="dominio">
+<h2><span class="n">1</span>Dominio / entidades</h2>
+<div class="short"><b>Respuesta corta</b>Un comercio con varios locales y un Centro de Distribución. Los locales piden reposición, el CD arma bultos precintados con remito, los despacha, el local los recibe y los verifica. Recién ahí el stock queda disponible para vender. Además hay compras a proveedores, ventas con cobros, caja y devoluciones.</div>
+
+<h3>Entidades por módulo (<code>backend/dominio/</code>)</h3>
+<div class="table"><table>
+<thead><tr><th>Módulo</th><th>Clases</th><th>Responsabilidad</th></tr></thead><tbody>
+<tr><td><code>catalogo.py</code></td><td>Catalogo, Categoria, Producto, Proveedor, Ubicacion</td><td>Maestros. Evita códigos duplicados (<code>CodigoDuplicadoError</code>), un único CD, mínimos por local. Baja lógica.</td></tr>
+<tr><td><code>compras.py</code></td><td>RegistroCompras, Compra, DetalleCompra</td><td>Compra a proveedor con destino CD; ingresa stock y da el costo de referencia.</td></tr>
+<tr><td><code>inventario.py</code></td><td>Inventario, MovimientoStock</td><td><b>Único</b> que modifica saldos por (ubicación, producto, condición). Condiciones: DISPONIBLE, RESERVADO, EN_TRANSITO, PENDIENTE, RECHAZADO, BLOQUEADO.</td></tr>
+<tr><td><code>reposicion.py</code></td><td>RegistroReposicion, NecesidadReposicion, OrdenReposicion, DetalleReposicion</td><td>Necesidades de cada local consolidadas en una orden CD → local.</td></tr>
+<tr><td><code>logistica.py</code></td><td>RegistroLogistica, Bulto, DetalleBulto, EventoEstadoBulto, Remito, EstadoBulto + 7 estados</td><td>Ciclo de vida del bulto (<b>State</b>), precinto, remito, historial inmutable.</td></tr>
+<tr><td><code>ventas.py</code></td><td>RegistroVentas, Venta, DetalleVenta, Cobro, Comprobante, MedioPago</td><td>Venta multilínea, cobros que suman el total, comprobante.</td></tr>
+<tr><td><code>caja.py</code></td><td>Caja, MovimientoCaja</td><td>Único responsable del dinero. Saldo = suma de movimientos.</td></tr>
+<tr><td><code>devoluciones.py</code></td><td>RegistroDevoluciones, Devolucion, DetalleDevolucion, Reintegro</td><td>Devolución parcial de una venta registrada, sin exceder lo vendido.</td></tr>
+<tr><td><code>reportes.py</code></td><td>ReporteVentas + estrategias, Periodo, funciones R-02 a R-04</td><td>Consultan, no modifican.</td></tr>
+</tbody></table></div>
+<p>Los <code>Registro…</code> funcionan como servicios: asignan identificadores y coordinan la operación (ej.: <code>RegistroVentas.registrar</code> crea la venta y le pide al <code>Inventario</code> que descuente y a la <code>Caja</code> que ingrese), sin quitarles reglas a las entidades.</p>
+
+<h3>Composición vs agregación</h3>
+<p>Criterio de la cátedra: <i>¿la parte puede pasar a otro contenedor?</i> y <i>¿tiene sentido sin contenedor?</i> Si las dos son “no” → composición.</p>
+<figure class="fig">
+<svg viewBox="0 0 960 360" role="img" aria-label="Composición y agregación">
+  <rect x="0" y="4" width="300" height="352" rx="12" fill="none" stroke="var(--line)" stroke-width="1.2"/>
+  <rect class="boxA" x="94.0" y="16" width="112" height="22" rx="11"/><text x="150" y="31" text-anchor="middle" font-size="11" class="b" letter-spacing=".08em">COMPOSICIÓN</text>
+  <rect class="boxA" x="70" y="54" width="160" height="44" rx="8"/><text x="150" y="81" text-anchor="middle" class="b">Venta</text>
+  <path d="M150,98 l-8,9 8,9 8,-9z" fill="var(--ink)" stroke="var(--ink)" stroke-width="1.5"/>
+  <line class="ln" x1="150" y1="116" x2="150" y2="140"/>
+  <line class="ln" x1="57.0" y1="140" x2="247.0" y2="140"/>
+  <line class="ln" x1="57.0" y1="140" x2="57.0" y2="172"/>
+  <text x="63.0" y="164" class="sm">1..*</text>
+  <rect class="box" x="12" y="172" width="90" height="38" rx="8"/><text x="57.0" y="196" text-anchor="middle" font-size="13">DetalleVenta</text>
+  <line class="ln" x1="152.0" y1="140" x2="152.0" y2="172"/>
+  <text x="158.0" y="164" class="sm">1..*</text>
+  <rect class="box" x="107" y="172" width="90" height="38" rx="8"/><text x="152.0" y="196" text-anchor="middle" font-size="13">Cobro</text>
+  <line class="ln" x1="247.0" y1="140" x2="247.0" y2="172"/>
+  <text x="253.0" y="164" class="sm">1</text>
+  <rect class="box" x="202" y="172" width="90" height="38" rx="8"/><text x="247.0" y="196" text-anchor="middle" font-size="13">Comprobante</text>
+  <line x1="16" y1="232" x2="284" y2="232" stroke="var(--line)" stroke-dasharray="3 4"/>
+  <text x="18" y="258" font-size="13">¿Pasa a otro contenedor?</text>
+  <rect class="boxBad" x="236" y="243" width="46" height="21" rx="10"/><text x="259" y="258" text-anchor="middle" font-size="12" class="b">No</text>
+  <text x="18" y="288" font-size="13">¿Existe sin contenedor?</text>
+  <rect class="boxBad" x="236" y="273" width="46" height="21" rx="10"/><text x="259" y="288" text-anchor="middle" font-size="12" class="b">No</text>
+  <text x="150" y="336" text-anchor="middle" class="sm">crea sus partes en __init__ · tuplas · sin remoción</text>
+  <rect x="330" y="4" width="300" height="352" rx="12" fill="none" stroke="var(--line)" stroke-width="1.2"/>
+  <rect class="boxA" x="424.0" y="16" width="112" height="22" rx="11"/><text x="480" y="31" text-anchor="middle" font-size="11" class="b" letter-spacing=".08em">COMPOSICIÓN</text>
+  <rect class="boxW" x="400" y="54" width="160" height="44" rx="8"/><text x="480" y="81" text-anchor="middle" class="b">Bulto</text>
+  <path d="M480,98 l-8,9 8,9 8,-9z" fill="var(--ink)" stroke="var(--ink)" stroke-width="1.5"/>
+  <line class="ln" x1="480" y1="116" x2="480" y2="140"/>
+  <line class="ln" x1="409.5" y1="140" x2="555.5" y2="140"/>
+  <line class="ln" x1="409.5" y1="140" x2="409.5" y2="172"/>
+  <text x="415.5" y="164" class="sm">1..*</text>
+  <rect class="box" x="342" y="172" width="135" height="38" rx="8"/><text x="409.5" y="196" text-anchor="middle" font-size="13">DetalleBulto</text>
+  <line class="ln" x1="555.5" y1="140" x2="555.5" y2="172"/>
+  <text x="561.5" y="164" class="sm">1..*</text>
+  <rect class="box" x="488" y="172" width="135" height="38" rx="8"/><text x="555.5" y="196" text-anchor="middle" font-size="13">EventoEstadoBulto</text>
+  <line x1="346" y1="232" x2="614" y2="232" stroke="var(--line)" stroke-dasharray="3 4"/>
+  <text x="348" y="258" font-size="13">¿Pasa a otro contenedor?</text>
+  <rect class="boxBad" x="566" y="243" width="46" height="21" rx="10"/><text x="589" y="258" text-anchor="middle" font-size="12" class="b">No</text>
+  <text x="348" y="288" font-size="13">¿Existe sin contenedor?</text>
+  <rect class="boxBad" x="566" y="273" width="46" height="21" rx="10"/><text x="589" y="288" text-anchor="middle" font-size="12" class="b">No</text>
+  <text x="480" y="336" text-anchor="middle" class="sm">contenido e historia propios · sin edición</text>
+  <rect x="660" y="4" width="300" height="352" rx="12" fill="none" stroke="var(--line)" stroke-width="1.2"/>
+  <rect class="boxOk" x="758.0" y="16" width="104" height="22" rx="11"/><text x="810" y="31" text-anchor="middle" font-size="11" class="b" letter-spacing=".08em">AGREGACIÓN</text>
+  <rect class="box" x="730" y="54" width="160" height="44" rx="8"/><text x="810" y="81" text-anchor="middle" class="b">DetalleReposicion</text>
+  <path d="M810,98 l-8,9 8,9 8,-9z" fill="var(--card)" stroke="var(--ink)" stroke-width="1.5"/>
+  <text x="824" y="112" class="sm">0..1</text>
+  <line class="ln" x1="810" y1="116" x2="810" y2="140"/>
+  <line class="ln" x1="810.0" y1="140" x2="810.0" y2="172"/>
+  <text x="816.0" y="164" class="sm">1..*</text>
+  <rect class="boxOk" x="720" y="172" width="180" height="38" rx="8"/><text x="810.0" y="196" text-anchor="middle" font-size="13">NecesidadReposicion</text>
+  <line x1="676" y1="232" x2="944" y2="232" stroke="var(--line)" stroke-dasharray="3 4"/>
+  <text x="678" y="258" font-size="13">¿Pasa a otro contenedor?</text>
+  <rect class="boxBad" x="896" y="243" width="46" height="21" rx="10"/><text x="919" y="258" text-anchor="middle" font-size="12" class="b">No</text>
+  <text x="678" y="288" font-size="13">¿Existe sin contenedor?</text>
+  <rect class="boxOk" x="896" y="273" width="46" height="21" rx="10"/><text x="919" y="288" text-anchor="middle" font-size="12" class="b">Sí</text>
+  <text x="810" y="336" text-anchor="middle" class="sm">existe antes de la orden y puede quedar pendiente</text>
+  </svg>
+<figcaption>◆ rombo lleno = composición · ◇ rombo vacío = agregación. Basta un “Sí” para que sea agregación. Con el mismo criterio, Compra, Devolución, Inventario y Caja también componen sus partes.</figcaption>
+</figure>
+
+<h3>Cómo se ve en el código</h3>
+
+<div class="layer">
+  <div class="layer-h"><span class="tag t-dom">◆ Composición</span><code>backend/dominio/ventas.py</code> · clase <code>Venta</code></div>
+<pre><code><span class="kw">def</span> __init__(self, identificador, local, instante, lineas, cobros, clave_operacion):
+    ...
+    <span class="cm"># Composición: la venta crea sus líneas, cobros y comprobante y valida todo antes de existir.</span>
+    detalles = []
+    <span class="kw">for</span> numero, (producto, cantidad, precio, costo) <span class="kw">in</span> enumerate(lineas, start=1):
+        detalles.append(<span class="hl">DetalleVenta(self, numero, producto, cantidad, precio, costo)</span>)
+    self._detalles = <span class="hl">tuple(detalles)</span>
+
+    registrados = []
+    <span class="kw">for</span> numero, (medio, importe) <span class="kw">in</span> enumerate(cobros, start=1):
+        registrados.append(<span class="hl">Cobro(self, numero, medio, importe)</span>)
+    self._cobros = tuple(registrados)
+    <span class="kw">if</span> cobrado != self.total_centavos:
+        <span class="kw">raise</span> ValueError(<span class="kw">"Los cobros suman ... y el total de la venta es ..."</span>)
+    self._comprobante = <span class="hl">Comprobante(self)</span></code></pre>
+  <p class="layer-n">Cómo se ve que es composición: la <b>Venta crea</b> sus partes (no las recibe hechas) y les pasa <code>self</code>, así que cada parte pertenece a esa venta y a ninguna otra. Las guarda en <b>tuplas</b>, y no hay métodos <code>agregar_detalle</code> ni <code>quitar_cobro</code>: las partes nacen y viven con la venta.</p>
+</div>
+
+<div class="layer">
+  <div class="layer-h"><span class="tag t-dom">◆ Composición</span><code>backend/dominio/logistica.py</code> · clase <code>Bulto</code></div>
+<pre><code><span class="kw">def</span> __init__(self, identificador, orden, instante, lineas):
+    ...
+    detalles = []
+    <span class="kw">for</span> numero, (producto, cantidad, costo) <span class="kw">in</span> enumerate(lineas, start=1):
+        detalles.append(<span class="hl">DetalleBulto(self, producto, cantidad, costo)</span>)
+    self._detalles = tuple(detalles)
+    self._estado = Preparado()
+    self._eventos = [<span class="hl">EventoEstadoBulto(1, None, "PREPARADO", instante, "Contenido preparado y reservado en el CD.")</span>]
+
+<span class="kw">def</span> _cambiar_estado(self, estado, instante, motivo):
+    self._eventos.append(<span class="hl">EventoEstadoBulto(len(self._eventos) + 1, ...)</span>)   <span class="cm"># sólo el bulto agrega eventos</span></code></pre>
+  <p class="layer-n">El bulto crea su contenido y el primer evento. Los eventos siguientes también los crea él, en <code>_cambiar_estado</code>. Un evento no se puede mover a otro bulto ni borrar.</p>
+</div>
+
+<div class="layer">
+  <div class="layer-h"><span class="tag t-db">◇ Agregación</span><code>backend/dominio/reposicion.py</code> · <code>RegistroReposicion</code>, <code>OrdenReposicion</code>, <code>NecesidadReposicion</code></div>
+<pre><code><span class="cm"># 1) La necesidad nace SOLA, antes de que exista una orden</span>
+<span class="kw">def</span> registrar_necesidad(self, local, producto, cantidad, instante):
+    necesidad = <span class="hl">NecesidadReposicion(len(self._necesidades) + 1, local, producto, cantidad, instante)</span>
+    self._necesidades[necesidad.identificador] = necesidad          <span class="cm"># queda PENDIENTE</span>
+    <span class="kw">return</span> necesidad
+
+<span class="cm"># 2) La orden RECIBE necesidades que ya existían (no las crea)</span>
+<span class="kw">def</span> consolidar(self, centro, destino, <span class="hl">necesidades</span>, instante):
+    orden = OrdenReposicion(len(self._ordenes) + 1, centro, destino, instante, <span class="hl">necesidades</span>)
+    <span class="kw">for</span> necesidad <span class="kw">in</span> necesidades:
+        <span class="kw">if</span> necesidad.estado != <span class="kw">"PENDIENTE"</span>:
+            <span class="kw">raise</span> ConflictoOperacionError(<span class="kw">"La necesidad ... ya fue consolidada en la orden ..."</span>)
+    <span class="kw">for</span> necesidad <span class="kw">in</span> necesidades:
+        <span class="hl">necesidad._consolidar(orden)</span>                                <span class="cm"># PENDIENTE → CONSOLIDADA</span>
+
+<span class="cm"># 3) En OrdenReposicion.__init__: el detalle (sí compuesto) referencia necesidades externas</span>
+self._detalles = tuple(<span class="hl">DetalleReposicion(self, producto, por_producto[producto])</span> <span class="kw">for</span> producto <span class="kw">in</span> ...)</code></pre>
+  <p class="layer-n">Cómo se ve que es agregación: la necesidad tiene <b>identidad y ciclo de vida propios</b>. La crea el registro, no la orden, y puede quedar pendiente sin orden. La orden sólo recibe una <b>referencia</b> a una necesidad que ya existía. Ojo: en este mismo código, <code>OrdenReposicion → DetalleReposicion</code> sí es composición, porque la orden crea sus detalles.</p>
+</div>
+
+<div class="q"><b>Si pregunta “¿y en Python cuál es la diferencia sintáctica?”:</b> ninguna. Las dos se implementan con referencias. La diferencia es de diseño: <b>quién crea la parte</b> (el todo o alguien externo), <b>si se puede transferir o quitar</b> y <b>si existe sin el todo</b>.</div>
+
+<h3>Encapsulamiento</h3>
+<ul>
+<li>Estado en atributos con <code>_</code> y lectura con <code>@property</code> <b>sin setter</b> → <code>bulto.estado = "VERIFICADO"</code> da <code>AttributeError</code>.</li>
+<li>Los cambios son mensajes con nombre del dominio (<code>precintar</code>, <code>verificar</code>, <code>cambiar_precio</code>, <code>desactivar</code>) que validan antes de modificar.</li>
+<li>Cada validación vive en el dueño del estado: <code>Producto</code> su precio, <code>Venta</code> que cobros = total, <code>Inventario</code> que ningún saldo quede negativo.</li>
+<li>Colecciones expuestas como <b>tuplas</b>: nadie recibe la lista interna.</li>
+</ul>
+
+<h3>Validaciones del enunciado → dónde están</h3>
+<div class="table"><table>
+<thead><tr><th>Validación</th><th>Dónde</th></tr></thead><tbody>
+<tr><td>Stock no disponible hasta Verificado (bulto <b>y</b> remito)</td><td><code>Recibido.verificar</code> no mueve stock; <code>Remito.verificar</code> → <code>inventario.habilitar_bulto</code></td></tr>
+<tr><td>Trazabilidad inmutable del bulto</td><td><code>Bulto._cambiar_estado</code> agrega un evento; triggers SQLite impiden UPDATE/DELETE en <code>eventos_bulto</code></td></tr>
+<tr><td>No vender más que lo disponible</td><td><code>Inventario.vender</code> → <code>_aplicar</code> comprueba <b>todos</b> los saldos antes de tocar alguno</td></tr>
+<tr><td>Sin productos/proveedores duplicados</td><td><code>Catalogo</code> + <code>CodigoDuplicadoError</code>, y UNIQUE en la base</td></tr>
+<tr><td>Devolución sólo de venta registrada y sin exceso</td><td><code>RegistroDevoluciones</code> + triggers <code>detalles_devolucion_de_su_venta</code> y <code>detalles_devolucion_sin_exceso</code></td></tr>
+</tbody></table></div>
+
+<div class="q"><b>¿Por qué Ubicacion no tiene subclases Local y CD?</b> Tienen los mismos datos y operaciones; sólo cambia qué aceptan (el CD no vende). Se usa un atributo <code>tipo</code>. Herencia sólo porque dos clases se parecen es lo que el material dice evitar.</div>
+<div class="q"><b>¿Dónde está el stock?</b> No es un número en <code>Producto</code>: lo lleva <code>Inventario</code> por (ubicación, producto, condición), y cada cambio deja un <code>MovimientoStock</code>.</div>
+</section>
+
+<!-- ============ 2 ============ -->
+<section id="patrones">
+<h2><span class="n">2</span>Patrones de diseño</h2>
+<div class="short"><b>Respuesta corta</b>Aplicamos dos: <b>State</b> para el ciclo de vida del bulto y <b>Strategy</b> para la agrupación del reporte de ventas (R-01). Los dos usan una clase abstracta como contrato y un contexto que delega por polimorfismo, sin <code>if</code> por tipo.</div>
+
+<h3>2.1 State — <code>backend/dominio/logistica.py</code></h3>
+<p><b>Problema:</b> lo que se puede hacer con un bulto depende de su estado (no se recibe sin despachar, no se verifica uno rechazado). Con <code>if estado == ...</code> en cada método las reglas quedarían dispersas.</p>
+<div class="lines">
+  <div class="lines-h">📍 Dónde está — <code>backend/dominio/logistica.py</code></div>
+  <div class="table"><table>
+  <thead><tr><th>Línea</th><th>Qué hay</th><th>Rol</th></tr></thead><tbody>
+  <tr><td class="ln-n">46</td><td><code>class EstadoBulto(ABC)</code> — <b>empieza el patrón</b></td><td>Estado abstracto</td></tr>
+  <tr><td class="ln-n">62</td><td><code>_rechazar()</code> y debajo las operaciones por defecto (65–78)</td><td>Comportamiento común</td></tr>
+  <tr><td class="ln-n">81</td><td><code>class Preparado</code> → <code>precintar</code> (90), <code>anular</code> (95)</td><td>Estado concreto</td></tr>
+  <tr><td class="ln-n">101</td><td><code>class Precintado</code> → <code>despachar</code> (110)</td><td>Estado concreto</td></tr>
+  <tr><td class="ln-n">116</td><td><code>class EnTransito</code> → <code>recibir</code> (125), con el rechazo por precinto</td><td>Estado concreto</td></tr>
+  <tr><td class="ln-n">152</td><td><code>class Recibido</code> → <code>verificar</code> (161)</td><td>Estado concreto</td></tr>
+  <tr><td class="ln-n">166 · 176 · 186</td><td><code>Verificado</code>, <code>Rechazado</code>, <code>Anulado</code></td><td>Estados finales</td></tr>
+  <tr><td class="ln-n">196</td><td><code>ESTADOS_BULTO</code> (nombre → clase, para reconstruir desde la base)</td><td>Apoyo</td></tr>
+  <tr><td class="ln-n">238</td><td><code>class Bulto</code></td><td>Contexto</td></tr>
+  <tr><td class="ln-n">307–320</td><td><code>precintar</code>, <code>despachar</code>, <code>recibir</code>, <code>verificar</code>, <code>anular</code>: <b>la delegación</b></td><td>Contexto delega</td></tr>
+  <tr><td class="ln-n">343</td><td><code>_cambiar_estado()</code>: único punto de transición + evento</td><td>Contexto</td></tr>
+  </tbody></table></div>
+</div>
+<figure class="fig">
+<svg viewBox="0 0 900 300" role="img" aria-label="Estructura del patrón State">
+  <defs><marker id="tri" viewBox="0 0 12 12" refX="11" refY="6" markerWidth="12" markerHeight="12" orient="auto"><path d="M0,0L12,6L0,12z" fill="var(--card)" stroke="var(--muted)"/></marker>
+  <marker id="ar3" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0L10,5L0,10z" fill="var(--accent)"/></marker></defs>
+  <rect class="boxW" x="20" y="20" width="230" height="130" rx="8"/>
+  <text x="135" y="42" text-anchor="middle" class="b">Bulto  «contexto»</text>
+  <line class="ln" x1="20" y1="52" x2="250" y2="52"/>
+  <text x="32" y="72" class="sm">- _estado : EstadoBulto</text>
+  <text x="32" y="88" class="sm">- _eventos : [EventoEstadoBulto]</text>
+  <text x="32" y="110" class="sm">+ precintar() despachar() recibir()</text>
+  <text x="32" y="126" class="sm">+ verificar() anular()</text>
+  <text x="32" y="142" class="sm">- _cambiar_estado(estado, …)</text>
+  <rect class="boxA" x="420" y="20" width="250" height="130" rx="8"/>
+  <text x="545" y="42" text-anchor="middle" class="b it">EstadoBulto  «abstracta»</text>
+  <line class="ln" x1="420" y1="52" x2="670" y2="52"/>
+  <text x="432" y="72" class="sm it">+ nombre*  + descripcion*  (abstractos)</text>
+  <text x="432" y="94" class="sm">+ precintar(bulto,…) → _rechazar</text>
+  <text x="432" y="110" class="sm">+ despachar(bulto,…) → _rechazar</text>
+  <text x="432" y="126" class="sm">+ recibir / verificar / anular → _rechazar</text>
+  <text x="432" y="142" class="sm">  (por defecto todo se rechaza)</text>
+  <line class="lnA" x1="250" y1="85" x2="416" y2="85" marker-end="url(#ar3)"/>
+  <text x="333" y="77" text-anchor="middle" class="sm">delega</text>
+  <text x="333" y="102" text-anchor="middle" class="sm">self._estado.op(self, …)</text>
+  <g>
+   <rect class="box" x="20" y="230" width="100" height="34" rx="6"/><text x="70" y="252" text-anchor="middle" font-size="12">Preparado</text>
+   <rect class="box" x="145" y="230" width="100" height="34" rx="6"/><text x="195" y="252" text-anchor="middle" font-size="12">Precintado</text>
+   <rect class="box" x="270" y="230" width="100" height="34" rx="6"/><text x="320" y="252" text-anchor="middle" font-size="12">EnTransito</text>
+   <rect class="box" x="395" y="230" width="100" height="34" rx="6"/><text x="445" y="252" text-anchor="middle" font-size="12">Recibido</text>
+   <rect class="boxOk" x="520" y="230" width="100" height="34" rx="6"/><text x="570" y="252" text-anchor="middle" font-size="12">Verificado</text>
+   <rect class="boxBad" x="645" y="230" width="100" height="34" rx="6"/><text x="695" y="252" text-anchor="middle" font-size="12">Rechazado</text>
+   <rect class="box" x="770" y="230" width="100" height="34" rx="6"/><text x="820" y="252" text-anchor="middle" font-size="12">Anulado</text>
+   <path class="ln" d="M70,230 V195 H820 V230 M195,230 V195 M320,230 V195 M445,230 V195 M570,230 V195 M695,230 V195"/>
+   <line class="ln" x1="545" y1="195" x2="545" y2="154" marker-end="url(#tri)"/>
+   <text x="560" y="180" class="sm">heredan y sobreescriben sólo lo que admiten</text>
+   <text x="70" y="285" text-anchor="middle" class="sm">precintar, anular</text>
+   <text x="195" y="285" text-anchor="middle" class="sm">despachar</text>
+   <text x="320" y="285" text-anchor="middle" class="sm">recibir</text>
+   <text x="445" y="285" text-anchor="middle" class="sm">verificar</text>
+   <text x="695" y="285" text-anchor="middle" class="sm">finales: nada</text>
+  </g>
+</svg>
+<figcaption>Debajo de cada estado: las operaciones que sobreescribe. Todo lo demás cae en <code>_rechazar</code> → <code>TransicionBultoError</code> (409).</figcaption>
+</figure>
+
+<div class="grid2">
+<pre><code><span class="cm"># Contexto: una línea que delega pasándose a sí mismo</span>
+<span class="kw">class</span> Bulto:
+    <span class="kw">def</span> despachar(self, instante, inventario):
+        <span class="kw">return</span> <span class="hl">self._estado.despachar(self, instante, inventario)</span>
+
+    <span class="kw">def</span> _cambiar_estado(self, estado, instante, motivo):
+        <span class="cm">"""Único punto que cambia el estado;
+        siempre agrega un evento al historial."""</span>
+        self._eventos.append(EventoEstadoBulto(
+            len(self._eventos) + 1,
+            self._estado.nombre, estado.nombre,
+            instante, motivo))
+        self._estado = estado</code></pre>
+<pre><code><span class="kw">class</span> EstadoBulto(ABC):
+    <span class="kw">def</span> _rechazar(self, bulto, accion):
+        <span class="kw">raise</span> TransicionBultoError(...)
+
+    <span class="kw">def</span> despachar(self, bulto, instante, inventario):
+        self._rechazar(bulto, <span class="kw">"despachar"</span>)
+
+<span class="kw">class</span> Precintado(EstadoBulto):
+    <span class="kw">def</span> despachar(self, bulto, instante, inventario):
+        inventario.despachar_bulto(bulto, instante)
+        <span class="hl">bulto._cambiar_estado(EnTransito(), instante, ...)</span></code></pre>
+</div>
+
+<ul>
+<li>En <code>self._estado.despachar(self, …)</code> el primer <code>self</code> es el <b>contexto</b>; dentro del estado, <code>self</code> es el estado y <code>bulto</code> es el contexto recibido.</li>
+<li>El estado recibe el bulto porque necesita pedirle el cambio (<code>_cambiar_estado</code>) y aplicar el efecto en el inventario.</li>
+<li>La transición <b>reemplaza la referencia</b> <code>_estado</code>; el bulto sigue siendo el mismo objeto, y el método no devuelve el estado nuevo.</li>
+<li>El contexto guarda un <b>objeto</b> estado, no un string.</li>
+<li><b>Consecuencias:</b> agregar un estado = agregar una clase; reglas de cada estado juntas. Costo: 7 clases chicas.</li>
+</ul>
+
+<h3>2.2 Strategy — <code>backend/dominio/reportes.py</code></h3>
+<p><b>Problema:</b> R-01 se agrupa por <b>día</b>, por <b>local</b> o por <b>medio de pago</b> sobre los mismos movimientos de caja: son algoritmos intercambiables.</p>
+<div class="lines">
+  <div class="lines-h">📍 Dónde está — <code>backend/dominio/reportes.py</code> y <code>backend/api_reportes.py</code></div>
+  <div class="table"><table>
+  <thead><tr><th>Línea</th><th>Qué hay</th><th>Rol</th></tr></thead><tbody>
+  <tr><td class="ln-n">67</td><td><code>class EstrategiaAgrupacion(ABC)</code> — <b>empieza el patrón</b></td><td>Estrategia abstracta</td></tr>
+  <tr><td class="ln-n">80</td><td><code>class PorDia</code></td><td>Estrategia concreta</td></tr>
+  <tr><td class="ln-n">90</td><td><code>class PorLocal</code></td><td>Estrategia concreta</td></tr>
+  <tr><td class="ln-n">99</td><td><code>class PorMedioPago</code></td><td>Estrategia concreta</td></tr>
+  <tr><td class="ln-n">108</td><td><code>ESTRATEGIAS_AGRUPACION</code> (nombre → clase)</td><td>Apoyo para el cliente</td></tr>
+  <tr><td class="ln-n">160</td><td><code>class ReporteVentas</code></td><td>Contexto</td></tr>
+  <tr><td class="ln-n">175</td><td><code>cambiar_estrategia()</code></td><td>Contexto</td></tr>
+  <tr><td class="ln-n">179 → 188</td><td><code>generar()</code>; en 188, <code>self._estrategia.clave(movimiento)</code>: <b>la delegación</b></td><td>Contexto delega</td></tr>
+  <tr><td class="ln-n">api_reportes.py 108</td><td><code>ReporteVentas(ESTRATEGIAS_AGRUPACION[nombre]())</code>: el cliente elige</td><td>Cliente</td></tr>
+  </tbody></table></div>
+</div>
+<figure class="fig">
+<svg viewBox="0 0 900 260" role="img" aria-label="Estructura del patrón Strategy">
+  <defs><marker id="tri2" viewBox="0 0 12 12" refX="11" refY="6" markerWidth="12" markerHeight="12" orient="auto"><path d="M0,0L12,6L0,12z" fill="var(--card)" stroke="var(--muted)"/></marker>
+  <marker id="ar4" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0L10,5L0,10z" fill="var(--accent)"/></marker></defs>
+  <rect class="box" x="20" y="30" width="170" height="70" rx="8"/>
+  <text x="105" y="56" text-anchor="middle" class="b">API  «cliente»</text>
+  <text x="105" y="76" text-anchor="middle" class="sm">?agrupacion=dia|local|medio</text>
+  <text x="105" y="92" text-anchor="middle" class="sm">elige la estrategia</text>
+  <rect class="boxW" x="250" y="20" width="230" height="100" rx="8"/>
+  <text x="365" y="42" text-anchor="middle" class="b">ReporteVentas «contexto»</text>
+  <line class="ln" x1="250" y1="52" x2="480" y2="52"/>
+  <text x="262" y="70" class="sm">- _estrategia</text>
+  <text x="262" y="88" class="sm">+ generar(periodo, …)</text>
+  <text x="262" y="106" class="sm">+ cambiar_estrategia(e)</text>
+  <rect class="boxA" x="580" y="20" width="270" height="100" rx="8"/>
+  <text x="715" y="42" text-anchor="middle" class="b it">EstrategiaAgrupacion «abstracta»</text>
+  <line class="ln" x1="580" y1="52" x2="850" y2="52"/>
+  <text x="592" y="74" class="sm it">+ nombre*   (abstracto)</text>
+  <text x="592" y="94" class="sm it">+ clave(movimiento)*   (abstracto)</text>
+  <line class="lnA" x1="190" y1="65" x2="246" y2="65" marker-end="url(#ar4)"/>
+  <text x="218" y="58" text-anchor="middle" class="sm">new</text>
+  <line class="lnA" x1="480" y1="70" x2="576" y2="70" marker-end="url(#ar4)"/>
+  <text x="528" y="62" text-anchor="middle" class="sm">clave(m)</text>
+  <rect class="box" x="560" y="200" width="90" height="40" rx="6"/><text x="605" y="225" text-anchor="middle" font-size="13">PorDia</text>
+  <rect class="box" x="670" y="200" width="90" height="40" rx="6"/><text x="715" y="225" text-anchor="middle" font-size="13">PorLocal</text>
+  <rect class="box" x="780" y="200" width="110" height="40" rx="6"/><text x="835" y="225" text-anchor="middle" font-size="13">PorMedioPago</text>
+  <path class="ln" d="M605,200 V170 H835 V200 M715,200 V170"/>
+  <line class="ln" x1="715" y1="170" x2="715" y2="124" marker-end="url(#tri2)"/>
+  <text x="250" y="170" class="sm">ESTRATEGIAS_AGRUPACION = {"dia": PorDia,</text>
+  <text x="250" y="186" class="sm">  "local": PorLocal, "medio": PorMedioPago}</text>
+</svg>
+</figure>
+<pre><code><span class="kw">class</span> ReporteVentas:
+    <span class="kw">def</span> __init__(self, estrategia):           <span class="cm"># viene de afuera</span>
+        self._estrategia = estrategia
+
+    <span class="kw">def</span> generar(self, periodo, ventas, devoluciones, caja, local=None):
+        <span class="kw">for</span> movimiento <span class="kw">in</span> caja.movimientos(local):
+            <span class="kw">if</span> periodo.contiene(movimiento.instante):
+                orden, etiqueta = <span class="hl">self._estrategia.clave(movimiento)</span>   <span class="cm"># polimorfismo</span>
+                ...
+
+<span class="cm"># api_reportes.py — el cliente elige</span>
+resultado = ReporteVentas(ESTRATEGIAS_AGRUPACION[nombre]()).generar(...)</code></pre>
+<ul><li>El contexto <b>no tiene</b> <code>if/elif</code> por agrupación. Nueva agrupación = nueva clase.</li><li>La estrategia sólo calcula una clave; no modifica datos ni decide transiciones.</li></ul>
+
+<h3>2.3 State vs Strategy (pregunta clásica)</h3>
+<div class="table"><table>
+<thead><tr><th></th><th>Strategy</th><th>State</th></tr></thead><tbody>
+<tr><td>Pregunta que responde</td><td>“¿Qué algoritmo uso?”</td><td>“¿Qué puede hacer el objeto ahora?”</td></tr>
+<tr><td>Quién decide el cambio</td><td>El <b>cliente</b>, desde afuera</td><td>El <b>propio estado</b> (transiciones)</td></tr>
+<tr><td>Se conocen entre sí</td><td>No</td><td>Sí: cada estado crea el siguiente</td></tr>
+<tr><td>En el TP</td><td>Agrupación de R-01</td><td>Ciclo del bulto</td></tr>
+</tbody></table></div>
+<div class="q"><b>¿Por qué no otros patrones?</b> Singleton: no hay necesidad real de instancia única (cada <code>create_app</code> tiene sus registros, y cada test una base aislada). Factory, Observer, Iterator: ningún problema del dominio los pide; las colecciones ya son tuplas iterables y nadie se suscribe a cambios.</div>
+</section>
+
+<!-- ============ 3 ============ -->
+<section id="tx">
+<h2><span class="n">3</span>Transacción</h2>
+<div class="short"><b>Respuesta corta</b>Toda operación que modifica datos se guarda en <b>una sola transacción SQLite</b>: o se guardan todos sus efectos (documento + movimientos de stock + movimientos de caja), o ninguno.</div>
+<figure class="fig">
+<svg viewBox="0 0 900 290" role="img" aria-label="Flujo de la transacción">
+  <defs><marker id="ar5" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0L10,5L0,10z" fill="var(--muted)"/></marker></defs>
+  <rect class="box" x="20" y="110" width="140" height="60" rx="8"/><text x="90" y="136" text-anchor="middle" class="b">conectar()</text><text x="90" y="154" text-anchor="middle" class="sm">abre la conexión</text>
+  <rect class="boxA" x="200" y="100" width="200" height="80" rx="8"/><text x="300" y="124" text-anchor="middle" class="b">operacion(conexion)</text>
+  <text x="300" y="144" text-anchor="middle" class="sm">INSERT ventas, detalles,</text>
+  <text x="300" y="160" text-anchor="middle" class="sm">cobros, movimientos…</text>
+  <rect class="boxOk" x="470" y="30" width="170" height="60" rx="8"/><text x="555" y="56" text-anchor="middle" class="b">commit()</text><text x="555" y="74" text-anchor="middle" class="sm">confirma todo junto</text>
+  <rect class="boxBad" x="470" y="190" width="170" height="60" rx="8"/><text x="555" y="216" text-anchor="middle" class="b">rollback()</text><text x="555" y="234" text-anchor="middle" class="sm">deshace lo pendiente</text>
+  <rect class="box" x="700" y="110" width="170" height="60" rx="8"/><text x="785" y="136" text-anchor="middle" class="b">close()</text><text x="785" y="154" text-anchor="middle" class="sm">finally: siempre</text>
+  <line class="ln" x1="160" y1="140" x2="196" y2="140" marker-end="url(#ar5)"/>
+  <path class="lnOk" d="M400,125 Q440,60 466,60" marker-end="url(#ar5)"/><text x="430" y="78" class="sm">ok</text>
+  <path class="lnBad" d="M400,160 Q440,220 466,220" marker-end="url(#ar5)"/><text x="410" y="215" class="sm">excepción</text>
+  <path class="ln" d="M640,60 Q680,60 700,125" marker-end="url(#ar5)"/>
+  <path class="ln" d="M640,220 Q680,220 700,158" marker-end="url(#ar5)"/>
+  <text x="555" y="275" text-anchor="middle" class="sm">+ guardar_cambio llama recargar_estado(): la memoria vuelve al último estado confirmado</text>
+</svg>
+</figure>
+<div class="grid2">
+<pre><code><span class="cm"># persistencia/base_datos.py</span>
+<span class="kw">def</span> ejecutar_transaccion(self, operacion, *argumentos):
+    <span class="cm">"""Confirma todos los cambios o ninguno."""</span>
+    conexion = self.conectar()
+    <span class="kw">try</span>:
+        resultado = operacion(conexion, *argumentos)
+        <span class="hl">conexion.commit()</span>
+        <span class="kw">return</span> resultado
+    <span class="kw">except</span> Exception:
+        <span class="hl">conexion.rollback()</span>
+        <span class="kw">raise</span>
+    <span class="kw">finally</span>:
+        conexion.close()
+
+<span class="kw">def</span> consultar(self, operacion, *argumentos):
+    <span class="cm">"""Lectura: no confirma (SELECT)."""</span></code></pre>
+<pre><code><span class="cm"># api_comun.py</span>
+<span class="kw">def</span> guardar_cambio(operacion, *argumentos):
+    <span class="kw">try</span>:
+        base_datos.ejecutar_transaccion(operacion, *argumentos)
+    <span class="kw">except</span> Exception <span class="kw">as</span> error:
+        <span class="hl">recargar_estado()</span>   <span class="cm"># memoria = base</span>
+        <span class="kw">if</span> isinstance(error, sqlite3.Error):
+            <span class="kw">raise</span> ErrorCatalogoAPI(500, <span class="kw">"No se pudo guardar..."</span>)
+        <span class="kw">raise</span></code></pre>
+</div>
+
+<h3>Ejemplo: registrar una venta</h3>
+<figure class="fig">
+<svg viewBox="0 0 900 330" role="img" aria-label="Secuencia de registrar venta">
+  <defs><marker id="ar6" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0L10,5L0,10z" fill="var(--accent)"/></marker></defs>
+  <g font-size="12">
+  <rect class="box" x="10" y="10" width="140" height="34" rx="6"/><text x="80" y="32" text-anchor="middle" class="b">api_ventas</text>
+  <rect class="box" x="190" y="10" width="150" height="34" rx="6"/><text x="265" y="32" text-anchor="middle" class="b">RegistroVentas</text>
+  <rect class="box" x="380" y="10" width="120" height="34" rx="6"/><text x="440" y="32" text-anchor="middle" class="b">Inventario</text>
+  <rect class="box" x="540" y="10" width="100" height="34" rx="6"/><text x="590" y="32" text-anchor="middle" class="b">Caja</text>
+  <rect class="box" x="690" y="10" width="190" height="34" rx="6"/><text x="785" y="32" text-anchor="middle" class="b">SQLite (1 transacción)</text>
+  </g>
+  <g class="ln" stroke-dasharray="3 4"><line x1="80" y1="44" x2="80" y2="320"/><line x1="265" y1="44" x2="265" y2="320"/><line x1="440" y1="44" x2="440" y2="320"/><line x1="590" y1="44" x2="590" y2="320"/><line x1="785" y1="44" x2="785" y2="320"/></g>
+  <line class="lnA" x1="80" y1="75" x2="261" y2="75" marker-end="url(#ar6)"/><text x="170" y="68" text-anchor="middle" class="sm">registrar(local, líneas, cobros…)</text>
+  <text x="275" y="100" class="sm">crea Venta (cobros = total)</text>
+  <line class="lnA" x1="265" y1="125" x2="436" y2="125" marker-end="url(#ar6)"/><text x="350" y="118" text-anchor="middle" class="sm">vender(venta)</text>
+  <text x="450" y="148" class="sm">_aplicar: valida TODOS los saldos</text>
+  <line class="lnA" x1="265" y1="170" x2="586" y2="170" marker-end="url(#ar6)"/><text x="470" y="163" text-anchor="middle" class="sm">ingresar_venta(venta)</text>
+  <line class="lnA" x1="80" y1="210" x2="781" y2="210" marker-end="url(#ar6)"/><text x="430" y="203" text-anchor="middle" class="sm">guardar_cambio(guardar_venta, venta, movimientos, movimientos_caja)</text>
+  <text x="795" y="236" class="sm">INSERT ventas</text>
+  <text x="795" y="252" class="sm">INSERT detalles_venta</text>
+  <text x="795" y="268" class="sm">INSERT cobros</text>
+  <text x="795" y="284" class="sm">mov. stock + caja</text>
+  <text x="795" y="306" class="sm b" style="fill:var(--ok)">un solo commit()</text>
+</svg>
+<figcaption>Si una línea no alcanza, falla <b>toda</b> la venta antes de tocar saldos. No hay commits intermedios → ningún efecto parcial en stock, caja ni comprobante.</figcaption>
+</figure>
+<ul>
+<li>SQL <b>parametrizado con <code>?</code></b>, nunca concatenado (evita inyección SQL). <code>executemany</code> para las líneas.</li>
+<li><code>rollback()</code> sólo deshace lo <b>no confirmado</b>. Cerrar la conexión <b>no</b> confirma.</li>
+<li>Un <code>SELECT</code> no lleva <code>commit()</code> (<code>consultar</code>).</li>
+<li><code>clave_operacion</code>: si el cliente reenvía la misma venta, devuelve la existente (200) sin duplicar.</li>
+<li><code>catalogo_lock</code>: dos pedidos simultáneos no modifican la memoria a la vez.</li>
+</ul>
+</section>
+
+<!-- ============ 4 ============ -->
+<section id="ciclo">
+<h2><span class="n">4</span>Ciclo de vida del bulto</h2>
+<div class="short"><b>Respuesta corta</b>El bulto pasa por Preparado → Precintado → En tránsito → Recibido → Verificado, o termina Rechazado (precinto roto) o Anulado. Cada transición queda registrada en un historial que no se edita ni se borra, y la mercadería sólo queda vendible cuando se verifican <b>el bulto y el remito</b>.</div>
+<figure class="fig">
+<svg viewBox="0 0 900 330" role="img" aria-label="Diagrama de estados del bulto">
+  <defs><marker id="ar7" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0,0L10,5L0,10z" fill="var(--accent)"/></marker>
+  <marker id="ar8" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0,0L10,5L0,10z" fill="var(--bad)"/></marker></defs>
+  <circle cx="30" cy="90" r="9" fill="var(--ink)"/>
+  <line class="lnA" x1="39" y1="90" x2="66" y2="90" marker-end="url(#ar7)"/>
+  <rect class="box" x="70" y="62" width="130" height="56" rx="28"/><text x="135" y="86" text-anchor="middle" class="b">PREPARADO</text><text x="135" y="104" text-anchor="middle" class="sm">CD: RESERVADO</text>
+  <rect class="box" x="260" y="62" width="130" height="56" rx="28"/><text x="325" y="86" text-anchor="middle" class="b">PRECINTADO</text><text x="325" y="104" text-anchor="middle" class="sm">remito EMITIDO</text>
+  <rect class="box" x="450" y="62" width="140" height="56" rx="28"/><text x="520" y="86" text-anchor="middle" class="b">EN_TRANSITO</text><text x="520" y="104" text-anchor="middle" class="sm">stock EN_TRANSITO</text>
+  <rect class="box" x="650" y="62" width="120" height="56" rx="28"/><text x="710" y="86" text-anchor="middle" class="b">RECIBIDO</text><text x="710" y="104" text-anchor="middle" class="sm">local: PENDIENTE</text>
+  <rect class="boxOk" x="650" y="200" width="130" height="56" rx="28"/><text x="715" y="224" text-anchor="middle" class="b">VERIFICADO</text><text x="715" y="242" text-anchor="middle" class="sm">final</text>
+  <rect class="boxBad" x="440" y="200" width="160" height="56" rx="28"/><text x="520" y="224" text-anchor="middle" class="b">RECHAZADO</text><text x="520" y="242" text-anchor="middle" class="sm">final · stock RECHAZADO</text>
+  <rect class="box" x="70" y="200" width="130" height="56" rx="28"/><text x="135" y="224" text-anchor="middle" class="b">ANULADO</text><text x="135" y="242" text-anchor="middle" class="sm">final · libera reserva</text>
+  <line class="lnA" x1="200" y1="90" x2="256" y2="90" marker-end="url(#ar7)"/><text x="228" y="82" text-anchor="middle" class="sm">precintar</text>
+  <line class="lnA" x1="390" y1="90" x2="446" y2="90" marker-end="url(#ar7)"/><text x="418" y="82" text-anchor="middle" class="sm">despachar</text>
+  <line class="lnA" x1="590" y1="90" x2="646" y2="90" marker-end="url(#ar7)"/><text x="618" y="58" text-anchor="middle" class="sm">recibir</text><text x="618" y="72" text-anchor="middle" class="sm">(precinto OK)</text>
+  <line class="lnA" x1="712" y1="118" x2="714" y2="196" marker-end="url(#ar7)"/><text x="722" y="162" class="sm">verificar</text>
+  <line class="lnA" x1="135" y1="118" x2="135" y2="196" marker-end="url(#ar7)"/><text x="143" y="162" class="sm">anular</text>
+  <path class="lnBad" d="M520,118 V196" marker-end="url(#ar8)"/><text x="528" y="146" class="sm" style="fill:var(--bad)">recibir con precinto</text><text x="528" y="160" class="sm" style="fill:var(--bad)">roto o distinto</text>
+  <text x="528" y="174" class="sm" style="fill:var(--bad)">(RECIBIDO→RECHAZADO juntos)</text>
+  <circle cx="715" cy="298" r="8" fill="none" stroke="var(--ok)" stroke-width="2"/><circle cx="715" cy="298" r="4" fill="var(--ok)"/>
+  <path class="lnOk" d="M780,228 H840 V298 H727" /><text x="700" y="302" text-anchor="end" class="sm b" style="fill:var(--ok)">Remito.verificar → stock DISPONIBLE ✓</text>
+</svg>
+<figcaption>Cualquier otra operación en un estado → <code>TransicionBultoError</code> (409) sin cambiar nada. Verificado, Rechazado y Anulado son finales.</figcaption>
+</figure>
+
+<h3>Qué pasa con el stock en cada paso</h3>
+<div class="table"><table>
+<thead><tr><th>Paso</th><th>Estado del bulto</th><th>Stock (condición en el Inventario)</th></tr></thead><tbody>
+<tr><td>Preparar</td><td><span class="pill p-a">PREPARADO</span></td><td>CD: DISPONIBLE → RESERVADO</td></tr>
+<tr><td>Anular</td><td><span class="pill p-a">ANULADO</span></td><td>CD: RESERVADO → DISPONIBLE</td></tr>
+<tr><td>Precintar</td><td><span class="pill p-a">PRECINTADO</span></td><td>Sin cambio; se fija precinto y se emite el remito</td></tr>
+<tr><td>Despachar</td><td><span class="pill p-a">EN_TRANSITO</span></td><td>CD RESERVADO → local EN_TRANSITO</td></tr>
+<tr><td>Recibir OK</td><td><span class="pill p-a">RECIBIDO</span></td><td>EN_TRANSITO → PENDIENTE (todavía <b>no vendible</b>)</td></tr>
+<tr><td>Recibir con precinto roto</td><td><span class="pill p-bad">RECHAZADO</span></td><td>EN_TRANSITO → RECHAZADO (en custodia, no vendible); remito RECHAZADO</td></tr>
+<tr><td>Verificar bulto</td><td><span class="pill p-ok">VERIFICADO</span></td><td><b>Sin cambio</b>: falta el remito</td></tr>
+<tr><td>Verificar remito</td><td>(bulto ya VERIFICADO)</td><td>PENDIENTE → <b>DISPONIBLE</b> ✓ recién acá se vende</td></tr>
+</tbody></table></div>
+
+<h3>Doble verificación</h3>
+<pre><code><span class="kw">class</span> Recibido(EstadoBulto):
+    <span class="kw">def</span> verificar(self, bulto, instante):
+        bulto._cambiar_estado(Verificado(), instante, <span class="kw">"Contenedor verificado; falta verificar el remito."</span>)
+
+<span class="kw">class</span> Remito:
+    <span class="kw">def</span> verificar(self, instante, inventario):
+        <span class="kw">if</span> self._estado != <span class="kw">"EMITIDO"</span>: <span class="kw">raise</span> ConflictoOperacionError(...)
+        <span class="kw">if</span> self._bulto.estado != <span class="kw">"VERIFICADO"</span>:
+            <span class="kw">raise</span> ConflictoOperacionError(<span class="kw">"Verificá el bulto ... antes que su remito ..."</span>)
+        movimientos = <span class="hl">inventario.habilitar_bulto(self._bulto, instante)</span>   <span class="cm"># PENDIENTE → DISPONIBLE</span>
+        self._estado = <span class="kw">"VERIFICADO"</span></code></pre>
+
+<h3>Trazabilidad inmutable — tres capas de protección</h3>
+<figure class="fig">
+<svg viewBox="0 0 900 140" role="img" aria-label="Capas de inmutabilidad">
+  <rect class="boxA" x="10" y="20" width="280" height="100" rx="8"/><text x="150" y="46" text-anchor="middle" class="b">1 · Único punto de cambio</text>
+  <text x="150" y="70" text-anchor="middle" class="sm">_cambiar_estado SIEMPRE agrega</text><text x="150" y="86" text-anchor="middle" class="sm">un EventoEstadoBulto (secuencia,</text><text x="150" y="102" text-anchor="middle" class="sm">anterior, nuevo, instante, motivo)</text>
+  <rect class="boxA" x="310" y="20" width="280" height="100" rx="8"/><text x="450" y="46" text-anchor="middle" class="b">2 · Expuesto como tupla</text>
+  <text x="450" y="70" text-anchor="middle" class="sm">bulto.eventos devuelve tuple:</text><text x="450" y="86" text-anchor="middle" class="sm">nadie puede modificar la lista</text><text x="450" y="102" text-anchor="middle" class="sm">desde afuera</text>
+  <rect class="boxA" x="610" y="20" width="280" height="100" rx="8"/><text x="750" y="46" text-anchor="middle" class="b">3 · Triggers en SQLite</text>
+  <text x="750" y="70" text-anchor="middle" class="sm">eventos_bulto_sin_modificacion</text><text x="750" y="86" text-anchor="middle" class="sm">eventos_bulto_sin_borrado</text><text x="750" y="102" text-anchor="middle" class="sm">→ RAISE(ABORT, …)</text>
+</svg>
+<figcaption>Al recargar desde la base, <code>_restaurar_historia</code> exige una cadena continua que empiece en PREPARADO.</figcaption>
+</figure>
+<div class="q"><b>Rechazo logístico:</b> en <code>EnTransito.recibir</code>, si el precinto está roto o no coincide, en la <b>misma</b> operación pasa a RECIBIDO y RECHAZADO, el stock va a RECHAZADO y el remito a RECHAZADO. Nunca existe un momento con stock habilitado.</div>
+<div class="q"><b>¿Por qué el remito no usa State?</b> Sólo tiene EMITIDO → VERIFICADO o RECHAZADO, una única vez. Un patrón ahí sería sobreingeniería.</div>
+</section>
+
+<!-- ============ 5 ============ -->
+<section id="reportes">
+<h2><span class="n">5</span>Reportes</h2>
+<div class="short"><b>Respuesta corta</b>Cuatro reportes, calculados en <code>backend/dominio/reportes.py</code> y expuestos en <code>backend/api_reportes.py</code> (<code>GET /api/reportes/…</code>). <b>Sólo consultan</b>: no modifican stock ni caja. Devuelven objetos de resultado que la API convierte en JSON.</div>
+<div class="table"><table>
+<thead><tr><th>#</th><th>Reporte</th><th>Endpoint</th><th>Código</th><th>Por qué no es trivial</th></tr></thead><tbody>
+<tr><td>R-01</td><td>Ventas e ingresos por período, local y medio de pago</td><td><code>/ventas</code></td><td><code>ReporteVentas</code> + Strategy</td><td>Cruza ventas, devoluciones y caja; agrupa y calcula cobros, reintegros e ingreso neto.</td></tr>
+<tr><td>R-02</td><td>Productos más vendidos y margen</td><td><code>/productos</code></td><td><code>productos_mas_vendidos()</code></td><td>Unidades netas (vendido − devuelto), importe, costo y margen.</td></tr>
+<tr><td>R-03</td><td>Existencias y stock mínimo</td><td><code>/existencias</code></td><td><code>existencias_y_minimos()</code></td><td>Inventario por condición vs mínimo del local; déficit; filtros.</td></tr>
+<tr><td>R-04</td><td>Bultos rechazados por precinto</td><td><code>/rechazos</code></td><td><code>rechazos_logisticos()</code></td><td>Recorre el historial de eventos; unidades y valor bloqueado por local.</td></tr>
+</tbody></table></div>
+
+<h3>Cómo se genera R-01</h3>
+<figure class="fig">
+<svg viewBox="0 0 900 170" role="img" aria-label="Pipeline del reporte">
+  <defs><marker id="ar9" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0L10,5L0,10z" fill="var(--accent)"/></marker></defs>
+  <rect class="box" x="10" y="40" width="150" height="80" rx="8"/><text x="85" y="66" text-anchor="middle" class="b">1 · API</text><text x="85" y="86" text-anchor="middle" class="sm">valida desde/hasta,</text><text x="85" y="102" text-anchor="middle" class="sm">local y agrupación</text>
+  <rect class="box" x="190" y="40" width="160" height="80" rx="8"/><text x="270" y="66" text-anchor="middle" class="b">2 · Filtrar</text><text x="270" y="86" text-anchor="middle" class="sm">movimientos de caja</text><text x="270" y="102" text-anchor="middle" class="sm">del período y local</text>
+  <rect class="boxA" x="380" y="40" width="170" height="80" rx="8"/><text x="465" y="66" text-anchor="middle" class="b">3 · Agrupar</text><text x="465" y="86" text-anchor="middle" class="sm">estrategia.clave(m)</text><text x="465" y="102" text-anchor="middle" class="sm">→ GrupoCaja</text>
+  <rect class="box" x="580" y="40" width="150" height="80" rx="8"/><text x="655" y="66" text-anchor="middle" class="b">4 · Resultado</text><text x="655" y="86" text-anchor="middle" class="sm">ResultadoVentas con</text><text x="655" y="102" text-anchor="middle" class="sm">totales calculados</text>
+  <rect class="box" x="760" y="40" width="130" height="80" rx="8"/><text x="825" y="66" text-anchor="middle" class="b">5 · JSON</text><text x="825" y="86" text-anchor="middle" class="sm">React lo muestra</text>
+  <line class="lnA" x1="160" y1="80" x2="186" y2="80" marker-end="url(#ar9)"/>
+  <line class="lnA" x1="350" y1="80" x2="376" y2="80" marker-end="url(#ar9)"/>
+  <line class="lnA" x1="550" y1="80" x2="576" y2="80" marker-end="url(#ar9)"/>
+  <line class="lnA" x1="730" y1="80" x2="756" y2="80" marker-end="url(#ar9)"/>
+  <text x="450" y="150" text-anchor="middle" class="sm">pasos 2–4 en el dominio (cálculo) · pasos 1 y 5 en API/frontend (presentación)</text>
+</svg>
+</figure>
+<ul>
+<li>Separación <b>cálculo (dominio)</b> / <b>presentación (API + React)</b>.</li>
+<li>Importes en <b>centavos enteros</b> para evitar errores de punto flotante.</li>
+<li>Los resultados (<code>FilaProducto</code>, <code>GrupoCaja</code>…) tienen atributos públicos a propósito: son la respuesta de una consulta, no estado del sistema.</li>
+<li>Probados en <code>tests/test_reportes.py</code> y <code>tests/test_api_reportes.py</code> contra datos conocidos y el caso sin datos.</li>
+</ul>
+</section>
+
+<!-- ============ 6 ============ -->
+<section id="abc">
+<h2><span class="n">6</span>¿Por qué usamos <code>@abstractmethod</code>?</h2>
+<div class="short"><b>Respuesta corta</b><code>EstadoBulto</code> y <code>EstrategiaAgrupacion</code> son <b>contratos</b>: definen qué mensajes debe entender cualquier estado o estrategia, pero no tiene sentido crear “un estado genérico”. Con <code>ABC</code> + <code>@abstractmethod</code>, Python <b>impide instanciar</b> la clase abstracta y <b>obliga</b> a cada subclase a implementar esos métodos; si alguna se olvida, falla al crearla (<code>TypeError</code>), no más tarde.</div>
+<figure class="fig">
+<svg viewBox="0 0 900 230" role="img" aria-label="Qué permite y qué impide ABC">
+  <rect class="boxA" x="330" y="10" width="240" height="70" rx="8"/><text x="450" y="36" text-anchor="middle" class="b it">EstrategiaAgrupacion(ABC)</text><text x="450" y="56" text-anchor="middle" class="sm it">@abstractmethod nombre, clave</text>
+  <rect class="boxBad" x="20" y="130" width="250" height="80" rx="8"/><text x="145" y="156" text-anchor="middle" class="b">EstrategiaAgrupacion()</text><text x="145" y="178" text-anchor="middle" class="sm">✗ TypeError: Can't instantiate</text><text x="145" y="194" text-anchor="middle" class="sm">abstract class</text>
+  <rect class="boxBad" x="325" y="130" width="250" height="80" rx="8"/><text x="450" y="156" text-anchor="middle" class="b">PorX sin clave()</text><text x="450" y="178" text-anchor="middle" class="sm">✗ TypeError al instanciar:</text><text x="450" y="194" text-anchor="middle" class="sm">no cumple el contrato</text>
+  <rect class="boxOk" x="630" y="130" width="250" height="80" rx="8"/><text x="755" y="156" text-anchor="middle" class="b">PorDia()</text><text x="755" y="178" text-anchor="middle" class="sm">✓ implementa nombre y clave</text><text x="755" y="194" text-anchor="middle" class="sm">→ se puede usar por polimorfismo</text>
+  <line class="ln" x1="145" y1="130" x2="380" y2="82"/><line class="ln" x1="450" y1="130" x2="450" y2="82"/><line class="ln" x1="755" y1="130" x2="520" y2="82"/>
+</svg>
+</figure>
+<pre><code><span class="kw">from</span> abc <span class="kw">import</span> ABC, abstractmethod
+
+<span class="kw">class</span> EstadoBulto(ABC):                  <span class="cm"># logistica.py</span>
+    @property
+    <span class="hl">@abstractmethod</span>
+    <span class="kw">def</span> nombre(self): ...               <span class="cm"># cada estado DEBE decir su nombre</span>
+
+    @property
+    <span class="hl">@abstractmethod</span>
+    <span class="kw">def</span> descripcion(self): ...
+
+    <span class="kw">def</span> precintar(self, bulto, ...):     <span class="cm"># concreto: rechaza por defecto</span>
+        self._rechazar(bulto, <span class="kw">"precintar"</span>)
+
+<span class="kw">class</span> EstrategiaAgrupacion(ABC):         <span class="cm"># reportes.py</span>
+    @property
+    <span class="hl">@abstractmethod</span>
+    <span class="kw">def</span> nombre(self): ...
+
+    <span class="hl">@abstractmethod</span>
+    <span class="kw">def</span> clave(self, movimiento): ...    <span class="cm"># cada estrategia DEBE saber agrupar</span></code></pre>
+<ol>
+<li><b>No instanciable:</b> <code>EstadoBulto()</code> da <code>TypeError</code>.</li>
+<li><b>Contrato obligatorio:</b> una subclase que no implemente <code>clave</code> o <code>nombre</code> tampoco se puede instanciar.</li>
+<li><b>Habilita el polimorfismo:</b> <code>Bulto</code> y <code>ReporteVentas</code> envían mensajes al tipo abstracto sin conocer la clase concreta y sin <code>isinstance</code>/<code>if</code>.</li>
+<li><b>Clase abstracta ≠ interfaz pura:</b> <code>EstadoBulto</code> mezcla abstractos (<code>nombre</code>, <code>descripcion</code>) con concretos por defecto (las operaciones rechazan). <code>EstrategiaAgrupacion</code> se parece más a una interfaz: sólo abstractos.</li>
+</ol>
+<div class="q"><b>¿Por qué precintar, despachar… NO son abstractas?</b> Si lo fueran, cada uno de los 7 estados tendría que implementar las 5 operaciones, casi todas sólo para rechazar → código repetido. Al dejarlas concretas con rechazo por defecto, cada estado redefine sólo sus transiciones válidas.</div>
+<div class="q"><b>¿Se usa <code>super()</code>?</b> En el dominio no hace falta: ninguna derivada redefine <code>__init__</code>. Se usa en <code>ErrorCatalogoAPI(Exception)</code> (<code>api_comun.py</code>): <code>super().__init__(mensaje)</code>.</div>
+</section>
+<section id="librerias">
+<h2><span class="n">7</span>Librerías y dependencias</h2>
+<div class="short"><b>Respuesta corta</b>El <b>dominio no importa ninguna librería externa</b>: sólo usa la biblioteca estándar (<code>abc</code> y <code>datetime</code>). Flask aparece únicamente en los adaptadores <code>api_*.py</code> y SQLite sólo en <code>persistencia/</code>. Así las reglas no dependen del framework web ni de la base.</div>
+<div class="table"><table>
+<thead><tr><th>Dependencia</th><th>Versión</th><th>Declarada en</th><th>Dónde se usa</th></tr></thead><tbody>
+<tr><td><b>Flask</b></td><td>3.1.3</td><td><code>backend/requirements.txt</code></td><td><code>backend/__init__.py</code> (<code>create_app</code>), <code>backend/api_*.py</code> (Blueprints, <code>request</code>, <code>jsonify</code>). Trae <code>werkzeug</code>, usado en <code>api_comun.py</code> para <code>BadRequest</code>.</td></tr>
+<tr><td><b>pytest</b></td><td>9.1.1</td><td><code>backend/requirements-dev.txt</code></td><td><code>tests/</code> y <code>pytest.ini</code>; no hace falta para ejecutar la app.</td></tr>
+<tr><td><b>react</b>, <b>react-dom</b></td><td>19.3.1</td><td><code>frontend/package.json</code></td><td><code>frontend/src/*.jsx</code>: hooks <code>useState</code>, <code>useEffect</code>, <code>useRef</code>, <code>createRoot</code>, <code>createPortal</code>.</td></tr>
+<tr><td><b>vite</b>, <b>@vitejs/plugin-react</b></td><td>8.3.4 · 6.1.2</td><td><code>frontend/package.json</code> (dev)</td><td>Servidor de desarrollo con proxy a <code>/api</code> y build estático; el backend es sólo Python.</td></tr>
+</tbody></table></div>
+<h3>Biblioteca estándar de Python</h3>
+<div class="table"><table>
+<thead><tr><th>Módulo</th><th>Dónde</th><th>Para qué</th></tr></thead><tbody>
+<tr><td><code>sqlite3</code></td><td><code>persistencia/</code>, <code>api_comun.py</code></td><td>Conexión, <code>execute</code>/<code>executemany</code> con <code>?</code>, <code>commit</code>/<code>rollback</code>; <code>sqlite3.Error</code> para responder 500.</td></tr>
+<tr><td><code>abc</code></td><td><code>dominio/logistica.py</code>, <code>dominio/reportes.py</code></td><td><code>EstadoBulto</code> y <code>EstrategiaAgrupacion</code>.</td></tr>
+<tr><td><code>datetime</code></td><td>dominio y API</td><td>Instantes de operaciones, períodos de los reportes.</td></tr>
+<tr><td><code>threading.Lock</code></td><td><code>backend/__init__.py</code></td><td><code>catalogo_lock</code>: un pedido a la vez modifica la memoria.</td></tr>
+<tr><td><code>pathlib</code>, <code>os</code></td><td><code>backend/__init__.py</code>, <code>persistencia/base_datos.py</code></td><td>Ubicar el archivo de la base.</td></tr>
+<tr><td><code>re</code></td><td><code>api_reportes.py</code></td><td>Validar el formato de los parámetros de los reportes.</td></tr>
+</tbody></table></div>
+<div class="q"><b>Lo que no usamos y por qué:</b> ningún ORM (SQL directo, como en la cátedra); ni ReportLab, Matplotlib, <code>csv</code> o pandas (los reportes se muestran en pantalla y el comprobante se imprime con <code>window.print()</code>); ni librerías de UI o de estado en el frontend, sólo React.</div>
+</section>
+</main>
+</div>
+</body>
+</html>
