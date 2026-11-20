@@ -23,9 +23,10 @@ body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.6 system-ui,-app
 header{padding:40px 16px 24px;max-width:960px;margin:auto}
 header h1{margin:0 0 6px;font-size:2rem}
 header p{margin:0;color:var(--muted)}
-nav{position:sticky;top:0;z-index:5;background:var(--bg);border-bottom:1px solid var(--line)}
-nav ol{display:flex;gap:6px;overflow-x:auto;margin:0 auto;padding:10px 16px;max-width:960px;list-style:none}
-nav a{display:block;white-space:nowrap;padding:5px 12px;border-radius:99px;background:var(--card);border:1px solid var(--line);color:var(--ink);text-decoration:none;font-size:.9rem}
+nav{background:var(--bg);border-bottom:1px solid var(--line)}
+nav ol{display:flex;flex-wrap:wrap;gap:6px;margin:0 auto;padding:10px 16px;max-width:960px;list-style:none}
+nav li{min-width:0;max-width:100%}
+nav a{display:block;overflow-wrap:anywhere;padding:5px 12px;border-radius:99px;background:var(--card);border:1px solid var(--line);color:var(--ink);text-decoration:none;font-size:.9rem}
 nav a:hover{border-color:var(--accent);color:var(--accent)}
 main{max-width:960px;margin:auto;padding:8px 16px 80px}
 section{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:24px;margin:24px 0}
@@ -37,6 +38,8 @@ h3{margin:26px 0 8px;font-size:1.1rem}
 .q{background:var(--warn-soft);border:1px solid var(--warn);padding:10px 16px;border-radius:8px;margin:10px 0}
 .q b{color:var(--warn)}
 code{font-family:ui-monospace,Consolas,monospace;font-size:.88em;background:var(--code);padding:1px 5px;border-radius:4px}
+.entidad-archivo{display:block;width:fit-content;max-width:100%;margin:4px 0 10px;padding:2px 8px;border:1px solid var(--ok);border-radius:6px;background:var(--ok-soft);color:var(--ok);font-size:.9rem;font-weight:650;overflow-wrap:anywhere}
+.entidad-archivo code{background:none;padding:0;font-size:inherit}
 pre{background:var(--code);padding:14px;border-radius:8px;overflow-x:auto;font-size:.85rem;line-height:1.5}
 pre code{background:none;padding:0}
 .cm{color:var(--muted)} .kw{color:var(--accent);font-weight:600} .hl{background:var(--warn-soft);border-radius:3px}
@@ -86,7 +89,7 @@ svg .it{font-style:italic}
 .switch button[aria-selected="true"] span{color:var(--card);opacity:.85}
 .view[hidden]{display:none}
 .lead{color:var(--muted);margin:16px 0 0}
-section{scroll-margin-top:60px}
+section{scroll-margin-top:12px}
 </style>
 </head>
 <body>
@@ -101,15 +104,16 @@ section{scroll-margin-top:60px}
 <div class="view" id="v-negocio" role="tabpanel" aria-labelledby="t-negocio">
 <nav><ol>
   <li><a href="#n-dominio">1 · Dominio</a></li>
-  <li><a href="#n-reglas">2 · Reglas</a></li>
-  <li><a href="#n-ciclo">3 · Ciclo del bulto</a></li>
-  <li><a href="#n-patrones">4 · Por qué los patrones</a></li>
-  <li><a href="#n-reportes">5 · Reportes</a></li>
-  <li><a href="#n-roles">6 · Roles</a></li>
-  <li><a href="#n-librerias">7 · Librerías</a></li>
+  <li><a href="#n-entidades">2 · Entidades de negocio</a></li>
+  <li><a href="#n-reglas">3 · Reglas</a></li>
+  <li><a href="#n-ciclo">4 · Ciclo del bulto</a></li>
+  <li><a href="#n-patrones">5 · Por qué los patrones</a></li>
+  <li><a href="#n-reportes">6 · Reportes</a></li>
+  <li><a href="#n-roles">7 · Roles</a></li>
+  <li><a href="#n-librerias">8 · Librerías</a></li>
 </ol></nav>
 <main>
-<p class="lead">Enfoque de <b>negocio</b>: dominio, reglas, ciclo del bulto, <b>por qué</b> elegimos cada patrón, reportes y roles. Se explica con palabras del negocio y diagramas, <b>casi sin código</b>. Si el profesor pide ver el código, pasá a la pestaña <b>Técnica</b>.</p>
+<p class="lead">Enfoque de <b>negocio</b>: dominio, entidades, reglas, ciclo del bulto, <b>por qué</b> elegimos cada patrón, reportes y roles. Se explica con palabras del negocio y diagramas, <b>casi sin código</b>. Si el profesor pide ver el código, pasá a la pestaña <b>Técnica</b>.</p>
 <section id="n-dominio">
 <h2><span class="n">1</span>Dominio</h2>
 <div class="short"><b>Cómo lo contaríamos</b>Es un comercio con varios locales que se abastecen desde un Centro de Distribución. El problema central es que <b>tener la mercadería físicamente no significa poder venderla</b>: entre el CD y el local hay un viaje, un precinto y dos controles. El sistema sigue cada unidad por <b>dónde está</b> y <b>en qué condición</b> (reservada, en tránsito, pendiente, disponible, rechazada) y sólo deja vender lo disponible. Además, cada venta y devolución impacta a la vez en stock y en caja, y con eso se arman los reportes económicos por período.</div>
@@ -162,24 +166,28 @@ section{scroll-margin-top:60px}
 </figure>
 
 
-<p><b>Entidades principales, en una frase cada una:</b></p>
+</section>
+
+<section id="n-entidades">
+<h2><span class="n">2</span>Entidades de negocio</h2>
+<p>Cada entidad representa algo que identificamos o registramos en la operación del comercio.</p>
 <ul>
-<li><b>Ubicación</b>: un local o el único CD. El CD no vende; los locales tienen stock mínimo por producto.</li>
-<li><b>Producto, Categoría y Proveedor</b>: el catálogo. Cada uno tiene un código que no se repite, y las bajas son lógicas para conservar la historia.</li>
-<li><b>Compra</b>: mercadería de un proveedor que entra al CD.</li>
-<li><b>Necesidad y Orden de reposición</b>: el local pide, y el CD junta los pedidos en una orden CD → local.</li>
-<li><b>Bulto y Remito</b>: la caja física, con su precinto, y el documento que la acompaña. El bulto tiene un ciclo de vida con historial.</li>
-<li><b>Inventario</b>: lleva cuántas unidades hay por ubicación, producto y condición. Es el único que mueve stock.</li>
-<li><b>Venta, Cobro y Comprobante</b>: lo que se vende, cómo se paga y el ticket.</li>
-<li><b>Caja</b>: registra cada ingreso y egreso de dinero.</li>
-<li><b>Devolución y Reintegro</b>: el cliente devuelve parte de una venta y se le reintegra el dinero.</li>
+<li><b>Ubicación</b>: un local o el único CD. El CD no vende; los locales tienen stock mínimo por producto. <a class="entidad-archivo" href="backend/dominio/catalogo.py">Archivo <code>backend/dominio/catalogo.py</code></a></li>
+<li><b>Producto, Categoría y Proveedor</b>: el catálogo. Cada uno tiene un código que no se repite, y las bajas son lógicas para conservar la historia. <a class="entidad-archivo" href="backend/dominio/catalogo.py">Archivo <code>backend/dominio/catalogo.py</code></a></li>
+<li><b>Compra y Detalle de compra</b>: la compra registra el ingreso al CD. Cada detalle indica producto, cantidad y costo unitario. <a class="entidad-archivo" href="backend/dominio/compras.py">Archivo <code>backend/dominio/compras.py</code></a></li>
+<li><b>Necesidad y Orden de reposición</b>: el local pide, y el CD junta los pedidos en una orden CD → local. <a class="entidad-archivo" href="backend/dominio/reposicion.py">Archivo <code>backend/dominio/reposicion.py</code></a></li>
+<li><b>Bulto y Remito</b>: la caja física, con su precinto, y el documento que la acompaña. El bulto tiene un ciclo de vida con historial. <a class="entidad-archivo" href="backend/dominio/logistica.py">Archivo <code>backend/dominio/logistica.py</code></a></li>
+<li><b>Inventario</b>: lleva cuántas unidades hay por ubicación, producto y condición. Es el único que mueve stock. <a class="entidad-archivo" href="backend/dominio/inventario.py">Archivo <code>backend/dominio/inventario.py</code></a></li>
+<li><b>Venta, Detalle de venta, Cobro, Medio de pago y Comprobante</b>: identifican la operación, sus productos, los importes cobrados, cómo se pagó y el comprobante emitido. <a class="entidad-archivo" href="backend/dominio/ventas.py">Archivo <code>backend/dominio/ventas.py</code></a></li>
+<li><b>Caja</b>: registra cada ingreso y egreso de dinero. <a class="entidad-archivo" href="backend/dominio/caja.py">Archivo <code>backend/dominio/caja.py</code></a></li>
+<li><b>Devolución y Reintegro</b>: el cliente devuelve parte de una venta y se le reintegra el dinero. <a class="entidad-archivo" href="backend/dominio/devoluciones.py">Archivo <code>backend/dominio/devoluciones.py</code></a></li>
 </ul>
 
 
 </section>
 
 <section id="n-reglas">
-<h2><span class="n">2</span>Reglas de negocio</h2>
+<h2><span class="n">3</span>Reglas de negocio</h2>
 <p>Las primeras cinco las exige el enunciado; las demás son reglas que agregamos nosotros para que el sistema sea coherente (el enunciado pide identificar reglas adicionales).</p>
 <div class="table"><table>
 <tr><th>Regla</th><th>En palabras</th><th>Origen</th></tr>
@@ -204,7 +212,7 @@ section{scroll-margin-top:60px}
 </section>
 
 <section id="n-ciclo">
-<h2><span class="n">3</span>Ciclo de vida del bulto</h2>
+<h2><span class="n">4</span>Ciclo de vida del bulto</h2>
 <div class="short"><b>Respuesta corta</b>El bulto es la caja precintada que viaja del CD al local. Pasa por <b>Preparado → Precintado → En tránsito → Recibido → Verificado</b>, o termina <b>Rechazado</b> (precinto roto o distinto) o <b>Anulado</b> (se desarma antes de precintar). Cada paso queda anotado en un historial que no se puede modificar, y la mercadería recién se puede vender cuando se verifican <b>el bulto y el remito</b>.</div>
 <figure class="fig">
 <svg viewBox="0 0 900 330" role="img" aria-label="Diagrama de estados del bulto">
@@ -255,7 +263,7 @@ section{scroll-margin-top:60px}
 </section>
 
 <section id="n-patrones">
-<h2><span class="n">4</span>Por qué elegimos cada patrón</h2>
+<h2><span class="n">5</span>Por qué elegimos cada patrón</h2>
 <div class="grid2">
 <div class="layer">
   <div class="layer-h"><span class="tag t-dom">State</span>ciclo de vida del bulto</div>
@@ -278,7 +286,7 @@ section{scroll-margin-top:60px}
 </section>
 
 <section id="n-reportes">
-<h2><span class="n">5</span>Reportes</h2>
+<h2><span class="n">6</span>Reportes</h2>
 <div class="table"><table>
 <tr><th>Reporte</th><th>Qué pregunta responde</th><th>Filtros</th></tr>
 <tr><td><b>R-01 · Ventas e ingresos</b></td><td>¿Cuánto vendimos y cuánto dinero entró neto (cobros menos reintegros)?</td><td>Período, local; agrupado por día, local o medio de pago</td></tr>
@@ -299,8 +307,8 @@ section{scroll-margin-top:60px}
 </section>
 
 <section id="n-roles">
-<h2><span class="n">6</span>Roles de usuario</h2>
-<div class="short"><b>Respuesta honesta</b><b>No implementamos usuarios, login ni permisos.</b> Fue una decisión del grupo: el enunciado no pide autenticación ni perfiles, así que lo dejamos fuera del alcance para concentrarnos en lo que sí se evalúa (procesos, validaciones, ciclo del bulto, patrones y reportes). Sí identificamos los <b>actores del dominio</b>, es decir quién hace cada cosa en el negocio, y el sistema está organizado según esas responsabilidades.</div>
+<h2><span class="n">7</span>Roles de usuario</h2>
+<div class="short"><b>No implementamos usuarios, login ni permisos.</b> Fue una decisión del grupo: el enunciado no pide autenticación ni perfiles, así que lo dejamos fuera del alcance para concentrarnos en lo que sí se evalúa (procesos, validaciones, ciclo del bulto, patrones y reportes). Sí identificamos los <b>actores del dominio</b>, es decir quién hace cada cosa en el negocio, y el sistema está organizado según esas responsabilidades.</div>
 <figure class="fig">
 <svg viewBox="0 0 900 290" role="img" aria-label="Actores del dominio y procesos">
   <defs><marker id="arR" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0L10,5L0,10z" fill="var(--muted)"/></marker></defs>
@@ -330,7 +338,7 @@ section{scroll-margin-top:60px}
 
 
 <section id="n-librerias">
-<h2><span class="n">7</span>¿Usamos librerías?</h2>
+<h2><span class="n">8</span>¿Usamos librerías?</h2>
 <div class="short"><b>Respuesta corta</b>Muy pocas, y a propósito. <b>Toda la lógica del negocio está escrita por nosotros en Python puro</b>: las clases, las reglas, los patrones, los cálculos de los reportes y el SQL. Las librerías externas son sólo para lo que no es del dominio: <b>Flask</b> para recibir los pedidos de la pantalla, <b>React</b> para la pantalla y <b>pytest</b> para las pruebas. La base de datos es <b>SQLite</b>, que viene incluida en Python.</div>
 <div class="table"><table>
 <tr><th>Librería</th><th>Para qué la usamos</th><th>Tipo</th></tr>
