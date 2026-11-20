@@ -363,6 +363,7 @@ section{scroll-margin-top:12px}
   <li><a href="#reportes">5 · Reportes</a></li>
   <li><a href="#abc">6 · @abstractmethod</a></li>
   <li><a href="#librerias">7 · Librerías</a></li>
+  <li><a href="#validaciones-codigo">8 · Validaciones en el código</a></li>
 </ol></nav>
 <main>
 <p class="lead">Enfoque <b>técnico</b>: capas, clases, cómo están implementados los patrones (con números de línea), transacción, ciclo del bulto en código, reportes y <code>@abstractmethod</code>. Usalo cuando el profesor pida ver el código.</p>
@@ -1061,6 +1062,36 @@ resultado = ReporteVentas(ESTRATEGIAS_AGRUPACION[nombre]()).generar(...)</code><
 <tr><td><code>re</code></td><td><code>api_reportes.py</code></td><td>Validar el formato de los parámetros de los reportes.</td></tr>
 </table></div>
 <div class="q"><b>Lo que no usamos y por qué:</b> ningún ORM (SQL directo, como en la cátedra); ni ReportLab, Matplotlib, <code>csv</code> o pandas (los reportes se muestran en pantalla y el comprobante se imprime con <code>window.print()</code>); ni librerías de UI o de estado en el frontend, sólo React.</div>
+</section>
+<section id="validaciones-codigo">
+<h2><span class="n">8</span>Validaciones en el código</h2>
+<p>Las referencias indican dónde se aplica cada regla de la guía. El enlace abre el archivo y el número indica la línea que hay que buscar.</p>
+<div class="table"><table>
+<thead><tr><th scope="col">Regla</th><th scope="col">Qué controla</th><th scope="col">Archivo y línea</th></tr></thead>
+<tbody>
+<tr><td>RB-01</td><td>Stock disponible tras verificar bulto y remito</td><td><a class="entidad-archivo" href="backend/dominio/logistica.py"><code>backend/dominio/logistica.py:404</code></a><a class="entidad-archivo" href="backend/dominio/inventario.py"><code>backend/dominio/inventario.py:213</code></a></td></tr>
+<tr><td>RB-02</td><td>Rechazo por precinto roto o distinto</td><td><a class="entidad-archivo" href="backend/dominio/logistica.py"><code>backend/dominio/logistica.py:135</code></a></td></tr>
+<tr><td>RB-03</td><td>Historial de estados sin edición ni borrado</td><td><a class="entidad-archivo" href="backend/dominio/logistica.py"><code>backend/dominio/logistica.py:346</code></a><a class="entidad-archivo" href="backend/persistencia/base_datos.py"><code>backend/persistencia/base_datos.py:155</code></a><a class="entidad-archivo" href="backend/persistencia/base_datos.py"><code>backend/persistencia/base_datos.py:160</code></a></td></tr>
+<tr><td>RB-04</td><td>Stock insuficiente bloquea toda la venta</td><td><a class="entidad-archivo" href="backend/dominio/inventario.py"><code>backend/dominio/inventario.py:152</code></a><a class="entidad-archivo" href="backend/dominio/inventario.py"><code>backend/dominio/inventario.py:216</code></a></td></tr>
+<tr><td>RB-05</td><td>Código de producto o proveedor duplicado</td><td><a class="entidad-archivo" href="backend/dominio/catalogo.py"><code>backend/dominio/catalogo.py:27</code></a></td></tr>
+<tr><td>RB-06 / RB-11</td><td>Venta de origen registrada y límite acumulado de devolución</td><td><a class="entidad-archivo" href="backend/api_devoluciones.py"><code>backend/api_devoluciones.py:88</code></a><a class="entidad-archivo" href="backend/dominio/devoluciones.py"><code>backend/dominio/devoluciones.py:223</code></a></td></tr>
+<tr><td>RB-09</td><td>Reserva de unidades al preparar el bulto</td><td><a class="entidad-archivo" href="backend/dominio/logistica.py"><code>backend/dominio/logistica.py:450</code></a><a class="entidad-archivo" href="backend/dominio/inventario.py"><code>backend/dominio/inventario.py:190</code></a></td></tr>
+<tr><td>RB-10</td><td>Reenvío de una venta o devolución con la misma clave</td><td><a class="entidad-archivo" href="backend/dominio/ventas.py"><code>backend/dominio/ventas.py:246</code></a><a class="entidad-archivo" href="backend/dominio/devoluciones.py"><code>backend/dominio/devoluciones.py:215</code></a></td></tr>
+<tr><td>RB-12</td><td>Precio y costo de referencia guardados al vender</td><td><a class="entidad-archivo" href="backend/dominio/ventas.py"><code>backend/dominio/ventas.py:256</code></a></td></tr>
+<tr><td>RB-13</td><td>El traslado descuenta y suma la misma cantidad</td><td><a class="entidad-archivo" href="backend/dominio/inventario.py"><code>backend/dominio/inventario.py:144</code></a></td></tr>
+<tr><td>RB-14</td><td>Contenido fijado al crear el bulto y operaciones del estado Precintado</td><td><a class="entidad-archivo" href="backend/dominio/logistica.py"><code>backend/dominio/logistica.py:263</code></a><a class="entidad-archivo" href="backend/dominio/logistica.py"><code>backend/dominio/logistica.py:101</code></a></td></tr>
+<tr><td>RB-15</td><td>Rechazo de acciones que el estado actual no admite</td><td><a class="entidad-archivo" href="backend/dominio/logistica.py"><code>backend/dominio/logistica.py:62</code></a></td></tr>
+<tr><td>RB-16</td><td>El stock rechazado queda en el local y fuera del saldo vendible</td><td><a class="entidad-archivo" href="backend/dominio/logistica.py"><code>backend/dominio/logistica.py:145</code></a><a class="entidad-archivo" href="backend/dominio/inventario.py"><code>backend/dominio/inventario.py:209</code></a></td></tr>
+</tbody></table></div>
+<h3 id="locales-reposicion-codigo">Local que pide y local destino</h3>
+<p>El local que pide queda registrado en la necesidad. El local destino es el que recibirá la mercadería del CD. La orden sólo admite necesidades de ese mismo local.</p>
+<ul>
+<li><b>Local que pide</b> <a class="entidad-archivo" href="frontend/src/PanelReposicion.jsx"><code>frontend/src/PanelReposicion.jsx:67</code></a></li>
+<li><b>Registro de la necesidad</b> <a class="entidad-archivo" href="backend/api_logistica.py"><code>backend/api_logistica.py:138</code></a></li>
+<li><b>Local destino</b> <a class="entidad-archivo" href="frontend/src/PanelReposicion.jsx"><code>frontend/src/PanelReposicion.jsx:91</code></a></li>
+<li><b>Selección del destino en la API</b> <a class="entidad-archivo" href="backend/api_logistica.py"><code>backend/api_logistica.py:178</code></a></li>
+<li><b>Control de que la necesidad corresponda al destino</b> <a class="entidad-archivo" href="backend/dominio/reposicion.py"><code>backend/dominio/reposicion.py:119</code></a></li>
+</ul>
 </section>
 </main>
 </div>
