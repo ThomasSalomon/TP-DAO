@@ -229,7 +229,7 @@ summary:hover { color: var(--text); }
 .receipt .total, .receipt-print .total { font-weight: 600; }
 .receipt-payments { margin-bottom: 0; }
 .cash-balances { max-width: 640px; margin-bottom: 16px; }
-.receipt-print { display: none; }
+.receipt-print, .report-print { display: none; }
 
 /* Reportes: cifras principales en línea, totales al pie y negativos en rojo. */
 .report h4 { margin-top: 24px; }
@@ -243,12 +243,25 @@ summary:hover { color: var(--text); }
 .negativo { color: var(--negative); }
 .badge-alerta { color: var(--pill-warning-ink); background: var(--pill-warning-bg); }
 
-/* Al imprimir con un comprobante abierto, sólo se imprime su copia. */
+/* Las vistas ocultas siguen montadas. Imprimir sólo el documento de la vista activa. */
 @media print {
   body { padding: 0; background: white; }
-  body:has(> .receipt-print) #root { display: none; }
-  .receipt-print { display: block; color: black; }
+  body:has(> .receipt-print) > #root:has(#vista-ventas:not([hidden])),
+  body:has(> .report-print) > #root:has(#vista-reportes:not([hidden])) { display: none; }
+  #root:has(#vista-ventas:not([hidden])) ~ .receipt-print,
+  #root:has(#vista-reportes:not([hidden])) ~ .report-print { display: block; color: black; }
   .receipt-print .detail, .receipt-print th { color: #333; }
+
+  @page reporte { size: landscape; margin: 12mm; }
+  .report-print { page: reporte; font-size: 10pt; }
+  .report-print h1 { margin: 0 0 6pt; font-size: 16pt; }
+  .report-print h4 { break-after: avoid; }
+  .report-print .table-scroll { overflow: visible; }
+  .report-print .table-scroll table { min-width: 0; }
+  .report-print th, .report-print td { padding: 4pt 5pt; white-space: normal; overflow-wrap: anywhere; }
+  .report-print thead { display: table-header-group; }
+  .report-print tfoot { display: table-row-group; }
+  .report-print tr, .report-print .report-summary { break-inside: avoid; }
 }
 
 @media (max-width: 1050px) {

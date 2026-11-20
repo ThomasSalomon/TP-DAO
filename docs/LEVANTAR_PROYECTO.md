@@ -54,6 +54,23 @@ Invoke-RestMethod http://127.0.0.1:5000/api/health   # {"status":"ok"}
 Invoke-RestMethod http://127.0.0.1:5173/api/health   # mismo resultado, vía proxy Vite
 ```
 
+## Datos precargados para la demostración
+
+Antes de levantar Flask, ejecutar desde la raíz del proyecto:
+
+```powershell
+.\.venv\Scripts\python.exe -m backend.cargar_demo
+```
+
+El comando crea la base que usaría Flask. Si ese archivo ya existe, se puede conservar y generar otra base de demostración:
+
+```powershell
+$env:TP_DAO_DB = "$env:LOCALAPPDATA\TP-DAO\tp_dao_demo.db"
+.\.venv\Scripts\python.exe -m backend.cargar_demo
+```
+
+Levantar Flask desde esa misma terminal para usar la base elegida. La carga incluye 96 ventas, 12 devoluciones, 12 compras y 23 bultos en tres sucursales. En **Reportes**, elegir del **01/08/2026 al 19/11/2026** para ver todo el historial o del **01/11/2026 al 19/11/2026** para ver solo noviembre. En **Existencias**, seleccionar un local y marcar **Sólo productos en su mínimo** para ver los faltantes.
+
 ## Notas
 
 - Antes de levantar, comprobar que los puertos estén libres: `netstat -ano | findstr ":5000 :5173"`. Vite usa puerto estricto: si 5173 está ocupado, falla en vez de elegir otro.

@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { formatearInstante, reportesAPI } from './api';
 import { CONDICIONES, nombreUbicacion } from './etiquetas';
 
@@ -270,6 +271,18 @@ function alcance(tipo, datos) {
   return partes.join(' · ');
 }
 
+function DetalleReporte({ reporte, datos, nivel }) {
+  const Titulo = nivel;
+  const Resultado = RESULTADOS[reporte.id];
+  return (
+    <>
+      <Titulo>{reporte.titulo}</Titulo>
+      <p className="detail">{alcance(reporte.id, datos)}</p>
+      <Resultado datos={datos} />
+    </>
+  );
+}
+
 export default function SeccionReportes({ ubicaciones, productos, categorias, estadoCatalogo }) {
   const [tipo, setTipo] = useState('ventas');
   const [filtros, setFiltros] = useState(filtrosIniciales);
@@ -282,7 +295,6 @@ export default function SeccionReportes({ ubicaciones, productos, categorias, es
   const reporte = REPORTES.find((item) => item.id === tipo);
   const resultado = resultados[tipo] ?? { estado: 'inicial' };
   const errores = resultado.estado === 'error' ? resultado.campos : {};
-  const Resultado = RESULTADOS[tipo];
 
   useEffect(() => () => Object.values(controladores.current).forEach((controller) => controller.abort()), []);
 
@@ -403,6 +415,9 @@ export default function SeccionReportes({ ubicaciones, productos, categorias, es
           <button type="submit" disabled={resultado.estado === 'cargando' || (tipo === 'existencias' && !ubicacionId)}>
             Generar reporte
           </button>
+          {resultado.estado === 'lista' && (
+            <button className="secondary" type="button" onClick={() => window.print()}>Imprimir reporte</button>
+          )}
         </div>
       </form>
       <div aria-live="polite">
@@ -411,9 +426,13 @@ export default function SeccionReportes({ ubicaciones, productos, categorias, es
         {resultado.estado === 'error' && <div className="notice error" role="alert"><p>{resultado.mensaje}</p></div>}
         {resultado.estado === 'lista' && (
           <>
-            <h3>{reporte.titulo}</h3>
-            <p className="detail">{alcance(tipo, resultado.datos)}</p>
-            <Resultado datos={resultado.datos} />
+            <DetalleReporte reporte={reporte} datos={resultado.datos} nivel="h3" />
+            {createPortal(
+              <div className="report report-print" aria-hidden="true">
+                <DetalleReporte reporte={reporte} datos={resultado.datos} nivel="h1" />
+              </div>,
+              document.body,
+            )}
           </>
         )}
       </div>
