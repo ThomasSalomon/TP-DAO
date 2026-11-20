@@ -253,12 +253,13 @@ summary:hover { color: var(--text); }
   .receipt-print .detail, .receipt-print th { color: #333; }
 
   @page reporte { size: landscape; margin: 12mm; }
-  .report-print { page: reporte; font-size: 10pt; }
+  .report-print { page: reporte; font-size: 10pt; line-height: 1.35; }
   .report-print h1 { margin: 0 0 6pt; font-size: 16pt; }
   .report-print h4 { break-after: avoid; }
   .report-print .table-scroll { overflow: visible; }
   .report-print .table-scroll table { min-width: 0; }
-  .report-print th, .report-print td { padding: 4pt 5pt; white-space: normal; overflow-wrap: anywhere; }
+  .report-print th, .report-print td { padding: 3pt 5pt; white-space: normal; }
+  .report-print .report-code { white-space: nowrap; }
   .report-print thead { display: table-header-group; }
   .report-print tfoot { display: table-row-group; }
   .report-print tr, .report-print .report-summary { break-inside: avoid; }

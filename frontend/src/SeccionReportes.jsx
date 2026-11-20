@@ -236,8 +236,8 @@ function ResultadoRechazos({ datos }) {
           </tr></thead>
           <tbody>{datos.rechazos.map((rechazo) => (
             <tr key={rechazo.bulto_id}>
-              <td>{rechazo.bulto_codigo}</td>
-              <td>{rechazo.remito}</td>
+              <td className="report-code">{rechazo.bulto_codigo}</td>
+              <td className="report-code">{rechazo.remito}</td>
               <td>{rechazo.destino.codigo}</td>
               <td>{formatearInstante(rechazo.instante)}</td>
               <td>{rechazo.motivo}</td>
